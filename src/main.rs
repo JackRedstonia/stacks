@@ -6,12 +6,14 @@ use application::AppHandler;
 use application::AppUpdateArgs;
 use application::ApplicationError;
 use application::InputState;
-use skulpin::LogicalSize;
+use application::InputEvent;
 use skulpin::app::LogicalPosition;
+use skulpin::winit::event::MouseButton;
+use skulpin::LogicalSize;
 use skulpin::{
-    skia_safe::{self, Contains,  scalar, Canvas, Matrix, Paint, Point},
+    app::{TimeState, VirtualKeyCode},
+    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint, Point},
     PresentMode,
-    app::{VirtualKeyCode, TimeState},
 };
 
 use std::ffi::CString;
@@ -31,7 +33,7 @@ fn main() {
 }
 
 struct Stacks {
-    target_framerate: f64,
+    target_framerate: u64,
     root_node: Box<dyn Node>,
     recycled_matrix_stack: Vec<Matrix>,
 }
@@ -39,7 +41,7 @@ struct Stacks {
 impl Stacks {
     pub fn new() -> Self {
         Stacks {
-            target_framerate: 120.0,
+            target_framerate: 120,
             root_node: Box::new(Wiggle {
                 matrix: Matrix::new_trans((0.0, 0.0)),
                 inner: Container {
@@ -53,10 +55,10 @@ impl Stacks {
                                 right: 100.0,
                                 bottom: 200.0,
                             },
-                            i: false,
+                            x: 0.0,
                             paint: {
                                 let mut p =
-                                    Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
+                                    Paint::new(skia_safe::Color4f::new(0.0, 0.7, 0.0, 1.0), None);
                                 p.set_anti_alias(true);
                                 p
                             },
@@ -69,10 +71,10 @@ impl Stacks {
                                 right: 50.0,
                                 bottom: 30.0,
                             },
-                            i: false,
+                            x: 0.0,
                             paint: {
                                 let mut p =
-                                    Paint::new(skia_safe::Color4f::new(1.0, 1.0, 0.0, 1.0), None);
+                                    Paint::new(skia_safe::Color4f::new(0.7, 0.9, 0.0, 1.0), None);
                                 p.set_anti_alias(true);
                                 p
                             },
@@ -86,31 +88,27 @@ impl Stacks {
 }
 
 impl AppHandler for Stacks {
-    fn target_update_rate(&self) -> f64 {
-        1000.0
+    fn target_update_rate(&self) -> u64 {
+        1000
     }
 
     fn update(&mut self, update_args: AppUpdateArgs) {
-        let input_state = update_args.input_state;
-
-        if input_state.is_key_down(VirtualKeyCode::Escape) {
-            update_args.app_control.enqueue_terminate_process();
-        }
-
-        let mut args = UpdateArgs {
+        let mut args = State {
             time_state: update_args.time_state,
-            matrix_stack: &mut self.recycled_matrix_stack,
-            matrix: Matrix::new_trans((0.0, 0.0)),
             input_state: update_args.input_state,
-            input_taken: false
         };
 
-        self.root_node.update(&mut args);
+        let mut stack = MatrixStack {
+            matrix_stack: &mut self.recycled_matrix_stack,
+            matrix: Matrix::new_trans((0.0, 0.0)),
+        };
+
+        self.root_node.update(&mut args, &mut stack);
 
         self.recycled_matrix_stack.clear();
     }
 
-    fn target_framerate(&self) -> f64 {
+    fn target_framerate(&self) -> u64 {
         self.target_framerate
     }
 
@@ -140,15 +138,17 @@ macro_rules! matrix_stack {
     }
 }
 
-pub struct UpdateArgs<'a, 'b, 'c> {
+pub struct State<'a, 'b> {
     time_state: &'a TimeState,
-    matrix_stack: &'b mut Vec<Matrix>,
-    matrix: Matrix,
-    input_state: &'c InputState,
-    input_taken: bool,
+    input_state: &'b mut InputState,
 }
 
-impl<'a, 'b, 'c> UpdateArgs<'a, 'b, 'c> {
+pub struct MatrixStack<'a> {
+    matrix_stack: &'a mut Vec<Matrix>,
+    matrix: Matrix,
+}
+
+impl<'a> MatrixStack<'a> {
     fn save(&mut self) {
         self.matrix_stack.push(self.matrix);
     }
@@ -165,33 +165,49 @@ impl<'a, 'b, 'c> UpdateArgs<'a, 'b, 'c> {
 }
 
 pub trait Node {
-    fn update(&mut self, update_args: &mut UpdateArgs);
+    fn update(&mut self, state: &mut State, matrix_stack: &mut MatrixStack);
     fn draw(&mut self, canvas: &mut Canvas);
 }
 
 struct Rect {
     matrix: Matrix,
     rect: skia_safe::Rect,
-    i: bool,
+    x: scalar,
     paint: Paint,
 }
 
 impl Node for Rect {
-    fn update(&mut self, update_args: &mut UpdateArgs) {
-        let mouse_position: LogicalPosition<scalar> = update_args.input_state.mouse_position()
-            .to_logical(update_args.input_state.scale_factor());
-        let point = Point::new(mouse_position.x, mouse_position.y);
-        matrix_stack!(update_args, &self.matrix, {
-            if let Some(m) = update_args.matrix.invert() {
-                self.i = self.rect.contains(m.map_point(Point::new(mouse_position.x, mouse_position.y)));
+    fn update(&mut self, state: &mut State, matrix_stack: &mut MatrixStack) {
+        if self.x > 0.0 {
+            self.x -= state.time_state.previous_update_time().as_secs_f32() * 2.0;
+            if self.x < 0.0 {
+                self.x = 0.0;
+            }
+        }
+
+        matrix_stack!(matrix_stack, &self.matrix, {
+            if let Some(m) = matrix_stack.matrix.invert() {
+                state.input_state.events.iter(|event| {
+                    if let InputEvent::MouseDown(MouseButton::Left, mouse_position) = event {
+                        if self.rect.contains(m.map_point((mouse_position.x, mouse_position.y))) {
+                            self.x = 1.0;
+                            return true;
+                        }
+                    }
+                    return false;
+                });
             }
         });
     }
 
     fn draw(&mut self, canvas: &mut Canvas) {
         matrix_stack!(canvas, &self.matrix, {
-            if self.i {
-                let mut p = Paint::new(skia_safe::Color4f::new(1.0, 1.0, 1.0, 1.0), None);
+            if self.x > 0.0 {
+                let mut c = self.paint.color4f();
+                c.r = (c.r + self.x).min(1.0);
+                c.g = (c.g + self.x).min(1.0);
+                c.b = (c.b + self.x).min(1.0);
+                let mut p = Paint::new(c, None);
                 p.set_anti_alias(true);
                 canvas.draw_rect(self.rect, &p);
             } else {
@@ -207,10 +223,10 @@ struct Container<T> {
 }
 
 impl<T: Node> Node for Container<T> {
-    fn update(&mut self, update_args: &mut UpdateArgs) {
-        matrix_stack!(update_args, &self.matrix, {
+    fn update(&mut self, state: &mut State, matrix_stack: &mut MatrixStack) {
+        matrix_stack!(matrix_stack, &self.matrix, {
             for c in &mut self.children {
-                c.update(update_args);
+                c.update(state, matrix_stack);
             }
         });
     }
@@ -230,13 +246,13 @@ struct Wiggle<T> {
 }
 
 impl<T: Node> Node for Wiggle<T> {
-    fn update(&mut self, update_args: &mut UpdateArgs) {
+    fn update(&mut self, state: &mut State, matrix_stack: &mut MatrixStack) {
         self.matrix.set_rotate(
-            (update_args.time_state.total_time().as_secs_f32() * 10.0).sin() * 10.0,
+            (state.time_state.total_time().as_secs_f32() * 10.0).sin() * 10.0,
             None,
         );
-        matrix_stack!(update_args, &self.matrix, {
-            self.inner.update(update_args);
+        matrix_stack!(matrix_stack, &self.matrix, {
+            self.inner.update(state, matrix_stack);
         });
     }
 

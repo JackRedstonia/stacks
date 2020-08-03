@@ -4,6 +4,7 @@ use skulpin::ash;
 use skulpin::skia_safe;
 use skulpin::winit;
 
+pub use input_state::InputEvent;
 pub use input_state::InputState;
 use skulpin::app::AppControl;
 use skulpin::app::TimeState;
@@ -50,7 +51,7 @@ impl From<ash::vk::Result> for ApplicationError {
 
 pub struct AppUpdateArgs<'a, 'b, 'c> {
     pub app_control: &'a mut AppControl,
-    pub input_state: &'b InputState,
+    pub input_state: &'b mut InputState,
     pub time_state: &'c TimeState,
 }
 
@@ -63,10 +64,10 @@ pub struct AppDrawArgs<'a, 'b, 'c, 'd> {
 }
 
 pub trait AppHandler {
-    fn target_update_rate(&self) -> f64;
+    fn target_update_rate(&self) -> u64;
     fn update(&mut self, pdate_args: AppUpdateArgs);
 
-    fn target_framerate(&self) -> f64;
+    fn target_framerate(&self) -> u64;
     fn draw(&mut self, draw_args: AppDrawArgs);
 
     fn fatal_error(&mut self, error: &ApplicationError);
@@ -271,7 +272,7 @@ impl App {
 
         // Pass control of this thread to winit until the app terminates. If this app wants to quit,
         // the update loop should send the appropriate event via the channel
-        let mut time_accm: f64 = 0.0;
+        let mut time_accm: u128 = 0;
         event_loop.run(move |event, window_target, control_flow| {
             let window = WinitWindow::new(&winit_window);
             input_state.handle_winit_event(&mut app_control, &event, window_target);
@@ -282,24 +283,25 @@ impl App {
 
                     app_handler.update(AppUpdateArgs {
                         app_control: &mut app_control,
-                        input_state: &input_state,
+                        input_state: &mut input_state,
                         time_state: &time_state,
                     });
 
                     // Call this to mark the start of the next frame (i.e. "key just down" will return false)
                     input_state.end_frame();
 
-                    let t = time_state.previous_update_time().as_secs_f64();
-                    time_accm += t;
-                    let t = 1.0 / app_handler.target_framerate();
-                    if time_accm > t {
-                        time_accm -= t;
+                    let t_update = time_state.previous_update_time();
+                    time_accm += t_update.as_nanos();
+                    let t_draw = 1_000_000_000 / app_handler.target_framerate() as u128;
+                    if time_accm > t_draw {
+                        time_accm -= t_draw;
                         winit_window.request_redraw();
                     }
 
-                    let update_time = 1.0 / app_handler.target_update_rate();
-                    if t > update_time {
-                        sleep(Duration::from_secs_f64(t - update_time));
+                    let update_time =
+                        Duration::from_nanos(1_000_000_000 / app_handler.target_update_rate());
+                    if update_time > t_update {
+                        sleep(update_time - t_update);
                     }
                 }
                 winit::event::Event::RedrawRequested(_window_id) => {
