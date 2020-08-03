@@ -5,14 +5,13 @@ use application::AppDrawArgs;
 use application::AppHandler;
 use application::AppUpdateArgs;
 use application::ApplicationError;
-use application::InputState;
 use application::InputEvent;
-use skulpin::app::LogicalPosition;
+use application::InputState;
 use skulpin::winit::event::MouseButton;
 use skulpin::LogicalSize;
 use skulpin::{
     app::{TimeState, VirtualKeyCode},
-    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint, Point},
+    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint},
     PresentMode,
 };
 
@@ -189,7 +188,10 @@ impl Node for Rect {
             if let Some(m) = matrix_stack.matrix.invert() {
                 state.input_state.events.iter(|event| {
                     if let InputEvent::MouseDown(MouseButton::Left, mouse_position) = event {
-                        if self.rect.contains(m.map_point((mouse_position.x, mouse_position.y))) {
+                        if self
+                            .rect
+                            .contains(m.map_point((mouse_position.x, mouse_position.y)))
+                        {
                             self.x = 1.0;
                             return true;
                         }

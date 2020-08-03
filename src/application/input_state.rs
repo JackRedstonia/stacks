@@ -15,8 +15,8 @@ pub use winit::event::MouseButton;
 pub use winit::event::MouseScrollDelta;
 
 use super::AppControl;
-use crate::winit::window::Window;
 use crate::scalar;
+use crate::winit::window::Window;
 
 pub enum InputEvent {
     KeyDown(VirtualKeyCode),
@@ -36,7 +36,7 @@ impl InputEventConsumable {
     fn new(e: InputEvent) -> Self {
         Self {
             event: e,
-            consumed: false
+            consumed: false,
         }
     }
 }
@@ -45,7 +45,9 @@ pub struct InputEventQueue(Vec<InputEventConsumable>);
 
 impl InputEventQueue {
     pub fn iter<F>(&mut self, mut f: F)
-    where F: FnMut(&InputEvent) -> bool {
+    where
+        F: FnMut(&InputEvent) -> bool,
+    {
         let mut should_rebuild_queue = false;
         for i in self.0.iter_mut() {
             if !i.consumed {
@@ -116,17 +118,17 @@ impl InputState {
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(vk) = input.virtual_keycode {
                         if let Some(kc) = Self::keyboard_button_to_index(vk) {
-                            self.key_is_down[kc] = input.state == ElementState::Pressed;
-                            self.events.0.push(InputEventConsumable::new(InputEvent::KeyDown(vk)));
+                            let v = input.state == ElementState::Pressed;
+                            self.key_is_down[kc] = v;
+                            self.events.0.push(InputEventConsumable::new(if v {
+                                InputEvent::KeyDown(vk)
+                            } else {
+                                InputEvent::KeyUp(vk)
+                            }));
                         };
                     }
                 }
-                WindowEvent::MouseInput {
-                    device_id,
-                    state,
-                    button,
-                    ..
-                } => {
+                WindowEvent::MouseInput { state, button, .. } => {
                     if let Some(button_index) = Self::mouse_button_to_index(*button) {
                         let v = matches!(state, ElementState::Pressed);
                         self.mouse_button_is_down[button_index] = v;
@@ -137,21 +139,19 @@ impl InputState {
                         }));
                     }
                 }
-                WindowEvent::CursorMoved {
-                    device_id,
-                    position,
-                    ..
-                } => {
+                WindowEvent::CursorMoved { position, .. } => {
                     let logical = position.to_logical(self.scale_factor);
                     self.mouse_position = logical;
-                    self.events.0.push(InputEventConsumable::new(InputEvent::MouseMove(logical)));
-                },
-                WindowEvent::MouseWheel {
-                    device_id, delta, ..
-                } => {
+                    self.events
+                        .0
+                        .push(InputEventConsumable::new(InputEvent::MouseMove(logical)));
+                }
+                WindowEvent::MouseWheel { delta, .. } => {
                     self.handle_mouse_wheel_event(delta);
-                    self.events.0.push(InputEventConsumable::new(InputEvent::MouseScroll(*delta)));
-                },
+                    self.events
+                        .0
+                        .push(InputEventConsumable::new(InputEvent::MouseScroll(*delta)));
+                }
                 _ => {}
             }
         }
