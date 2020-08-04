@@ -224,21 +224,21 @@ impl<T: RedrawManagedNode> Node for RedrawManager<T> {
 
     fn draw(&mut self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
         if self.should_redraw || self.virtual_surface.is_none() {
-            let mut new_bounds = self.inner.bounds();
-            self.left_top = (new_bounds.left, new_bounds.top).into();
-            let old_info = canvas.image_info();
+            let bounds = self.inner.bounds();
+            self.left_top = (bounds.left, bounds.top).into();
+            let info = canvas.image_info();
 
             let mut s = skia_safe::Surface::new_render_target(
                 &mut canvas.gpu_context().unwrap(),
                 skia_safe::Budgeted::Yes,
                 &ImageInfo::new(
                     ISize {
-                        width: new_bounds.right - new_bounds.left,
-                        height: new_bounds.bottom - new_bounds.top,
+                        width: bounds.right - bounds.left,
+                        height: bounds.bottom - bounds.top,
                     },
-                    old_info.color_type(),
-                    old_info.alpha_type(),
-                    old_info.color_space(),
+                    info.color_type(),
+                    info.alpha_type(),
+                    info.color_space(),
                 ),
                 None,
                 skia_safe::gpu::SurfaceOrigin::TopLeft,
