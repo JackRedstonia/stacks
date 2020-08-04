@@ -9,7 +9,6 @@ pub use input_state::InputState;
 use skulpin::app::AppControl;
 use skulpin::app::TimeState;
 use std::ffi::CString;
-use std::thread::sleep;
 
 use skulpin::CoordinateSystem;
 use skulpin::CoordinateSystemHelper;
