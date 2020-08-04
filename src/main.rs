@@ -413,6 +413,32 @@ impl<T: Node> Node for Container<T> {
     }
 }
 
+impl<T: RedrawManagedNode> Container<T> {
+    fn ibounds(&self) -> IRect {
+        if self.children.is_empty() {
+            IRect {
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0,
+            }
+        } else {
+            let mut i = self.children.iter();
+            let mut r = i.next().unwrap().bounds();
+            for c in i {
+                let b = c.bounds();
+                r = IRect {
+                    left: b.left.min(r.left),
+                    top: b.top.min(r.top),
+                    right: b.right.max(r.right),
+                    bottom: b.bottom.max(r.bottom),
+                };
+            }
+            r
+        }
+    }
+}
+
 impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
     fn update(&mut self, state: &mut State, matrix_stack: &mut MatrixStack) -> bool {
         let mut b = false;
@@ -425,52 +451,10 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
     }
 
     fn bounds(&self) -> IRect {
-        let mut r = if self.children.is_empty() {
-            IRect {
-                left: 0,
-                top: 0,
-                right: 0,
-                bottom: 0,
-            }
-        } else {
-            let mut i = self.children.iter();
-            let mut r = i.next().unwrap().bounds();
-            for c in i {
-                let b = c.bounds();
-                r = IRect {
-                    left: b.left.min(r.left),
-                    top: b.top.min(r.top),
-                    right: b.right.max(r.right),
-                    bottom: b.bottom.max(r.bottom),
-                };
-            }
-            r
-        };
-        self.matrix.map_rect(irect_to_rect(r)).0.round_out()
+        self.matrix.map_rect(irect_to_rect(self.ibounds())).0.round_out()
     }
 
     fn draw(&mut self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
-        let mut r = irect_to_rect(if self.children.is_empty() {
-            IRect {
-                left: 0,
-                top: 0,
-                right: 0,
-                bottom: 0,
-            }
-        } else {
-            let mut i = self.children.iter();
-            let mut r = i.next().unwrap().bounds();
-            for c in i {
-                let b = c.bounds();
-                r = IRect {
-                    left: b.left.min(r.left),
-                    top: b.top.min(r.top),
-                    right: b.right.max(r.right),
-                    bottom: b.bottom.max(r.bottom),
-                };
-            }
-            r
-        });
         // DEBUG DRAW
         let mut p = Paint::new(skia_safe::Color4f::new(1.0, 1.0, 1.0, 0.7), None);
         p.set_anti_alias(true);
@@ -478,7 +462,7 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
         p.set_stroke_width(2.0);
         matrix_stack!(matrix_stack, &self.matrix, {
             canvas.set_matrix(&matrix_stack.matrix);
-            canvas.draw_rect(r, &p);
+            canvas.draw_rect(irect_to_rect(self.ibounds()), &p);
             for c in &mut self.children {
                 c.draw(canvas, matrix_stack);
             }
