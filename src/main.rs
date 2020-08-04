@@ -11,7 +11,7 @@ use skulpin::winit::event::MouseButton;
 use skulpin::LogicalSize;
 use skulpin::{
     app::{TimeState, VirtualKeyCode},
-    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint, Image, IRect, Surface, Point, RoundOut},
+    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint, Image, IRect, Surface, Point, RoundOut, ImageInfo, ISize, Vector},
     PresentMode,
 };
 
@@ -41,8 +41,9 @@ impl Stacks {
     pub fn new() -> Self {
         Stacks {
             target_framerate: 120,
-            root_node: Box::new(RedrawManager {
-                inner: Wiggle {
+            root_node: Box::new(RedrawManager::new(Container {
+                matrix: Matrix::new_trans((200.0, 200.0)),
+                children: vec![Wiggle {
                     matrix: Matrix::new_trans((0.0, 0.0)),
                     inner: Container {
                         matrix: Matrix::new_trans((0.0, 0.0)),
@@ -81,10 +82,8 @@ impl Stacks {
                             },
                         ],
                     },
-                },
-                should_redraw: false,
-                virtual_surface: None
-            }),
+                }]
+            })),
             recycled_matrix_stack: Vec::with_capacity(1000),
         }
     }
@@ -177,6 +176,18 @@ pub struct RedrawManager<T: RedrawManagedNode> {
     inner: T,
     should_redraw: bool,
     virtual_surface: Option<Surface>,
+    left_top: Point,
+}
+
+impl<T: RedrawManagedNode> RedrawManager<T> {
+    fn new(inner: T) -> Self {
+        Self {
+            inner,
+            should_redraw: true,
+            virtual_surface: None,
+            left_top: (0.0, 0.0).into(),
+        }
+    }
 }
 
 impl<T: RedrawManagedNode> Node for RedrawManager<T> {
@@ -185,24 +196,34 @@ impl<T: RedrawManagedNode> Node for RedrawManager<T> {
     }
 
     fn draw(&mut self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
-        if self.virtual_surface.is_none() {
-            let s = skia_safe::Surface::new_render_target(
+        if self.should_redraw || self.virtual_surface.is_none() {
+            let mut new_bounds = self.inner.bounds();
+            self.left_top = (new_bounds.left, new_bounds.top).into();
+            let old_info = canvas.image_info();
+
+            let mut s = skia_safe::Surface::new_render_target(
                 &mut canvas.gpu_context().unwrap(),
                 skia_safe::Budgeted::Yes,
-                &canvas.image_info(),
+                &ImageInfo::new(ISize {
+                    width: new_bounds.right - new_bounds.left,
+                    height: new_bounds.bottom - new_bounds.top,
+                }, old_info.color_type(), old_info.alpha_type(), old_info.color_space()),
                 None,
                 skia_safe::gpu::SurfaceOrigin::TopLeft,
                 None,
                 false,
             ).unwrap();
+
+            let c = s.canvas();
+            c.clear(skia_safe::Color::from_argb(0, 0, 0, 0));
+            matrix_stack!(matrix_stack, &Matrix::new_trans((-self.left_top.x, -self.left_top.y)), {
+                canvas.set_matrix(&matrix_stack.matrix);
+                self.inner.draw(c, matrix_stack);
+            });
+
             self.virtual_surface = Some(s);
         }
-        if self.should_redraw {
-            let c = self.virtual_surface.as_mut().unwrap().canvas();
-            c.clear(skia_safe::Color::from_argb(0, 0, 0, 0));
-            self.inner.draw(c, matrix_stack);
-        }
-        canvas.draw_image(self.virtual_surface.as_mut().unwrap().image_snapshot(), (0.0, 0.0), None);
+        canvas.draw_image(self.virtual_surface.as_mut().unwrap().image_snapshot(), self.left_top * 2.0, None);
     }
 }
 
@@ -363,25 +384,52 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
     }
 
     fn bounds(&self) -> IRect {
-        let mut r = IRect {
-            left: 0,
-            top: 0,
-            right: 0,
-            bottom: 0
+        let mut r = if self.children.is_empty() {
+            IRect {
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0
+            }
+        } else {
+            let mut i = self.children.iter();
+            let mut r = i.next().unwrap().bounds();
+            for c in i {
+                let b = c.bounds();
+                r = IRect {
+                    left: b.left.min(r.left),
+                    top: b.top.min(r.top),
+                    right: b.right.max(r.right),
+                    bottom: b.bottom.max(r.bottom),
+                };
+            }
+            r
         };
-        for c in &self.children {
-            let b = c.bounds();
-            r = IRect {
-                left: b.left.min(r.left),
-                top: b.top.min(r.top),
-                right: b.right.max(r.right),
-                bottom: b.bottom.max(r.bottom),
-            };
-        }
         self.matrix.map_rect(irect_to_rect(r)).0.round_out()
     }
 
     fn draw(&mut self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
+        let mut r = irect_to_rect(if self.children.is_empty() {
+            IRect {
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0
+            }
+        } else {
+            let mut i = self.children.iter();
+            let mut r = i.next().unwrap().bounds();
+            for c in i {
+                let b = c.bounds();
+                r = IRect {
+                    left: b.left.min(r.left),
+                    top: b.top.min(r.top),
+                    right: b.right.max(r.right),
+                    bottom: b.bottom.max(r.bottom),
+                };
+            }
+            r
+        });
         matrix_stack!(matrix_stack, &self.matrix, {
             canvas.set_matrix(&matrix_stack.matrix);
             for c in &mut self.children {
