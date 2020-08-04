@@ -301,7 +301,9 @@ impl App {
                     let update_time =
                         Duration::from_nanos(1_000_000_000 / app_handler.target_update_rate());
                     if update_time > t_update {
-                        sleep(update_time - t_update);
+                        *control_flow = winit::event_loop::ControlFlow::WaitUntil(
+                            std::time::Instant::now() + update_time - t_update,
+                        );
                     }
                 }
                 winit::event::Event::RedrawRequested(_window_id) => {

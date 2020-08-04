@@ -11,7 +11,10 @@ use skulpin::winit::event::MouseButton;
 use skulpin::LogicalSize;
 use skulpin::{
     app::{TimeState, VirtualKeyCode},
-    skia_safe::{self, scalar, Canvas, Contains, Matrix, Paint, Image, IRect, Surface, Point, RoundOut, ImageInfo, ISize, Vector},
+    skia_safe::{
+        self, scalar, Canvas, Contains, IRect, ISize, Image, ImageInfo, Matrix, Paint, Point,
+        RoundOut, Surface, Vector,
+    },
     PresentMode,
 };
 
@@ -37,12 +40,26 @@ struct Stacks {
     recycled_matrix_stack: Vec<Matrix>,
 }
 
+// Matrix::new_all(
+// 2.0,
+// 0.7,
+// 0.2,
+// 0.0,
+// 1.3,
+// 2.4,
+// 0.0, 0.0, 0.0,
+// )
+
 impl Stacks {
     pub fn new() -> Self {
+        let mut m = Matrix::new_trans((0.0, 0.0));
+        m.set_scale((2.0, 2.0), Point::new(-200.0, -140.0));
+        m.set_persp_x(0.001);
+        m.set_skew_x(0.4);
         Stacks {
             target_framerate: 120,
             root_node: Box::new(RedrawManager::new(Container {
-                matrix: Matrix::new_trans((200.0, 200.0)),
+                matrix: m,
                 children: vec![Wiggle {
                     matrix: Matrix::new_trans((0.0, 0.0)),
                     inner: Container {
@@ -58,8 +75,10 @@ impl Stacks {
                                 },
                                 x: 0.0,
                                 paint: {
-                                    let mut p =
-                                        Paint::new(skia_safe::Color4f::new(0.0, 0.7, 0.0, 1.0), None);
+                                    let mut p = Paint::new(
+                                        skia_safe::Color4f::new(0.0, 0.7, 0.0, 1.0),
+                                        None,
+                                    );
                                     p.set_anti_alias(true);
                                     p
                                 },
@@ -74,15 +93,17 @@ impl Stacks {
                                 },
                                 x: 0.0,
                                 paint: {
-                                    let mut p =
-                                        Paint::new(skia_safe::Color4f::new(0.7, 0.9, 0.0, 1.0), None);
+                                    let mut p = Paint::new(
+                                        skia_safe::Color4f::new(0.7, 0.9, 0.0, 1.0),
+                                        None,
+                                    );
                                     p.set_anti_alias(true);
                                     p
                                 },
                             },
                         ],
                     },
-                }]
+                }],
             })),
             recycled_matrix_stack: Vec::with_capacity(1000),
         }
@@ -100,10 +121,13 @@ impl AppHandler for Stacks {
             input_state: update_args.input_state,
         };
 
-        self.root_node.update(&mut args, &mut MatrixStack {
-            matrix_stack: &mut self.recycled_matrix_stack,
-            matrix: Matrix::new_trans((0.0, 0.0)),
-        });
+        self.root_node.update(
+            &mut args,
+            &mut MatrixStack {
+                matrix_stack: &mut self.recycled_matrix_stack,
+                matrix: Matrix::new_trans((0.0, 0.0)),
+            },
+        );
 
         self.recycled_matrix_stack.clear();
     }
@@ -118,10 +142,13 @@ impl AppHandler for Stacks {
             .canvas
             .clear(skia_safe::Color::from_argb(0, 0, 0, 255));
 
-        self.root_node.draw(draw_args.canvas, &mut MatrixStack {
-            matrix_stack: &mut self.recycled_matrix_stack,
-            matrix: Matrix::new_trans((0.0, 0.0)),
-        });
+        self.root_node.draw(
+            draw_args.canvas,
+            &mut MatrixStack {
+                matrix_stack: &mut self.recycled_matrix_stack,
+                matrix: Matrix::new_trans((0.0, 0.0)),
+            },
+        );
     }
 
     fn fatal_error(&mut self, error: &ApplicationError) {
@@ -204,26 +231,40 @@ impl<T: RedrawManagedNode> Node for RedrawManager<T> {
             let mut s = skia_safe::Surface::new_render_target(
                 &mut canvas.gpu_context().unwrap(),
                 skia_safe::Budgeted::Yes,
-                &ImageInfo::new(ISize {
-                    width: new_bounds.right - new_bounds.left,
-                    height: new_bounds.bottom - new_bounds.top,
-                }, old_info.color_type(), old_info.alpha_type(), old_info.color_space()),
+                &ImageInfo::new(
+                    ISize {
+                        width: new_bounds.right - new_bounds.left,
+                        height: new_bounds.bottom - new_bounds.top,
+                    },
+                    old_info.color_type(),
+                    old_info.alpha_type(),
+                    old_info.color_space(),
+                ),
                 None,
                 skia_safe::gpu::SurfaceOrigin::TopLeft,
                 None,
                 false,
-            ).unwrap();
+            )
+            .unwrap();
 
             let c = s.canvas();
             c.clear(skia_safe::Color::from_argb(0, 0, 0, 0));
-            matrix_stack!(matrix_stack, &Matrix::new_trans((-self.left_top.x, -self.left_top.y)), {
-                canvas.set_matrix(&matrix_stack.matrix);
-                self.inner.draw(c, matrix_stack);
-            });
+            matrix_stack!(
+                matrix_stack,
+                &Matrix::new_trans((-self.left_top.x, -self.left_top.y)),
+                {
+                    canvas.set_matrix(&matrix_stack.matrix);
+                    self.inner.draw(c, matrix_stack);
+                }
+            );
 
             self.virtual_surface = Some(s);
         }
-        canvas.draw_image(self.virtual_surface.as_mut().unwrap().image_snapshot(), self.left_top * 2.0, None);
+        canvas.draw_image(
+            self.virtual_surface.as_mut().unwrap().image_snapshot(),
+            self.left_top * 2.0,
+            None,
+        );
     }
 }
 
@@ -389,7 +430,7 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
                 left: 0,
                 top: 0,
                 right: 0,
-                bottom: 0
+                bottom: 0,
             }
         } else {
             let mut i = self.children.iter();
@@ -414,7 +455,7 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
                 left: 0,
                 top: 0,
                 right: 0,
-                bottom: 0
+                bottom: 0,
             }
         } else {
             let mut i = self.children.iter();
@@ -430,8 +471,14 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Container<T> {
             }
             r
         });
+        // DEBUG DRAW
+        let mut p = Paint::new(skia_safe::Color4f::new(1.0, 1.0, 1.0, 0.7), None);
+        p.set_anti_alias(true);
+        p.set_style(skia_safe::PaintStyle::Stroke);
+        p.set_stroke_width(2.0);
         matrix_stack!(matrix_stack, &self.matrix, {
             canvas.set_matrix(&matrix_stack.matrix);
+            canvas.draw_rect(r, &p);
             for c in &mut self.children {
                 c.draw(canvas, matrix_stack);
             }
@@ -476,7 +523,10 @@ impl<T: RedrawManagedNode> RedrawManagedNode for Wiggle<T> {
     }
 
     fn bounds(&self) -> IRect {
-        self.matrix.map_rect(irect_to_rect(self.inner.bounds())).0.round_out()
+        self.matrix
+            .map_rect(irect_to_rect(self.inner.bounds()))
+            .0
+            .round_out()
     }
 
     fn draw(&mut self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
