@@ -1,15 +1,9 @@
-mod input_state;
+use std::ffi::CString;
+use std::time::Duration;
 
-use skulpin::ash;
-use skulpin::skia_safe;
-use skulpin::winit;
-
-pub use input_state::InputEvent;
-pub use input_state::InputState;
 use skulpin::app::AppControl;
 use skulpin::app::TimeState;
-use std::ffi::CString;
-
+use skulpin::ash;
 use skulpin::CoordinateSystem;
 use skulpin::CoordinateSystemHelper;
 use skulpin::LogicalSize;
@@ -17,8 +11,14 @@ use skulpin::PhysicalDeviceType;
 use skulpin::PresentMode;
 use skulpin::RendererBuilder;
 use skulpin::Size;
+use skulpin::skia_safe;
+use skulpin::winit;
 use skulpin::WinitWindow;
-use std::time::Duration;
+
+pub use input_state::InputEvent;
+pub use input_state::InputState;
+
+mod input_state;
 
 /// Represents an error from creating the renderer
 #[derive(Debug)]

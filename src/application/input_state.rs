@@ -2,7 +2,6 @@
 
 use skulpin::app::VirtualKeyCode;
 use skulpin::winit;
-
 // Re-export winit types
 pub use winit::dpi::LogicalPosition;
 pub use winit::dpi::LogicalSize;
@@ -14,9 +13,10 @@ pub use winit::event::ElementState;
 pub use winit::event::MouseButton;
 pub use winit::event::MouseScrollDelta;
 
-use super::AppControl;
 use crate::scalar;
 use crate::winit::window::Window;
+
+use super::AppControl;
 
 pub enum InputEvent {
     KeyDown(VirtualKeyCode),
