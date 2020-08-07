@@ -1,55 +1,51 @@
-mod application;
+use std::ffi::CString;
+
+use skulpin::{
+    app::{TimeState, VirtualKeyCode},
+    PresentMode,
+    skia_safe::{
+        self, Canvas, Contains, Image, ImageInfo, IRect, ISize, Matrix, Paint, Point, RoundOut,
+        scalar, Surface, Vector,
+    },
+};
+use skulpin::LogicalSize;
+use skulpin::winit;
+use skulpin::winit::event::MouseButton;
 
 use application::AppBuilder;
 use application::AppDrawArgs;
 use application::AppHandler;
-use application::AppUpdateArgs;
 use application::ApplicationError;
+use application::AppUpdateArgs;
 use application::InputEvent;
 use application::InputState;
-use skulpin::winit::event::MouseButton;
-use skulpin::LogicalSize;
-use skulpin::{
-    app::{TimeState, VirtualKeyCode},
-    skia_safe::{
-        self, scalar, Canvas, Contains, IRect, ISize, Image, ImageInfo, Matrix, Paint, Point,
-        RoundOut, Surface, Vector,
-    },
-    PresentMode,
-};
 
-use std::ffi::CString;
-
-use skulpin::winit;
+mod application;
 
 fn main() {
-    let example_app = Stacks::new(Rect {
-        matrix: {
-            let mut m = Matrix::new_trans((50.0, 100.0));
-            m.set_persp_x(0.001);
-            m.set_persp_y(0.001);
-            m
-        },
-        rect: skia_safe::Rect {
-            left: 0.0,
-            top: 0.0,
-            right: 100.0,
-            bottom: 100.0
-        },
-        paint: {
-            let mut p = Paint::new(skia_safe::Color4f::from(skia_safe::Color::LIGHT_GRAY), None);
-            p.set_anti_alias(true);
-            p
-        }
-    });
-
     AppBuilder::new()
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .use_vulkan_debug_layer(false)
         .present_mode_priority(vec![PresentMode::Immediate])
         .inner_size(LogicalSize::new(1280, 720))
-        .run(example_app);
+        .run(Stacks::new(Rect {
+            matrix: {
+                let mut m = Matrix::new_trans((200.0, 200.0));
+                m
+            },
+            rect: skia_safe::Rect {
+                left: 0.0,
+                top: 0.0,
+                right: 250.0,
+                bottom: 250.0
+            },
+            paint: {
+                let mut p = Paint::new(skia_safe::Color4f::from(skia_safe::Color::LIGHT_GRAY), None);
+                p.set_anti_alias(true);
+                p
+            }
+        }));
 }
 
 struct Stacks<T: Node> {
