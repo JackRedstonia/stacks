@@ -63,12 +63,8 @@ pub struct AppDrawArgs<'a, 'b, 'c, 'd> {
 }
 
 pub trait AppHandler {
-    fn target_update_rate(&self) -> u64;
     fn update(&mut self, pdate_args: AppUpdateArgs);
-
-    fn target_framerate(&self) -> u64;
     fn draw(&mut self, draw_args: AppDrawArgs);
-
     fn fatal_error(&mut self, error: &ApplicationError);
 }
 
@@ -271,7 +267,6 @@ impl App {
 
         // Pass control of this thread to winit until the app terminates. If this app wants to quit,
         // the update loop should send the appropriate event via the channel
-        let mut time_accm: u128 = 0;
         event_loop.run(move |event, window_target, control_flow| {
             let window = WinitWindow::new(&winit_window);
             input_state.handle_winit_event(&mut app_control, &event, window_target);
@@ -289,21 +284,7 @@ impl App {
                     // Call this to mark the start of the next frame (i.e. "key just down" will return false)
                     input_state.end_frame();
 
-                    let t_update = time_state.previous_update_time();
-                    time_accm += t_update.as_nanos();
-                    let t_draw = 1_000_000_000 / app_handler.target_framerate() as u128;
-                    if time_accm > t_draw {
-                        time_accm -= t_draw;
-                        winit_window.request_redraw();
-                    }
-
-                    let update_time =
-                        Duration::from_nanos(1_000_000_000 / app_handler.target_update_rate());
-                    if update_time > t_update {
-                        *control_flow = winit::event_loop::ControlFlow::WaitUntil(
-                            std::time::Instant::now() + update_time - t_update,
-                        );
-                    }
+                    winit_window.request_redraw();
                 }
                 winit::event::Event::RedrawRequested(_window_id) => {
                     if let Err(e) = renderer.draw(&window, |canvas, coordinate_system_helper| {

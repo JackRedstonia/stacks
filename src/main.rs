@@ -10,6 +10,7 @@ use skulpin::{
 };
 use skulpin::LogicalSize;
 use skulpin::winit;
+use skulpin::winit::dpi::LogicalPosition;
 use skulpin::winit::event::MouseButton;
 
 use application::AppBuilder;
@@ -29,48 +30,53 @@ fn main() {
         .use_vulkan_debug_layer(false)
         .present_mode_priority(vec![PresentMode::Immediate])
         .inner_size(LogicalSize::new(1280, 720))
-        .run(Stacks::new(Rect {
-            width: 100.0,
-            height: 120.0,
-            paint: Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None),
+        .run(Stacks::new(Transform {
+            matrix: Matrix::translate((100.0, 100.0)),
+            inner: Rect {
+                rect: skia_safe::Rect {
+                    top: 0.0,
+                    left: 0.0,
+                    right: 300.0,
+                    bottom: 120.0
+                },
+                paint: Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None),
+                x: 0,
+            }
         }));
 }
 
-struct Stacks<T: Drawable> {
-    target_framerate: u64,
+struct Stacks<T: Component> {
     root: T,
     recycled_matrix_stack: MatrixStack,
 }
 
-impl<T: Drawable> Stacks<T> {
+impl<T: Component> Stacks<T> {
     pub fn new(root: T) -> Self {
         Stacks {
-            target_framerate: 120,
             root,
             recycled_matrix_stack: MatrixStack {
                 matrix_stack: Vec::with_capacity(1000),
-                matrix: Matrix::new_trans((0.0, 0.0)),
+                matrix: Matrix::translate((0.0, 0.0)),
             },
         }
     }
 }
 
-impl<T: Drawable> AppHandler for Stacks<T> {
-    fn target_update_rate(&self) -> u64 {
-        1000
-    }
-
+impl<T: Component> AppHandler for Stacks<T> {
     fn update(&mut self, update_args: AppUpdateArgs) {
+        for event in &update_args.input_state.events {
+            self.root.input(event);
+        }
+        update_args.input_state.events.clear();
+
         let mut args = State {
             time_state: update_args.time_state,
             input_state: update_args.input_state,
         };
 
-        self.recycled_matrix_stack.clear();
-    }
+        self.root.update(&mut args);
 
-    fn target_framerate(&self) -> u64 {
-        self.target_framerate
+        self.recycled_matrix_stack.clear();
     }
 
     fn draw(&mut self, draw_args: AppDrawArgs) {
@@ -78,10 +84,13 @@ impl<T: Drawable> AppHandler for Stacks<T> {
         draw_args
             .canvas
             .clear(skia_safe::Color::from_argb(0, 0, 0, 255));
-        
-        let mut virt = VirtCanvas::new();
-        self.root.draw(&mut virt);
-        virt.play(draw_args.canvas, &mut self.recycled_matrix_stack);
+
+        self.root.draw(draw_args.canvas, draw_args.time_state);
+        draw_args.canvas.reset_matrix();
+
+        // let typeface = skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
+        // let font = skia_safe::Font::new(typeface, Some(16.0));
+        // draw_args.canvas.draw_str(format!("{}", draw_args.time_state.updates_per_second()), (20.0, 30.0), &font, &Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None));
     }
 
     fn fatal_error(&mut self, error: &ApplicationError) {
@@ -128,64 +137,54 @@ impl MatrixStack {
 
     fn clear(&mut self) {
         self.matrix_stack.clear();
-        self.matrix = Matrix::new_trans((0.0, 0.0));
+        self.matrix = Matrix::translate((0.0, 0.0));
     }
 }
 
-pub enum DrawCallType {
-    Matrix(Matrix, Vec<DrawCallType>),
-    Rect(skia_safe::Rect, Paint),
+pub trait Component {
+    fn update(&mut self, _state: &mut State) {}
+    fn draw(&mut self, _canvas: &mut Canvas, _time_state: &TimeState) {}
+    fn input(&mut self, _event: &InputEvent) {}
 }
 
-pub struct VirtCanvas {
-    pub draw_calls: Vec<DrawCallType>,
+pub struct Rect {
+    pub rect: skia_safe::Rect,
+    pub paint: Paint,
+    pub x: u64,
 }
 
-impl VirtCanvas {
-    pub fn new() -> Self {
-        Self {
-            draw_calls: vec![],
-        }
+impl Component for Rect {
+    fn draw(&mut self, canvas: &mut Canvas, _time_state: &TimeState) {
+        canvas.draw_rect(self.rect, &self.paint);
+        let typeface = skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
+        let font = skia_safe::Font::new(typeface, Some(16.0));
+        canvas.draw_str(self.x.to_string(), (0.0, self.rect.bottom + 17.0), &font, &self.paint);
     }
 
-    pub fn play(&self, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
-        Self::play_calls(&self.draw_calls, canvas, matrix_stack);
-    }
-
-    pub fn play_calls(calls: &Vec<DrawCallType>, canvas: &mut Canvas, matrix_stack: &mut MatrixStack) {
-        for call in calls {
-            use DrawCallType::*;
-            match call {
-                Matrix(matrix, calls) => {
-                    matrix_stack!(matrix_stack, matrix, {
-                        Self::play_calls(calls, canvas, matrix_stack);
-                    });
-                }
-                Rect(rect, paint) => {
-                    canvas.draw_rect(rect, paint);
-                }
+    fn input(&mut self, event: &InputEvent) {
+        if let InputEvent::MouseDown(m , LogicalPosition { x, y }) = event {
+            if *m == MouseButton::Left && self.rect.contains(Point { x: *x, y: *y }) {
+                self.x += 1;
             }
         }
     }
 }
 
-pub trait Drawable {
-    fn draw(&mut self, canvas: &mut VirtCanvas);
+pub struct Transform<T: Component> {
+    matrix: Matrix,
+    inner: T,
 }
 
-pub struct Rect {
-    pub width: scalar,
-    pub height: scalar,
-    pub paint: Paint,
-}
+impl<T: Component> Component for Transform<T> {
+    fn draw(&mut self, canvas: &mut Canvas, time_state: &TimeState) {
+        matrix_stack!(canvas, &self.matrix, {
+            self.inner.draw(canvas, time_state);
+        });
+    }
 
-impl Drawable for Rect {
-    fn draw(&mut self, canvas: &mut VirtCanvas) {
-        canvas.draw_calls.push(DrawCallType::Rect(skia_safe::Rect {
-            top: 0.0,
-            left: 0.0,
-            right: self.width,
-            bottom: self.height,
-        }, self.paint.clone()));
+    fn input(&mut self, event: &InputEvent) {
+        if let Some(p) = event.reverse_map_position(&self.matrix) {
+            self.inner.input(&p);
+        }
     }
 }

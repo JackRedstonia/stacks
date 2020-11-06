@@ -18,6 +18,7 @@ use crate::winit::window::Window;
 
 use super::AppControl;
 
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum InputEvent {
     KeyDown(VirtualKeyCode),
     KeyUp(VirtualKeyCode),
@@ -27,38 +28,24 @@ pub enum InputEvent {
     MouseScroll(MouseScrollDelta),
 }
 
-pub struct InputEventConsumable {
-    pub event: InputEvent,
-    pub consumed: bool,
-}
-
-impl InputEventConsumable {
-    fn new(e: InputEvent) -> Self {
-        Self {
-            event: e,
-            consumed: false,
-        }
-    }
-}
-
-pub struct InputEventQueue(Vec<InputEventConsumable>);
-
-impl InputEventQueue {
-    pub fn iter<F>(&mut self, mut f: F)
-    where
-        F: FnMut(&InputEvent) -> bool,
-    {
-        let mut should_rebuild_queue = false;
-        for i in self.0.iter_mut() {
-            if !i.consumed {
-                let c = f(&i.event);
-                should_rebuild_queue = should_rebuild_queue || c;
-                i.consumed = c;
-            }
-        }
-        if should_rebuild_queue {
-            self.0.retain(|i| !i.consumed);
-        }
+impl InputEvent {
+    pub fn reverse_map_position(&self, matrix: &skulpin::skia_safe::Matrix) -> Option<Self> {
+        let m = matrix.invert()?;
+        Some(match self {
+            Self::MouseMove(LogicalPosition { x, y }) => {
+                let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
+                Self::MouseMove(LogicalPosition { x, y })
+            },
+            Self::MouseDown(b, LogicalPosition { x, y }) => {
+                let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
+                Self::MouseDown(b.clone(), LogicalPosition { x, y })
+            },
+            Self::MouseUp(b, LogicalPosition { x, y }) => {
+                let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
+                Self::MouseUp(b.clone(), LogicalPosition { x, y })
+            },
+            e => e.clone(),
+        })
     }
 }
 
@@ -66,7 +53,7 @@ impl InputEventQueue {
 pub struct InputState {
     pub window_size: PhysicalSize<u32>,
     pub scale_factor: f64,
-    pub events: InputEventQueue,
+    pub events: Vec<InputEvent>,
     pub key_is_down: [bool; Self::KEYBOARD_BUTTON_COUNT],
     pub mouse_position: LogicalPosition<scalar>,
     pub mouse_button_is_down: [bool; Self::MOUSE_BUTTON_COUNT],
@@ -86,7 +73,7 @@ impl InputState {
         InputState {
             window_size: window.inner_size(),
             scale_factor: window.scale_factor(),
-            events: InputEventQueue(vec![]),
+            events: vec![],
             key_is_down: [false; Self::KEYBOARD_BUTTON_COUNT],
             mouse_position: LogicalPosition::new(0.0, 0.0),
             mouse_button_is_down: [false; Self::MOUSE_BUTTON_COUNT],
@@ -120,11 +107,11 @@ impl InputState {
                         if let Some(kc) = Self::keyboard_button_to_index(vk) {
                             let v = input.state == ElementState::Pressed;
                             self.key_is_down[kc] = v;
-                            self.events.0.push(InputEventConsumable::new(if v {
+                            self.events.push(if v {
                                 InputEvent::KeyDown(vk)
                             } else {
                                 InputEvent::KeyUp(vk)
-                            }));
+                            });
                         };
                     }
                 }
@@ -132,25 +119,23 @@ impl InputState {
                     if let Some(button_index) = Self::mouse_button_to_index(*button) {
                         let v = matches!(state, ElementState::Pressed);
                         self.mouse_button_is_down[button_index] = v;
-                        self.events.0.push(InputEventConsumable::new(if v {
+                        self.events.push(if v {
                             InputEvent::MouseDown(*button, self.mouse_position)
                         } else {
                             InputEvent::MouseUp(*button, self.mouse_position)
-                        }));
+                        });
                     }
                 }
                 WindowEvent::CursorMoved { position, .. } => {
                     let logical = position.to_logical(self.scale_factor);
                     self.mouse_position = logical;
                     self.events
-                        .0
-                        .push(InputEventConsumable::new(InputEvent::MouseMove(logical)));
+                        .push(InputEvent::MouseMove(logical));
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     self.handle_mouse_wheel_event(delta);
                     self.events
-                        .0
-                        .push(InputEventConsumable::new(InputEvent::MouseScroll(*delta)));
+                        .push(InputEvent::MouseScroll(*delta));
                 }
                 _ => {}
             }
@@ -185,7 +170,7 @@ impl InputState {
             }
         } else if let MouseScrollDelta::PixelDelta(d1) = self.mouse_wheel_delta {
             if let MouseScrollDelta::PixelDelta(d2) = delta {
-                self.mouse_wheel_delta = MouseScrollDelta::PixelDelta(LogicalPosition::<f64>::new(
+                self.mouse_wheel_delta = MouseScrollDelta::PixelDelta(PhysicalPosition::<f64>::new(
                     d1.x + d2.x,
                     d1.y + d2.y,
                 ));
@@ -200,7 +185,7 @@ impl InputState {
     /// Call at the end of every frame. This clears events that were "just" completed.
     pub fn end_frame(&mut self) {
         self.mouse_wheel_delta = MouseScrollDelta::LineDelta(0.0, 0.0);
-        self.events.0.clear();
+        self.events.clear();
     }
 
     //
