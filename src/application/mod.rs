@@ -4,6 +4,8 @@ use std::time::Duration;
 use skulpin::app::AppControl;
 use skulpin::app::TimeState;
 use skulpin::ash;
+use skulpin::skia_safe;
+use skulpin::winit;
 use skulpin::CoordinateSystem;
 use skulpin::CoordinateSystemHelper;
 use skulpin::LogicalSize;
@@ -11,8 +13,6 @@ use skulpin::PhysicalDeviceType;
 use skulpin::PresentMode;
 use skulpin::RendererBuilder;
 use skulpin::Size;
-use skulpin::skia_safe;
-use skulpin::winit;
 use skulpin::WinitWindow;
 
 pub use input_state::InputEvent;

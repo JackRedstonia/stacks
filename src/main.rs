@@ -1,23 +1,23 @@
 use std::ffi::CString;
 
-use skulpin::{
-    app::{TimeState, VirtualKeyCode},
-    PresentMode,
-    skia_safe::{
-        self, Canvas, Contains, Image, ImageInfo, IRect, ISize, Matrix, Paint, Point, RoundOut,
-        scalar, Surface, Vector, Color4f,
-    },
-};
-use skulpin::LogicalSize;
 use skulpin::winit;
 use skulpin::winit::dpi::LogicalPosition;
 use skulpin::winit::event::MouseButton;
+use skulpin::LogicalSize;
+use skulpin::{
+    app::{TimeState, VirtualKeyCode},
+    skia_safe::{
+        self, scalar, Canvas, Color4f, Contains, IRect, ISize, Image, ImageInfo, Matrix, Paint,
+        Point, RoundOut, Surface, Vector,
+    },
+    PresentMode,
+};
 
 use application::AppBuilder;
 use application::AppDrawArgs;
 use application::AppHandler;
-use application::ApplicationError;
 use application::AppUpdateArgs;
+use application::ApplicationError;
 use application::InputEvent;
 use application::InputState;
 
@@ -37,11 +37,11 @@ fn main() {
                     top: 0.0,
                     left: 0.0,
                     right: 300.0,
-                    bottom: 120.0
+                    bottom: 120.0,
                 },
                 paint: Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None),
                 x: 0,
-            }
+            },
         }));
 }
 
@@ -156,13 +156,19 @@ pub struct Rect {
 impl Component for Rect {
     fn draw(&mut self, canvas: &mut Canvas, _time_state: &TimeState) {
         canvas.draw_rect(self.rect, &self.paint);
-        let typeface = skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
+        let typeface =
+            skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
         let font = skia_safe::Font::new(typeface, Some(16.0));
-        canvas.draw_str(self.x.to_string(), (0.0, self.rect.bottom + 17.0), &font, &self.paint);
+        canvas.draw_str(
+            self.x.to_string(),
+            (0.0, self.rect.bottom + 17.0),
+            &font,
+            &self.paint,
+        );
     }
 
     fn input(&mut self, event: &InputEvent) {
-        if let InputEvent::MouseDown(m , LogicalPosition { x, y }) = event {
+        if let InputEvent::MouseDown(m, LogicalPosition { x, y }) = event {
             if *m == MouseButton::Left && self.rect.contains(Point { x: *x, y: *y }) {
                 self.x += 1;
             }

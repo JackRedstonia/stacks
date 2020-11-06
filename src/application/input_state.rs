@@ -35,15 +35,15 @@ impl InputEvent {
             Self::MouseMove(LogicalPosition { x, y }) => {
                 let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
                 Self::MouseMove(LogicalPosition { x, y })
-            },
+            }
             Self::MouseDown(b, LogicalPosition { x, y }) => {
                 let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
                 Self::MouseDown(b.clone(), LogicalPosition { x, y })
-            },
+            }
             Self::MouseUp(b, LogicalPosition { x, y }) => {
                 let skulpin::skia_safe::Point { x, y } = m.map_point((*x, *y));
                 Self::MouseUp(b.clone(), LogicalPosition { x, y })
-            },
+            }
             e => e.clone(),
         })
     }
@@ -129,13 +129,11 @@ impl InputState {
                 WindowEvent::CursorMoved { position, .. } => {
                     let logical = position.to_logical(self.scale_factor);
                     self.mouse_position = logical;
-                    self.events
-                        .push(InputEvent::MouseMove(logical));
+                    self.events.push(InputEvent::MouseMove(logical));
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     self.handle_mouse_wheel_event(delta);
-                    self.events
-                        .push(InputEvent::MouseScroll(*delta));
+                    self.events.push(InputEvent::MouseScroll(*delta));
                 }
                 _ => {}
             }
@@ -170,10 +168,9 @@ impl InputState {
             }
         } else if let MouseScrollDelta::PixelDelta(d1) = self.mouse_wheel_delta {
             if let MouseScrollDelta::PixelDelta(d2) = delta {
-                self.mouse_wheel_delta = MouseScrollDelta::PixelDelta(PhysicalPosition::<f64>::new(
-                    d1.x + d2.x,
-                    d1.y + d2.y,
-                ));
+                self.mouse_wheel_delta = MouseScrollDelta::PixelDelta(
+                    PhysicalPosition::<f64>::new(d1.x + d2.x, d1.y + d2.y),
+                );
             } else {
                 self.mouse_wheel_delta = *delta;
             }
