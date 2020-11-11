@@ -83,7 +83,7 @@ impl<T: Component> AppHandler for Stacks<T> {
         // Generally would want to clear data every time we draw
         draw_args
             .canvas
-            .clear(skia_safe::Color::from_argb(0, 0, 0, 255));
+            .clear(skia_safe::Color::from_argb(255, 10, 10, 10));
 
         self.root.draw(draw_args.canvas, draw_args.time_state);
         draw_args.canvas.reset_matrix();
