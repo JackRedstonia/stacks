@@ -43,7 +43,6 @@ impl From<VkResult> for ApplicationError {
 }
 
 pub trait Application {
-    // TODO: impl input state & time state & canvas
     fn update(&mut self, input_state: &InputState, time_state: &TimeState);
     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas);
     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent);
