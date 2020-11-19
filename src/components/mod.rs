@@ -1,4 +1,7 @@
 pub mod shapes;
+mod transform;
+
+pub use transform::Transform;
 
 use super::application::{
     input::{InputEvent, InputState},
@@ -7,7 +10,7 @@ use super::application::{
 use crate::canvas::Canvas;
 
 pub trait Component {
-    fn update(&mut self, _input_state: &InputState, _time_state: &TimeState);
-    fn draw(&mut self, _input_state: &InputState, _time_state: &TimeState, _canvas: &mut Canvas);
-    fn input(&mut self, _input_state: &InputState, _time_state: &TimeState, _event: &InputEvent);
+    fn update(&mut self, input_state: &InputState, time_state: &TimeState);
+    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas);
+    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent);
 }

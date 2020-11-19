@@ -1,4 +1,4 @@
-use skia_safe::scalar;
+use skia_safe::{scalar, Point, Matrix};
 use skulpin_renderer::skia_safe;
 use skulpin_renderer_winit::winit;
 use winit::{
@@ -19,6 +19,27 @@ pub enum InputEvent {
     MouseDown(MouseButton, LogicalPosition<scalar>),
     MouseUp(MouseButton, LogicalPosition<scalar>),
     MouseScroll(MouseScrollDelta),
+}
+
+impl InputEvent {
+    pub fn reverse_map_position(&self, matrix: Matrix) -> Option<Self> {
+        let m = matrix.invert()?;
+        Some(match self {
+            Self::MouseMove(LogicalPosition { x, y }) => {
+                let Point { x, y } = m.map_point((*x, *y));
+                Self::MouseMove(LogicalPosition { x, y })
+            }
+            Self::MouseDown(b, LogicalPosition { x, y }) => {
+                let Point { x, y } = m.map_point((*x, *y));
+                Self::MouseDown(b.clone(), LogicalPosition { x, y })
+            }
+            Self::MouseUp(b, LogicalPosition { x, y }) => {
+                let Point { x, y } = m.map_point((*x, *y));
+                Self::MouseUp(b.clone(), LogicalPosition { x, y })
+            }
+            e => e.clone(),
+        })
+    }
 }
 
 pub struct InputState {
