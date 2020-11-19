@@ -4,7 +4,7 @@ use skulpin_renderer_winit::winit;
 use winit::{
     dpi::LogicalPosition,
     dpi::LogicalSize,
-    event::{ElementState, Event as WinitEvent, MouseButton, MouseScrollDelta, VirtualKeyCode},
+    event::{ElementState, Event as WinitEvent, WindowEvent, MouseButton, MouseScrollDelta, VirtualKeyCode},
     window::Window,
 };
 
@@ -49,10 +49,9 @@ impl InputState {
 
     pub fn handle_event<T>(&mut self, event: &WinitEvent<T>) -> Option<EventHandleResult> {
         if let WinitEvent::WindowEvent { event, .. } = event {
-            use winit::event::WindowEvent::*;
             match event {
-                CloseRequested => return Some(EventHandleResult::Exit),
-                ScaleFactorChanged {
+                WindowEvent::CloseRequested => return Some(EventHandleResult::Exit),
+                WindowEvent::ScaleFactorChanged {
                     scale_factor,
                     new_inner_size,
                     ..
@@ -60,10 +59,10 @@ impl InputState {
                     self.scale_factor = *scale_factor;
                     self.window_size = new_inner_size.to_logical(*scale_factor);
                 }
-                Resized(window_size) => {
+                WindowEvent::Resized(window_size) => {
                     self.window_size = window_size.to_logical(self.scale_factor)
                 }
-                KeyboardInput { input, .. } => {
+                WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(k) = input.virtual_keycode {
                         if let Some(kc) = Self::keyboard_button_to_index(k) {
                             let pressed = input.state == ElementState::Pressed;
@@ -76,7 +75,7 @@ impl InputState {
                         }
                     }
                 }
-                MouseInput { state, button, .. } => {
+                WindowEvent::MouseInput { state, button, .. } => {
                     if let Some(idx) = Self::mouse_button_to_index(*button) {
                         let pressed = *state == ElementState::Pressed;
                         self.mouse_buttons[idx] = pressed;
@@ -87,12 +86,12 @@ impl InputState {
                         }));
                     }
                 }
-                CursorMoved { position, .. } => {
+                WindowEvent::CursorMoved { position, .. } => {
                     let logical = position.to_logical(self.scale_factor);
                     self.mouse_position = logical;
                     return Some(EventHandleResult::Input(InputEvent::MouseMove(logical)));
                 }
-                MouseWheel { delta, .. } => {
+                WindowEvent::MouseWheel { delta, .. } => {
                     return Some(EventHandleResult::Input(InputEvent::MouseScroll(*delta)));
                 }
                 _ => {}
