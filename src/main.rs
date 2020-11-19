@@ -41,6 +41,8 @@ fn main() {
                 },
                 paint: Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None),
                 x: 0,
+                last_mouse_position: (0.0, 0.0).into(),
+                interpolated_mouse_position: (0.0, 0.0).into(),
             },
         }));
 }
@@ -151,27 +153,56 @@ pub struct Rect {
     pub rect: skia_safe::Rect,
     pub paint: Paint,
     pub x: u64,
+    pub last_mouse_position: Point,
+    pub interpolated_mouse_position: Point,
 }
 
 impl Component for Rect {
     fn draw(&mut self, canvas: &mut Canvas, _time_state: &TimeState) {
-        canvas.draw_rect(self.rect, &self.paint);
-        let typeface =
-            skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
-        let font = skia_safe::Font::new(typeface, Some(16.0));
-        canvas.draw_str(
-            self.x.to_string(),
-            (0.0, self.rect.bottom + 17.0),
-            &font,
-            &self.paint,
-        );
+        matrix_stack!(canvas, &self.calc_parallax(), {
+            canvas.draw_rect(self.rect, &self.paint);
+                let typeface =
+                skia_safe::Typeface::from_name("Fira Sans", skia_safe::FontStyle::bold()).unwrap();
+            let font = skia_safe::Font::new(typeface, Some(32.0));
+            canvas.draw_str(
+                self.x.to_string(),
+                (0.0, self.rect.bottom + 34.0),
+                &font,
+                &self.paint,
+            );
+        });
     }
 
     fn input(&mut self, event: &InputEvent) {
-        if let InputEvent::MouseDown(m, LogicalPosition { x, y }) = event {
-            if *m == MouseButton::Left && self.rect.contains(Point { x: *x, y: *y }) {
-                self.x += 1;
+        match event {
+            InputEvent::MouseMove(LogicalPosition { x, y }) => self.last_mouse_position = (*x, *y).into(),
+            InputEvent::MouseDown(m, LogicalPosition { x, y }) => {
+                if let Some(p) = self.calc_parallax().invert() {
+                    if *m == MouseButton::Left && self.rect.contains(p.map_point((*x, *y))) {
+                        self.x += 1;
+                    }
+                }
             }
+            _ => {}
+        }
+    }
+
+    fn update(&mut self, state: &mut State) {
+        self.interpolate_parallax(state.time_state.previous_update_dt() * 20.0);
+    }
+}
+
+impl Rect {
+    fn calc_parallax(&self) -> Matrix {
+        Matrix::translate(self.interpolated_mouse_position * 0.05)
+    }
+
+    fn interpolate_parallax(&mut self, factor: scalar) {
+        let diff = self.last_mouse_position - self.interpolated_mouse_position;
+        if diff.distance_to_origin() < 1.0 {
+            self.interpolated_mouse_position = self.last_mouse_position;
+        } else {
+            self.interpolated_mouse_position += diff * factor;
         }
     }
 }
@@ -192,5 +223,9 @@ impl<T: Component> Component for Transform<T> {
         if let Some(p) = event.reverse_map_position(&self.matrix) {
             self.inner.input(&p);
         }
+    }
+
+    fn update(&mut self, state: &mut State) {
+        self.inner.update(state);
     }
 }
