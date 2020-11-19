@@ -161,9 +161,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "clang-sys"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d114d16ab92900b56ab0a855c49d29f9cff9f2704aed31112b9ecacd4505d9cc"
+checksum = "0659001ab56b791be01d4b729c44376edc6718cf389a502e579b77b758f3296c"
 dependencies = [
  "glob",
  "libc",
@@ -1093,29 +1093,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "skulpin"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d11f1c75af5e20eaa1dd985692b42b697b49f3581eb8088526688120a951b1ad"
-dependencies = [
- "log",
- "skulpin-app-winit",
- "skulpin-renderer",
- "skulpin-renderer-winit",
-]
-
-[[package]]
-name = "skulpin-app-winit"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e3b37d709ce9ccd12e4767fc1225f10092af25ccbca74e24c9fb764cc6fde76"
-dependencies = [
- "log",
- "skulpin-renderer",
- "skulpin-renderer-winit",
-]
-
-[[package]]
 name = "skulpin-renderer"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1188,7 +1165,8 @@ dependencies = [
 name = "stacks"
 version = "0.1.0"
 dependencies = [
- "skulpin",
+ "skulpin-renderer",
+ "skulpin-renderer-winit",
 ]
 
 [[package]]

@@ -1,12 +1,15 @@
 [package]
 name = "stacks"
 version = "0.1.0"
-authors = ["JackRedstonia <jackredstonia64@gmail.com>"]
+authors = ["reverb"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-skulpin = { version = "0", default-features = false, features = ["skia_complete", "skulpin_winit", "winit-latest"] }
+[profile.release]
+lto = true
 
-[dev-dependencies]
+[dependencies]
+skulpin-renderer = "0.5"
+skulpin-renderer-winit = { version = "0.5", features = ["winit-latest"] }
+# skulpin = { version = "0", default-features = false, features = ["skia_complete", "skulpin_winit", "winit-latest"] }
