@@ -1,17 +1,17 @@
 pub mod input;
+pub mod time;
 
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::error::Error;
 
-use skulpin_renderer::{
-    ash, CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size,
-};
+use skulpin_renderer::{ash, CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
 use input::{EventHandleResult, InputEvent, InputState};
+use time::TimeState;
 
 #[derive(Debug)]
 pub enum ApplicationError {
@@ -42,9 +42,9 @@ impl From<VkResult> for ApplicationError {
 
 pub trait Application {
     // TODO: impl input state & time state & canvas
-    fn update(&mut self, input_state: (), time_state: ());
-    fn draw(&mut self, input_state: (), time_state: (), canvas: ());
-    fn input(&mut self, input_state: (), time_state: (), event: InputEvent);
+    fn update(&mut self, input_state: &InputState, time_state: &TimeState);
+    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: ());
+    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent);
     fn close(&mut self);
     fn crash(&mut self, err: ApplicationError);
 }
@@ -163,35 +163,29 @@ impl ApplicationRunner {
             .expect("Failed to create renderer");
 
         let mut input_state = InputState::new(&winit_window);
+        let mut time_state = TimeState::new();
 
         // Pass control of this thread to winit until the app terminates. If this app wants to quit,
         // the update loop should send the appropriate event via the channel
         event_loop.run(move |event, _window_target, control_flow| {
             let window = WinitWindow::new(&winit_window);
             if let Some(r) = input_state.handle_event(&event) {
-                use EventHandleResult::*;
                 match r {
-                    Input(event) => application.input((), (), event),
+                    EventHandleResult::Input(event) => application.input(&input_state, &time_state, event),
                     // TODO: instead of exiting immediately, we (ideally blockingly) call application::close
                     // and wait for it to close everything before exiting ourselves
-                    Exit => *control_flow = winit::event_loop::ControlFlow::Exit,
+                    EventHandleResult::Exit => *control_flow = winit::event_loop::ControlFlow::Exit,
                 }
             }
 
             match event {
                 winit::event::Event::MainEventsCleared => {
-                    // time_state.update();
-
-                    // app_handler.update(AppUpdateArgs {
-                    //     app_control: &mut app_control,
-                    //     input_state: &mut input_state,
-                    //     time_state: &time_state,
-                    // });
-                    application.update((), ());
+                    application.update(&input_state, &time_state);
+                    time_state.update();
                 }
                 winit::event::Event::RedrawRequested(_window_id) => {
                     if let Err(e) = renderer.draw(&window, |canvas, _coordinate_system_helper| {
-                        application.draw((), (), ());
+                        application.draw(&input_state, &time_state, ());
                     }) {
                         application.crash(e.into());
                         *control_flow = winit::event_loop::ControlFlow::Exit;
