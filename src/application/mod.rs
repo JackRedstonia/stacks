@@ -13,6 +13,8 @@ use winit::{event_loop::EventLoop, window::WindowBuilder};
 use input::{EventHandleResult, InputEvent, InputState};
 use time::TimeState;
 
+use crate::canvas::Canvas;
+
 #[derive(Debug)]
 pub enum ApplicationError {
     RendererError(VkResult),
@@ -43,7 +45,7 @@ impl From<VkResult> for ApplicationError {
 pub trait Application {
     // TODO: impl input state & time state & canvas
     fn update(&mut self, input_state: &InputState, time_state: &TimeState);
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: ());
+    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas);
     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent);
     fn close(&mut self);
     fn crash(&mut self, err: ApplicationError);
@@ -164,6 +166,7 @@ impl ApplicationRunner {
 
         let mut input_state = InputState::new(&winit_window);
         let mut time_state = TimeState::new();
+        let mut canvas = Canvas::new();
 
         // Pass control of this thread to winit until the app terminates. If this app wants to quit,
         // the update loop should send the appropriate event via the channel
@@ -171,7 +174,9 @@ impl ApplicationRunner {
             let window = WinitWindow::new(&winit_window);
             if let Some(r) = input_state.handle_event(&event) {
                 match r {
-                    EventHandleResult::Input(event) => application.input(&input_state, &time_state, event),
+                    EventHandleResult::Input(event) => {
+                        application.input(&input_state, &time_state, event)
+                    }
                     // TODO: instead of exiting immediately, we (ideally blockingly) call application::close
                     // and wait for it to close everything before exiting ourselves
                     EventHandleResult::Exit => *control_flow = winit::event_loop::ControlFlow::Exit,
@@ -184,8 +189,9 @@ impl ApplicationRunner {
                     time_state.update();
                 }
                 winit::event::Event::RedrawRequested(_window_id) => {
-                    if let Err(e) = renderer.draw(&window, |canvas, _coordinate_system_helper| {
-                        application.draw(&input_state, &time_state, ());
+                    if let Err(e) = renderer.draw(&window, |sk_canvas, _coordinate_system_helper| {
+                        application.draw(&input_state, &time_state, &mut canvas);
+                        canvas.play(sk_canvas);
                     }) {
                         application.crash(e.into());
                         *control_flow = winit::event_loop::ControlFlow::Exit;

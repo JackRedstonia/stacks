@@ -1,38 +1,29 @@
+#![feature(duration_zero)]
+
 mod application;
+mod canvas;
+mod components;
+mod stacks;
 
 use std::ffi::CString;
 
-use skulpin_renderer::PresentMode;
-use application::{Application, ApplicationBuilder, input::InputEvent};
+use application::ApplicationBuilder;
+use skulpin_renderer::{skia_safe, PresentMode};
+
+use stacks::Stacks;
 
 fn main() {
     ApplicationBuilder::new()
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .present_mode_priority(vec![PresentMode::Immediate])
-        .run(Stacks {})
-}
-
-struct Stacks {}
-
-impl Application for Stacks {
-    fn update(&mut self, input_state: (), time_state: ()) {
-        
-    }
-
-    fn draw(&mut self, input_state: (), time_state: (), canvas: ()) {
-        
-    }
-
-    fn input(&mut self, input_state: (), time_state: (), event: InputEvent) {
-        
-    }
-
-    fn close(&mut self) {
-        
-    }
-
-    fn crash(&mut self, err: application::ApplicationError) {
-        println!("Stacks has crashed!\nMore info: {:?}", err);
-    }
+        .run(Stacks::new(components::shapes::Rect {
+            rect: skia_safe::Rect {
+                left: 0.0,
+                top: 0.0,
+                right: 10.0,
+                bottom: 10.0,
+            },
+            paint: skia_safe::Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
+        }))
 }

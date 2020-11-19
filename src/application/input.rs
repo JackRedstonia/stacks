@@ -4,7 +4,10 @@ use skulpin_renderer_winit::winit;
 use winit::{
     dpi::LogicalPosition,
     dpi::LogicalSize,
-    event::{ElementState, Event as WinitEvent, WindowEvent, MouseButton, MouseScrollDelta, VirtualKeyCode},
+    event::{
+        ElementState, Event as WinitEvent, MouseButton, MouseScrollDelta, VirtualKeyCode,
+        WindowEvent,
+    },
     window::Window,
 };
 
