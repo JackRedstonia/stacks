@@ -147,6 +147,12 @@ pub enum ApplicationFeedbackEvent {
 pub struct ApplicationRunner {}
 
 impl ApplicationRunner {
+    pub const CANVAS_QUEUE_LENGTH: usize = 4;
+    pub const EVENT_QUEUE_SIZE: usize = 4;
+    pub const FEEDBACK_QUEUE_SIZE: usize = 1;
+}
+
+impl ApplicationRunner {
     pub fn run<T: 'static + Application + Send>(
         application: T,
         inner_size: Size,
@@ -177,15 +183,16 @@ impl ApplicationRunner {
             .build(&window)
             .expect("Failed to create renderer");
 
-        let (canvas_tx, canvas_rx) = sync_channel::<Canvas>(10);
-        let (event_tx, event_rx) = sync_channel::<ApplicationEvent<_>>(10);
-        let (feedback_tx, feedback_rx) = sync_channel::<ApplicationFeedbackEvent>(10);
+        let (canvas_tx, canvas_rx) = sync_channel(Self::CANVAS_QUEUE_LENGTH);
+        let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
+        let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         let input_state = InputState::new(&winit_window);
         spawn(move || {
             let mut input_state = input_state;
             let mut application = application;
             let mut time_state = TimeState::new();
+            let mut time_state_draw = TimeState::new();
 
             let mut canvas_cap = 200_000;
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
@@ -213,11 +220,12 @@ impl ApplicationRunner {
                                 WinitEvent::RedrawRequested(_) => {
                                     is_redraw = true;
                                     let mut canvas = Canvas::with_capacity(canvas_cap);
-                                    application.draw(&input_state, &time_state, &mut canvas);
+                                    application.draw(&input_state, &time_state_draw, &mut canvas);
                                     canvas_cap = canvas_cap.max(canvas.capacity());
                                     canvas_tx
                                         .send(canvas)
                                         .expect("Failed to send canvas to draw thread");
+                                    time_state_draw.update();
                                 }
                                 _ => {}
                             }
@@ -246,7 +254,7 @@ impl ApplicationRunner {
             }
         });
 
-        let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
+        let target_frame_time = std::time::Duration::MILLISECOND * 4; // 240 fps
         let mut last_frame = std::time::Instant::now();
 
         let font_set = VanillaFontSet::new();
