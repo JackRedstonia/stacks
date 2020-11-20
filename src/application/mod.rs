@@ -184,59 +184,66 @@ impl ApplicationRunner {
             let mut time_state = TimeState::new();
 
             let mut canvas_cap = 200_000;
-            let target_update_time = std::time::Duration::MILLISECOND;
-            while let Ok(event) = event_rx.recv() {
-                match event {
-                    ApplicationEvent::WinitEvent(event) => {
-                        if let Some(r) = input_state.handle_event(&event) {
-                            match r {
-                                EventHandleResult::Input(event) => {
-                                    application.input(&input_state, &time_state, event)
-                                }
-                                // TODO: instead of exiting immediately, we (ideally blockingly) call application::close
-                                // and wait for it to close everything before exiting ourselves
-                                EventHandleResult::Exit => {
-                                    application.close();
-                                    feedback_tx
-                                        .send(ApplicationFeedbackEvent::Exit)
-                                        .expect("Failed to send feedback event to draw thread");
-                                    break;
+            let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
+            loop {
+                let mut is_redraw = false;
+                match event_rx.try_recv() {
+                    Ok(event) => match event {
+                        ApplicationEvent::WinitEvent(event) => {
+                            if let Some(r) = input_state.handle_event(&event) {
+                                match r {
+                                    EventHandleResult::Input(event) => {
+                                        application.input(&input_state, &time_state, event)
+                                    }
+                                    EventHandleResult::Exit => {
+                                        application.close();
+                                        feedback_tx
+                                            .send(ApplicationFeedbackEvent::Exit)
+                                            .expect("Failed to send feedback event to draw thread");
+                                        return;
+                                    }
                                 }
                             }
-                        }
-
-                        match event {
-                            WinitEvent::MainEventsCleared => {
-                                application.update(&input_state, &time_state);
-                                let t = time_state.last_update().elapsed();
-                                if target_update_time > t {
-                                    std::thread::sleep(target_update_time - t);
+    
+                            match event {
+                                WinitEvent::RedrawRequested(_) => {
+                                    is_redraw = true;
+                                    let mut canvas = Canvas::with_capacity(canvas_cap);
+                                        application.draw(&input_state, &time_state, &mut canvas);
+                                        canvas_cap = canvas_cap.max(canvas.capacity());
+                                        canvas_tx
+                                            .send(canvas)
+                                            .expect("Failed to send canvas to draw thread");
                                 }
-                                time_state.update();
-
-                                let mut canvas = Canvas::with_capacity(canvas_cap);
-                                application.draw(&input_state, &time_state, &mut canvas);
-                                canvas_cap = canvas_cap.max(canvas.capacity());
-                                canvas_tx
-                                    .send(canvas)
-                                    .expect("Failed to send canvas to draw thread");
+                                _ => {}
                             }
-                            _ => {}
                         }
-                    }
-                    ApplicationEvent::Crash(e) => {
-                        application.crash(e);
-                        feedback_tx
-                            .send(ApplicationFeedbackEvent::Exit)
-                            .expect("Failed to send feedback event to draw thread");
-                        break;
+                        ApplicationEvent::Crash(e) => {
+                            application.crash(e);
+                            feedback_tx
+                                .send(ApplicationFeedbackEvent::Exit)
+                                .expect("Failed to send feedback event to draw thread");
+                            return;
+                        }
+                    },
+                    Err(e) => match e {
+                        TryRecvError::Empty => {},
+                        TryRecvError::Disconnected => return,
                     }
                 }
+                application.update(&input_state, &time_state);                             
+                if !is_redraw {
+                    let update_time = time_state.last_update().elapsed();
+                    if target_update_time > update_time {
+                        std::thread::sleep(target_update_time - update_time);
+                    }
+                }
+                time_state.update();
             }
         });
 
-        // Pass control of this thread to winit until the app terminates. If this app wants to quit,
-        // the update loop should send the appropriate event via the channel
+        let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
+        let mut last_frame = std::time::Instant::now();
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
                 Ok(event) => match event {
@@ -246,7 +253,11 @@ impl ApplicationRunner {
                 },
                 Err(e) => match e {
                     TryRecvError::Empty => {
-                        let window = WinitWindow::new(&winit_window);
+                        let frame_time = last_frame.elapsed();
+                        if frame_time > target_frame_time {
+                            winit_window.request_redraw();
+                            last_frame = std::time::Instant::now() - (frame_time - target_frame_time);
+                        }
                         if let Some(event) = event.to_static() {
                             if event_tx.send(ApplicationEvent::WinitEvent(event)).is_err() {
                                 *control_flow = ControlFlow::Exit;
@@ -254,6 +265,7 @@ impl ApplicationRunner {
                         }
                         match canvas_rx.try_recv() {
                             Ok(canvas) => {
+                                let window = WinitWindow::new(&winit_window);
                                 if let Err(e) = renderer.draw(
                                     &window,
                                     |sk_canvas, _coordinate_system_helper| {
