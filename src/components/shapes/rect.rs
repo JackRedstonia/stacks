@@ -14,14 +14,8 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(size: impl Into<Size>, paint: Paint) -> Self {
-        let Size { width, height  } = size.into();
         Self {
-            rect: skia_safe::Rect {
-                left: 0.0,
-                top: 0.0,
-                right: width,
-                bottom: height,
-            },
+            rect: skia_safe::Rect::from_size(size),
             paint,
         }
     }
