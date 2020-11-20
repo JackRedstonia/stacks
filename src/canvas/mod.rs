@@ -1,6 +1,6 @@
-use skia_safe::{Canvas as SkCanvas, Matrix, Paint, Rect, Point, scalar};
-use skulpin_renderer::skia_safe;
 use crate::components::{Font, FontStyle};
+use skia_safe::{scalar, Canvas as SkCanvas, Matrix, Paint, Point, Rect};
+use skulpin_renderer::skia_safe;
 
 pub struct Canvas {
     commands: Vec<Command>,
@@ -47,12 +47,33 @@ impl Canvas {
         self.commands.push(Command::Rect(rect, paint.clone()));
     }
 
-    pub fn draw_arc(&mut self, oval: Rect, start: scalar, sweep: scalar, center: bool, paint: &Paint) {
-        self.commands.push(Command::Arc(oval, start, sweep, center, paint.clone()));
+    pub fn draw_arc(
+        &mut self,
+        oval: Rect,
+        start: scalar,
+        sweep: scalar,
+        center: bool,
+        paint: &Paint,
+    ) {
+        self.commands
+            .push(Command::Arc(oval, start, sweep, center, paint.clone()));
     }
 
-    pub fn draw_str(&mut self, text: String, origin: impl Into<Point>, font: Font, style: FontStyle, paint: &Paint) {
-        self.commands.push(Command::Str(text, origin.into(), font, style, paint.clone()));
+    pub fn draw_str(
+        &mut self,
+        text: String,
+        origin: impl Into<Point>,
+        font: Font,
+        style: FontStyle,
+        paint: &Paint,
+    ) {
+        self.commands.push(Command::Str(
+            text,
+            origin.into(),
+            font,
+            style,
+            paint.clone(),
+        ));
     }
 }
 
@@ -68,7 +89,7 @@ pub enum Command {
 pub trait FontSet {
     fn get(&self, font: Font, style: FontStyle) -> &skia_safe::Font {
         match font {
-            Font::Default => self.get_default(style)
+            Font::Default => self.get_default(style),
         }
     }
 
@@ -93,7 +114,7 @@ impl Command {
             Command::Arc(oval, start, sweep, center, paint) => {
                 canvas.draw_arc(oval, *start, *sweep, *center, paint);
             }
-            Command::Str(str, origin, font, style,  paint) => {
+            Command::Str(str, origin, font, style, paint) => {
                 canvas.draw_str(str, *origin, font_set.get(*font, *style), paint);
             }
         }

@@ -1,15 +1,17 @@
 mod composite;
-pub mod shapes;
-mod transform;
-mod text;
+mod metrics;
 mod parallax;
+pub mod shapes;
+mod text;
+mod transform;
 
 pub use composite::Composite;
-pub use transform::Transform;
-pub use text::{Font, FontStyle, Text};
+pub use metrics::Metrics;
 pub use parallax::Parallax;
+pub use text::{Font, FontStyle, Text};
+pub use transform::Transform;
 
-use super::application::{
+use super::game::{
     input::{InputEvent, InputState},
     time::TimeState,
 };

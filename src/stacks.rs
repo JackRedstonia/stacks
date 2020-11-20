@@ -1,7 +1,7 @@
-use super::application::{
+use super::game::{
     input::{InputEvent, InputState},
     time::TimeState,
-    Application, ApplicationError,
+    Game, GameError,
 };
 use super::canvas::Canvas;
 use super::components::Component;
@@ -16,7 +16,7 @@ impl<T: Component> Stacks<T> {
     }
 }
 
-impl<T: Component> Application for Stacks<T> {
+impl<T: Component> Game for Stacks<T> {
     fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
         self.root.update(input_state, time_state);
     }
@@ -31,7 +31,7 @@ impl<T: Component> Application for Stacks<T> {
 
     fn close(&mut self) {}
 
-    fn crash(&mut self, err: ApplicationError) {
+    fn crash(&mut self, err: GameError) {
         println!("Stacks has crashed!\nMore info: {:?}", err);
     }
 }

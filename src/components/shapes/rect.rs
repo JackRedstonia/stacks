@@ -1,5 +1,5 @@
 use super::super::Component;
-use crate::application::{
+use crate::game::{
     input::{InputEvent, InputState},
     time::TimeState,
 };

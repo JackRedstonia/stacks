@@ -1,10 +1,10 @@
 use super::Component;
-use crate::application::{
+use crate::game::{
     input::{InputEvent, InputState},
     time::TimeState,
 };
 use crate::canvas::Canvas;
-use skia_safe::{Matrix, Point, scalar};
+use skia_safe::{scalar, Matrix, Point};
 use skulpin_renderer::skia_safe;
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 

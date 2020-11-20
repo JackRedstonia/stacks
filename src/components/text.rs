@@ -1,5 +1,5 @@
 use super::Component;
-use crate::application::{
+use crate::game::{
     input::{InputEvent, InputState},
     time::TimeState,
 };
@@ -31,7 +31,13 @@ impl Component for Text {
     fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
 
     fn draw(&mut self, _input_state: &InputState, _time_state: &TimeState, canvas: &mut Canvas) {
-        canvas.draw_str(self.text.clone(), (0.0, 0.0), self.font, self.style, &self.paint);
+        canvas.draw_str(
+            self.text.clone(),
+            (0.0, 0.0),
+            self.font,
+            self.style,
+            &self.paint,
+        );
     }
 
     fn input(&mut self, _input_state: &InputState, _time_state: &TimeState, _event: &InputEvent) {}
