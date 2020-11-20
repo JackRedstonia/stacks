@@ -1,9 +1,11 @@
 mod composite;
 pub mod shapes;
 mod transform;
+mod text;
 
 pub use composite::Composite;
 pub use transform::Transform;
+pub use text::{Font, FontStyle, Text};
 
 use super::application::{
     input::{InputEvent, InputState},

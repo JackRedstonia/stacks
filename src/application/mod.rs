@@ -4,7 +4,7 @@ pub mod time;
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::error::Error;
 
-use skulpin_renderer::{ash, CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size};
+use skulpin_renderer::{skia_safe, ash, CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
@@ -17,7 +17,7 @@ use winit::{
 use input::{EventHandleResult, InputEvent, InputState};
 use time::TimeState;
 
-use crate::canvas::Canvas;
+use crate::canvas::{Canvas, FontSet};
 
 #[derive(Debug)]
 pub enum ApplicationError {
@@ -248,6 +248,9 @@ impl ApplicationRunner {
 
         let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
         let mut last_frame = std::time::Instant::now();
+
+        let font_set = VanillaFontSet::new();
+
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
                 Ok(event) => match event {
@@ -274,7 +277,7 @@ impl ApplicationRunner {
                                 if let Err(e) = renderer.draw(
                                     &window,
                                     |sk_canvas, _coordinate_system_helper| {
-                                        canvas.play(sk_canvas);
+                                        canvas.play(sk_canvas, &font_set);
                                     },
                                 ) {
                                     let _ = event_tx.send(ApplicationEvent::Crash(e.into()));
@@ -291,5 +294,40 @@ impl ApplicationRunner {
                 },
             },
         );
+    }
+}
+
+use skia_safe::{Font, Typeface, FontStyle as SkFontStyle};
+use crate::components::FontStyle;
+
+// TODO: require argument for font set instead
+struct VanillaFontSet {
+    default_regular: Font,
+    default_bold: Font,
+    default_italic: Font,
+    default_bold_italic: Font,
+}
+
+impl VanillaFontSet {
+    fn new() -> Self {
+        let family_name = "IBM Plex Sans";
+        let size = 16.0;
+        Self {
+            default_regular: Font::new(Typeface::new(family_name, SkFontStyle::normal()).unwrap(), size),
+            default_bold: Font::new(Typeface::new(family_name, SkFontStyle::bold()).unwrap(), size),
+            default_italic: Font::new(Typeface::new(family_name, SkFontStyle::italic()).unwrap(), size),
+            default_bold_italic: Font::new(Typeface::new(family_name, SkFontStyle::bold_italic()).unwrap(), size),
+        }
+    }
+}
+
+impl FontSet for VanillaFontSet {
+    fn get_default(&self, style: FontStyle) -> &Font {
+        match style {
+            FontStyle::Regular => &self.default_regular,
+            FontStyle::Bold => &self.default_bold,
+            FontStyle::Italic => &self.default_italic,
+            FontStyle::BoldItalic => &self.default_bold_italic
+        }
     }
 }
