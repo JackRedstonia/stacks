@@ -6,8 +6,8 @@ use super::application::{
 use super::canvas::Canvas;
 use super::components::Component;
 
-pub struct Stacks<C: Component> {
-    root: C,
+pub struct Stacks<T: Component> {
+    root: T,
 }
 
 impl<T: Component> Stacks<T> {

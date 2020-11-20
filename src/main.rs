@@ -14,29 +14,36 @@ use skulpin_renderer::{skia_safe, PresentMode};
 use stacks::Stacks;
 
 fn main() {
-    let root = components::Composite {
-        inner: (0..20000)
-            .map(|f| {
-                let wh = 200;
-                let q = (f % wh) as f32 * 6.0;
-                let p = (f / wh) as f32 * 6.0;
-                components::Transform {
-                    inner: components::shapes::Rect {
-                        rect: skia_safe::Rect {
-                            left: 0.0,
-                            top: 0.0,
-                            right: 5.0,
-                            bottom: 5.0,
-                        },
-                        paint: skia_safe::Paint::new(
-                            skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
-                            None,
-                        ),
+    let root = components::Transform {
+        inner: components::Composite::<Box<dyn components::Component + Send>> {
+            inner: vec![
+                Box::new(components::shapes::Rect::new((200.0, 100.0), {
+                    let mut p = skia_safe::Paint::new(
+                        skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                        None,
+                    );
+                    p.set_anti_alias(true);
+                    p
+                })),
+                Box::new(components::Transform {
+                    inner: components::Text {
+                        text: "1234".into(),
+                        font: components::Font::Default,
+                        style: components::FontStyle::Regular,
+                        paint: {
+                            let mut p = skia_safe::Paint::new(
+                                skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                                None,
+                            );
+                            p.set_anti_alias(true);
+                            p
+                        }
                     },
-                    matrix: skia_safe::Matrix::translate((q, p)),
-                }
-            })
-            .collect(),
+                    matrix: skia_safe::Matrix::translate((0.0, 120.0)),
+                })
+            ],
+        },
+        matrix: skia_safe::Matrix::translate((120.0, 120.0)),
     };
 
     ApplicationBuilder::new()

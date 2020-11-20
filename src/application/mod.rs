@@ -313,10 +313,10 @@ impl VanillaFontSet {
         let family_name = "IBM Plex Sans";
         let size = 16.0;
         Self {
-            default_regular: Font::new(Typeface::new(family_name, SkFontStyle::normal()).unwrap(), size),
-            default_bold: Font::new(Typeface::new(family_name, SkFontStyle::bold()).unwrap(), size),
-            default_italic: Font::new(Typeface::new(family_name, SkFontStyle::italic()).unwrap(), size),
-            default_bold_italic: Font::new(Typeface::new(family_name, SkFontStyle::bold_italic()).unwrap(), size),
+            default_regular: Font::new(Typeface::from_name(family_name, SkFontStyle::normal()).unwrap(), size),
+            default_bold: Font::new(Typeface::from_name(family_name, SkFontStyle::bold()).unwrap(), size),
+            default_italic: Font::new(Typeface::from_name(family_name, SkFontStyle::italic()).unwrap(), size),
+            default_bold_italic: Font::new(Typeface::from_name(family_name, SkFontStyle::bold_italic()).unwrap(), size),
         }
     }
 }

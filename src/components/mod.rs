@@ -18,3 +18,17 @@ pub trait Component {
     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas);
     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent);
 }
+
+impl Component for Box<dyn Component + Send> {
+    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
+        self.as_mut().update(input_state, time_state);
+    }
+
+    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
+        self.as_mut().draw(input_state, time_state, canvas);
+    }
+
+    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent) {
+        self.as_mut().input(input_state, time_state, event);
+    }
+}
