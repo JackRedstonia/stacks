@@ -1,10 +1,6 @@
-use super::game::{
-    input::{InputEvent, InputState},
-    time::TimeState,
-    Game, GameError,
-};
-use super::canvas::Canvas;
 use super::components::Component;
+use super::game::Canvas;
+use super::game::{Game, GameError, InputEvent, InputState, TimeState};
 
 pub struct Stacks<T: Component> {
     root: T,

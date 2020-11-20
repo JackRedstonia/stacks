@@ -1,9 +1,5 @@
 use super::Component;
-use crate::game::{
-    input::{InputEvent, InputState},
-    time::TimeState,
-};
-use crate::canvas::Canvas;
+use crate::game::{Canvas, InputEvent, InputState, TimeState};
 
 pub struct Composite<T: Component> {
     pub inner: Vec<T>,

@@ -73,23 +73,13 @@ impl Canvas {
     }
 }
 
-pub enum Command {
+enum Command {
     ConcatMatrix(Matrix),
     Save,
     Restore,
     Rect(Rect, Paint),
     Arc(Rect, scalar, scalar, bool, Paint),
     Str(String, Point, Font, FontStyle, Paint),
-}
-
-pub trait FontSet {
-    fn get(&self, font: Font, style: FontStyle) -> &skia_safe::Font {
-        match font {
-            Font::Default => self.get_default(style),
-        }
-    }
-
-    fn get_default(&self, style: FontStyle) -> &skia_safe::Font;
 }
 
 impl Command {
@@ -115,4 +105,14 @@ impl Command {
             }
         }
     }
+}
+
+pub trait FontSet {
+    fn get(&self, font: Font, style: FontStyle) -> &skia_safe::Font {
+        match font {
+            Font::Default => self.get_default(style),
+        }
+    }
+
+    fn get_default(&self, style: FontStyle) -> &skia_safe::Font;
 }

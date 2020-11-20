@@ -1,9 +1,8 @@
 #![feature(duration_zero)]
 #![feature(duration_constants)]
 
-mod game;
-mod canvas;
 mod components;
+mod game;
 mod stacks;
 
 use std::ffi::CString;
@@ -35,8 +34,10 @@ fn main() {
                 }),
                 Box::new(components::Transform {
                     inner: components::shapes::Throbber::new(64.0, {
-                        let mut p =
-                            skia_safe::Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
+                        let mut p = skia_safe::Paint::new(
+                            skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                            None,
+                        );
                         p.set_stroke_width(12.0);
                         p.set_anti_alias(true);
                         p.set_style(skia_safe::PaintStyle::Stroke);

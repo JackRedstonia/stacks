@@ -11,11 +11,7 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use super::game::{
-    input::{InputEvent, InputState},
-    time::TimeState,
-};
-use crate::canvas::Canvas;
+use crate::game::{Canvas, InputEvent, InputState, TimeState};
 
 pub trait Component {
     fn update(&mut self, input_state: &InputState, time_state: &TimeState);
