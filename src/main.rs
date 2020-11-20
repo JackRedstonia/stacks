@@ -29,7 +29,7 @@ fn main() {
                     inner: components::Text {
                         text: "1234".into(),
                         font: components::Font::Default,
-                        style: components::FontStyle::Regular,
+                        style: components::FontStyle::Bold,
                         paint: {
                             let mut p = skia_safe::Paint::new(
                                 skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
