@@ -27,23 +27,28 @@ fn main() {
     // };
 
     let root = components::Composite {
-        inner: (0..20000).map(|f| {
-            let wh = 200;
-            let q = (f % wh) as f32 * 6.0;
-            let p = (f / wh) as f32 * 6.0;
-            components::Transform {
-                inner: components::shapes::Rect {
-                    rect: skia_safe::Rect {
-                        left: 0.0,
-                        top: 0.0,
-                        right: 5.0,
-                        bottom: 5.0,
+        inner: (0..20000)
+            .map(|f| {
+                let wh = 200;
+                let q = (f % wh) as f32 * 6.0;
+                let p = (f / wh) as f32 * 6.0;
+                components::Transform {
+                    inner: components::shapes::Rect {
+                        rect: skia_safe::Rect {
+                            left: 0.0,
+                            top: 0.0,
+                            right: 5.0,
+                            bottom: 5.0,
+                        },
+                        paint: skia_safe::Paint::new(
+                            skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                            None,
+                        ),
                     },
-                    paint: skia_safe::Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
-                },
-                matrix: skia_safe::Matrix::translate((q, p)),
-            }
-        }).collect()
+                    matrix: skia_safe::Matrix::translate((q, p)),
+                }
+            })
+            .collect(),
     };
 
     ApplicationBuilder::new()

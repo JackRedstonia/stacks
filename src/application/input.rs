@@ -1,4 +1,4 @@
-use skia_safe::{scalar, Point, Matrix};
+use skia_safe::{scalar, Matrix, Point};
 use skulpin_renderer::skia_safe;
 use skulpin_renderer_winit::winit;
 use winit::{

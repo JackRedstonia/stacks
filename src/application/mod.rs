@@ -8,7 +8,7 @@ use skulpin_renderer::{ash, CoordinateSystem, LogicalSize, PresentMode, Renderer
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
-use winit::{event_loop::EventLoop, window::WindowBuilder, event::Event as WinitEvent};
+use winit::{event::Event as WinitEvent, event_loop::EventLoop, window::WindowBuilder};
 
 use input::{EventHandleResult, InputEvent, InputState};
 use time::TimeState;
@@ -189,11 +189,13 @@ impl ApplicationRunner {
                     winit_window.request_redraw();
                 }
                 WinitEvent::RedrawRequested(_window_id) => {
-                    if let Err(e) = renderer.draw(&window, |sk_canvas, _coordinate_system_helper| {
-                        application.draw(&input_state, &time_state, &mut canvas);
-                        canvas.play(sk_canvas);
-                        canvas.clear();
-                    }) {
+                    if let Err(e) =
+                        renderer.draw(&window, |sk_canvas, _coordinate_system_helper| {
+                            application.draw(&input_state, &time_state, &mut canvas);
+                            canvas.play(sk_canvas);
+                            canvas.clear();
+                        })
+                    {
                         application.crash(e.into());
                         *control_flow = winit::event_loop::ControlFlow::Exit;
                     }

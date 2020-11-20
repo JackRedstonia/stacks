@@ -1,9 +1,9 @@
+mod composite;
 pub mod shapes;
 mod transform;
-mod composite;
 
-pub use transform::Transform;
 pub use composite::Composite;
+pub use transform::Transform;
 
 use super::application::{
     input::{InputEvent, InputState},
