@@ -1,4 +1,4 @@
-use crate::components::{Font, FontStyle};
+use crate::framework::components::{Font, FontStyle};
 use skia_safe::{scalar, Canvas as SkCanvas, Matrix, Paint, Point, Rect};
 use skulpin_renderer::skia_safe;
 

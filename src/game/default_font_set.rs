@@ -1,5 +1,5 @@
 use super::canvas::FontSet;
-use crate::components::FontStyle;
+use crate::framework::components::FontStyle;
 use skia_safe::{Font, FontStyle as SkFontStyle, Typeface};
 use skulpin_renderer::skia_safe;
 

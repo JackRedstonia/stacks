@@ -1,18 +1,20 @@
-use super::components::Component;
+pub mod components;
+
+use components::Component;
 use super::game::Canvas;
 use super::game::{Game, Error, InputEvent, InputState, TimeState};
 
-pub struct Stacks<T: Component> {
+pub struct Framework<T: Component> {
     root: T,
 }
 
-impl<T: Component> Stacks<T> {
+impl<T: Component> Framework<T> {
     pub fn new(root: T) -> Self {
         Self { root }
     }
 }
 
-impl<T: Component> Game for Stacks<T> {
+impl<T: Component> Game for Framework<T> {
     fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
         self.root.update(input_state, time_state);
     }
