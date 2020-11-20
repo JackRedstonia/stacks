@@ -7,7 +7,7 @@ mod stacks;
 
 use std::ffi::CString;
 
-use game::GameBuilder;
+use game::Builder;
 use skulpin_renderer::{skia_safe, PresentMode};
 
 use stacks::Stacks;
@@ -50,7 +50,7 @@ fn main() {
         matrix: skia_safe::Matrix::translate((120.0, 120.0)),
     });
 
-    GameBuilder::new()
+    Builder::new()
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .present_mode_priority(vec![PresentMode::Immediate])

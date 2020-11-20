@@ -1,6 +1,6 @@
 use super::components::Component;
 use super::game::Canvas;
-use super::game::{Game, GameError, InputEvent, InputState, TimeState};
+use super::game::{Game, Error, InputEvent, InputState, TimeState};
 
 pub struct Stacks<T: Component> {
     root: T,
@@ -27,7 +27,7 @@ impl<T: Component> Game for Stacks<T> {
 
     fn close(&mut self) {}
 
-    fn crash(&mut self, err: GameError) {
+    fn crash(&mut self, err: Error) {
         println!("Stacks has crashed!\nMore info: {:?}", err);
     }
 }

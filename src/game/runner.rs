@@ -1,5 +1,5 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
-use std::error::Error;
+use std::error::Error as StdError;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread::spawn;
 
@@ -20,45 +20,45 @@ use super::Game;
 
 use super::canvas::Canvas;
 
-enum GameEvent<T: 'static> {
+enum Event<T: 'static> {
     WinitEvent(WinitEvent<'static, T>),
-    Crash(GameError),
+    Crash(Error),
 }
 
-enum GameFeedbackEvent {
+enum FeedbackEvent {
     Exit,
 }
 
 #[derive(Debug)]
-pub enum GameError {
+pub enum Error {
     RendererError(VkResult),
 }
 
-impl Display for GameError {
+impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            GameError::RendererError(e) => e.fmt(f),
+            Error::RendererError(e) => e.fmt(f),
         }
     }
 }
 
-impl Error for GameError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            GameError::RendererError(e) => Some(e),
+            Error::RendererError(e) => Some(e),
         }
     }
 }
 
-impl From<VkResult> for GameError {
+impl From<VkResult> for Error {
     fn from(result: VkResult) -> Self {
-        GameError::RendererError(result)
+        Error::RendererError(result)
     }
 }
 
-pub struct GameRunner;
+pub struct Runner;
 
-impl GameRunner {
+impl Runner {
     pub const CANVAS_QUEUE_LENGTH: usize = 8;
     pub const EVENT_QUEUE_SIZE: usize = 8;
     pub const FEEDBACK_QUEUE_SIZE: usize = 8;
@@ -66,7 +66,7 @@ impl GameRunner {
     pub const BACKGROUND: skia_safe::Color = skia_safe::Color::from_argb(255, 10, 10, 10);
 }
 
-impl GameRunner {
+impl Runner {
     pub fn run<T: 'static + Game + Send>(
         game: T,
         inner_size: Size,
@@ -154,7 +154,7 @@ impl GameRunner {
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
                 Ok(event) => match event {
-                    GameFeedbackEvent::Exit => {
+                    FeedbackEvent::Exit => {
                         *control_flow = ControlFlow::Exit;
                     }
                 },
@@ -167,7 +167,7 @@ impl GameRunner {
                                 std::time::Instant::now() - (frame_time - target_frame_time);
                         }
                         if let Some(event) = event.to_static() {
-                            if event_tx.send(GameEvent::WinitEvent(event)).is_err() {
+                            if event_tx.send(Event::WinitEvent(event)).is_err() {
                                 *control_flow = ControlFlow::Exit;
                             }
                         }
@@ -181,7 +181,7 @@ impl GameRunner {
                                         canvas.play(sk_canvas, &font_set);
                                     },
                                 ) {
-                                    let _ = event_tx.send(GameEvent::Crash(e.into()));
+                                    let _ = event_tx.send(Event::Crash(e.into()));
                                     *control_flow = ControlFlow::Exit;
                                 }
                             }
@@ -199,17 +199,17 @@ impl GameRunner {
 
     fn handle_event<T>(
         game: &mut impl Game,
-        event: GameEvent<T>,
+        event: Event<T>,
         input_state: &mut InputState,
         time_state: &mut TimeState,
         time_state_draw: &mut TimeState,
         canvas_tx: &SyncSender<Canvas>,
-        feedback_tx: &SyncSender<GameFeedbackEvent>,
+        feedback_tx: &SyncSender<FeedbackEvent>,
         canvas_cap: &mut usize,
         is_redraw: &mut bool,
     ) -> bool {
         match event {
-            GameEvent::WinitEvent(event) => {
+            Event::WinitEvent(event) => {
                 if let Some(r) = input_state.handle_event(&event) {
                     match r {
                         EventHandleResult::Input(event) => {
@@ -218,7 +218,7 @@ impl GameRunner {
                         EventHandleResult::Exit => {
                             game.close();
                             feedback_tx
-                                .send(GameFeedbackEvent::Exit)
+                                .send(FeedbackEvent::Exit)
                                 .expect("Failed to send feedback event to draw thread");
                             return true;
                         }
@@ -239,10 +239,10 @@ impl GameRunner {
                     _ => {}
                 }
             }
-            GameEvent::Crash(e) => {
+            Event::Crash(e) => {
                 game.crash(e);
                 feedback_tx
-                    .send(GameFeedbackEvent::Exit)
+                    .send(FeedbackEvent::Exit)
                     .expect("Failed to send feedback event to draw thread");
                 return true;
             }

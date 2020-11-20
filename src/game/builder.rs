@@ -1,20 +1,20 @@
 use skulpin_renderer::{CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size};
 
-use super::{runner::GameRunner, Game};
+use super::{runner::Runner, Game};
 
-pub struct GameBuilder {
+pub struct Builder {
     inner_size: Size,
     window_title: String,
     renderer_builder: RendererBuilder,
 }
 
-impl Default for GameBuilder {
+impl Default for Builder {
     fn default() -> Self {
-        GameBuilder::new()
+        Builder::new()
     }
 }
 
-impl GameBuilder {
+impl Builder {
     /// Construct the app builder initialized with default options
     pub fn new() -> Self {
         Self {
@@ -71,7 +71,7 @@ impl GameBuilder {
     /// This does not return because winit does not return. For consistency, we use the
     /// fatal_error() callback on the passed in AppHandler.
     pub fn run<T: 'static + Game + Send>(self, game: T) -> ! {
-        GameRunner::run(
+        Runner::run(
             game,
             self.inner_size,
             self.window_title.clone(),
