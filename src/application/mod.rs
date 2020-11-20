@@ -8,7 +8,11 @@ use skulpin_renderer::{ash, CoordinateSystem, LogicalSize, PresentMode, Renderer
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
-use winit::{event::Event as WinitEvent, event_loop::{EventLoop, ControlFlow}, window::WindowBuilder};
+use winit::{
+    event::Event as WinitEvent,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
 
 use input::{EventHandleResult, InputEvent, InputState};
 use time::TimeState;
@@ -204,16 +208,16 @@ impl ApplicationRunner {
                                     }
                                 }
                             }
-    
+
                             match event {
                                 WinitEvent::RedrawRequested(_) => {
                                     is_redraw = true;
                                     let mut canvas = Canvas::with_capacity(canvas_cap);
-                                        application.draw(&input_state, &time_state, &mut canvas);
-                                        canvas_cap = canvas_cap.max(canvas.capacity());
-                                        canvas_tx
-                                            .send(canvas)
-                                            .expect("Failed to send canvas to draw thread");
+                                    application.draw(&input_state, &time_state, &mut canvas);
+                                    canvas_cap = canvas_cap.max(canvas.capacity());
+                                    canvas_tx
+                                        .send(canvas)
+                                        .expect("Failed to send canvas to draw thread");
                                 }
                                 _ => {}
                             }
@@ -227,11 +231,11 @@ impl ApplicationRunner {
                         }
                     },
                     Err(e) => match e {
-                        TryRecvError::Empty => {},
+                        TryRecvError::Empty => {}
                         TryRecvError::Disconnected => return,
-                    }
+                    },
                 }
-                application.update(&input_state, &time_state);                             
+                application.update(&input_state, &time_state);
                 if !is_redraw {
                     let update_time = time_state.last_update().elapsed();
                     if target_update_time > update_time {
@@ -256,7 +260,8 @@ impl ApplicationRunner {
                         let frame_time = last_frame.elapsed();
                         if frame_time > target_frame_time {
                             winit_window.request_redraw();
-                            last_frame = std::time::Instant::now() - (frame_time - target_frame_time);
+                            last_frame =
+                                std::time::Instant::now() - (frame_time - target_frame_time);
                         }
                         if let Some(event) = event.to_static() {
                             if event_tx.send(ApplicationEvent::WinitEvent(event)).is_err() {
