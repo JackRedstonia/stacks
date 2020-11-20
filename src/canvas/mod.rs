@@ -27,10 +27,6 @@ impl Canvas {
         }
     }
 
-    pub fn clear(&mut self) {
-        self.commands.clear();
-    }
-
     pub fn concat(&mut self, matrix: Matrix) {
         self.commands.push(Command::ConcatMatrix(matrix));
     }

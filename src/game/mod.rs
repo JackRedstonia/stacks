@@ -134,7 +134,7 @@ impl GameBuilder {
     }
 }
 
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender, TryRecvError};
+use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread::spawn;
 
 pub enum GameEvent<T: 'static> {
