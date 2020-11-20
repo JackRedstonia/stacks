@@ -22,9 +22,7 @@ impl<T: Component> Application for Stacks<T> {
     }
 
     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        let x = std::time::Instant::now();
         self.root.draw(input_state, time_state, canvas);
-        println!("{:?}", x.elapsed());
     }
 
     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent) {

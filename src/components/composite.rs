@@ -4,7 +4,6 @@ use crate::application::{
     time::TimeState,
 };
 use crate::canvas::Canvas;
-use skulpin_renderer::skia_safe;
 
 pub struct Composite<T: Component> {
     pub inner: Vec<T>,

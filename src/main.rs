@@ -1,4 +1,5 @@
 #![feature(duration_zero)]
+#![feature(duration_constants)]
 
 mod application;
 mod canvas;
@@ -13,19 +14,6 @@ use skulpin_renderer::{skia_safe, PresentMode};
 use stacks::Stacks;
 
 fn main() {
-    // let root = components::Transform {
-    //     inner: components::shapes::Rect {
-    //         rect: skia_safe::Rect {
-    //             left: 0.0,
-    //             top: 0.0,
-    //             right: 100.0,
-    //             bottom: 100.0,
-    //         },
-    //         paint: skia_safe::Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
-    //     },
-    //     matrix: skia_safe::Matrix::translate((200.0, 200.0)),
-    // };
-
     let root = components::Composite {
         inner: (0..20000)
             .map(|f| {

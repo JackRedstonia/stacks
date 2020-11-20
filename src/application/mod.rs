@@ -8,7 +8,7 @@ use skulpin_renderer::{ash, CoordinateSystem, LogicalSize, PresentMode, Renderer
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
-use winit::{event::Event as WinitEvent, event_loop::EventLoop, window::WindowBuilder};
+use winit::{event::Event as WinitEvent, event_loop::{EventLoop, ControlFlow}, window::WindowBuilder};
 
 use input::{EventHandleResult, InputEvent, InputState};
 use time::TimeState;
@@ -118,7 +118,7 @@ impl ApplicationBuilder {
     /// Start the app. `app_handler` must be an implementation of [skulpin::app::AppHandler].
     /// This does not return because winit does not return. For consistency, we use the
     /// fatal_error() callback on the passed in AppHandler.
-    pub fn run<T: 'static + Application>(self, application: T) -> ! {
+    pub fn run<T: 'static + Application + Send>(self, application: T) -> ! {
         ApplicationRunner::run(
             application,
             self.inner_size,
@@ -128,11 +128,23 @@ impl ApplicationBuilder {
     }
 }
 
+use std::sync::mpsc::{sync_channel, TryRecvError};
+use std::thread::spawn;
+
+pub enum ApplicationEvent<T: 'static> {
+    WinitEvent(WinitEvent<'static, T>),
+    Crash(ApplicationError),
+}
+
+pub enum ApplicationFeedbackEvent {
+    Exit,
+}
+
 pub struct ApplicationRunner {}
 
 impl ApplicationRunner {
-    pub fn run<T: 'static + Application>(
-        mut application: T,
+    pub fn run<T: 'static + Application + Send>(
+        application: T,
         inner_size: Size,
         window_title: String,
         renderer_builder: RendererBuilder,
@@ -156,52 +168,111 @@ impl ApplicationRunner {
             .with_inner_size(winit_size)
             .build(&event_loop)
             .expect("Failed to create winit window");
-
         let window = WinitWindow::new(&winit_window);
-
         let mut renderer = renderer_builder
             .build(&window)
             .expect("Failed to create renderer");
 
-        let mut input_state = InputState::new(&winit_window);
-        let mut time_state = TimeState::new();
-        let mut canvas = Canvas::new();
+        let (canvas_tx, canvas_rx) = sync_channel::<Canvas>(10);
+        let (event_tx, event_rx) = sync_channel::<ApplicationEvent<_>>(10);
+        let (feedback_tx, feedback_rx) = sync_channel::<ApplicationFeedbackEvent>(10);
+
+        let input_state = InputState::new(&winit_window);
+        spawn(move || {
+            let mut input_state = input_state;
+            let mut application = application;
+            let mut time_state = TimeState::new();
+
+            let mut canvas_cap = 200_000;
+            let target_update_time = std::time::Duration::MILLISECOND;
+            while let Ok(event) = event_rx.recv() {
+                match event {
+                    ApplicationEvent::WinitEvent(event) => {
+                        if let Some(r) = input_state.handle_event(&event) {
+                            match r {
+                                EventHandleResult::Input(event) => {
+                                    application.input(&input_state, &time_state, event)
+                                }
+                                // TODO: instead of exiting immediately, we (ideally blockingly) call application::close
+                                // and wait for it to close everything before exiting ourselves
+                                EventHandleResult::Exit => {
+                                    application.close();
+                                    feedback_tx
+                                        .send(ApplicationFeedbackEvent::Exit)
+                                        .expect("Failed to send feedback event to draw thread");
+                                    break;
+                                }
+                            }
+                        }
+
+                        match event {
+                            WinitEvent::MainEventsCleared => {
+                                application.update(&input_state, &time_state);
+                                let t = time_state.last_update().elapsed();
+                                if target_update_time > t {
+                                    std::thread::sleep(target_update_time - t);
+                                }
+                                time_state.update();
+
+                                let mut canvas = Canvas::with_capacity(canvas_cap);
+                                application.draw(&input_state, &time_state, &mut canvas);
+                                canvas_cap = canvas_cap.max(canvas.capacity());
+                                canvas_tx
+                                    .send(canvas)
+                                    .expect("Failed to send canvas to draw thread");
+                            }
+                            _ => {}
+                        }
+                    }
+                    ApplicationEvent::Crash(e) => {
+                        application.crash(e);
+                        feedback_tx
+                            .send(ApplicationFeedbackEvent::Exit)
+                            .expect("Failed to send feedback event to draw thread");
+                        break;
+                    }
+                }
+            }
+        });
 
         // Pass control of this thread to winit until the app terminates. If this app wants to quit,
         // the update loop should send the appropriate event via the channel
-        event_loop.run(move |event, _window_target, control_flow| {
-            let window = WinitWindow::new(&winit_window);
-            if let Some(r) = input_state.handle_event(&event) {
-                match r {
-                    EventHandleResult::Input(event) => {
-                        application.input(&input_state, &time_state, event)
+        event_loop.run(
+            move |event, _window_target, control_flow| match feedback_rx.try_recv() {
+                Ok(event) => match event {
+                    ApplicationFeedbackEvent::Exit => {
+                        *control_flow = ControlFlow::Exit;
                     }
-                    // TODO: instead of exiting immediately, we (ideally blockingly) call application::close
-                    // and wait for it to close everything before exiting ourselves
-                    EventHandleResult::Exit => *control_flow = winit::event_loop::ControlFlow::Exit,
-                }
-            }
-
-            match event {
-                WinitEvent::MainEventsCleared => {
-                    application.update(&input_state, &time_state);
-                    time_state.update();
-                    winit_window.request_redraw();
-                }
-                WinitEvent::RedrawRequested(_window_id) => {
-                    if let Err(e) =
-                        renderer.draw(&window, |sk_canvas, _coordinate_system_helper| {
-                            application.draw(&input_state, &time_state, &mut canvas);
-                            canvas.play(sk_canvas);
-                            canvas.clear();
-                        })
-                    {
-                        application.crash(e.into());
-                        *control_flow = winit::event_loop::ControlFlow::Exit;
+                },
+                Err(e) => match e {
+                    TryRecvError::Empty => {
+                        let window = WinitWindow::new(&winit_window);
+                        if let Some(event) = event.to_static() {
+                            if event_tx.send(ApplicationEvent::WinitEvent(event)).is_err() {
+                                *control_flow = ControlFlow::Exit;
+                            }
+                        }
+                        match canvas_rx.try_recv() {
+                            Ok(canvas) => {
+                                if let Err(e) = renderer.draw(
+                                    &window,
+                                    |sk_canvas, _coordinate_system_helper| {
+                                        canvas.play(sk_canvas);
+                                    },
+                                ) {
+                                    let _ = event_tx.send(ApplicationEvent::Crash(e.into()));
+                                    *control_flow = ControlFlow::Exit;
+                                }
+                            }
+                            Err(e) => match e {
+                                TryRecvError::Empty => {}
+                                TryRecvError::Disconnected => *control_flow = ControlFlow::Exit,
+                            },
+                        }
                     }
-                }
-                _ => {}
-            }
-        });
+                    TryRecvError::Disconnected => *control_flow = ControlFlow::Exit,
+                },
+            },
+        );
     }
 }

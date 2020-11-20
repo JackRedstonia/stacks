@@ -10,6 +10,16 @@ impl Canvas {
         Self { commands: vec![] }
     }
 
+    pub fn with_capacity(cap: usize) -> Self {
+        Self {
+            commands: Vec::with_capacity(cap),
+        }
+    }
+
+    pub fn capacity(&self) -> usize {
+        self.commands.capacity()
+    }
+
     pub fn play(&self, canvas: &mut SkCanvas) {
         for command in &self.commands {
             command.execute(canvas);
