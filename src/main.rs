@@ -14,37 +14,42 @@ use skulpin_renderer::{skia_safe, PresentMode};
 use stacks::Stacks;
 
 fn main() {
-    let root = components::Transform {
+    let root = components::Parallax::new(components::Transform {
         inner: components::Composite::<Box<dyn components::Component + Send>> {
             inner: vec![
-                Box::new(components::shapes::Rect::new((200.0, 100.0), {
-                    let mut p = skia_safe::Paint::new(
-                        skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
-                        None,
-                    );
-                    p.set_anti_alias(true);
-                    p
-                })),
+                Box::new(components::shapes::Rect::new((200.0, 100.0), skia_safe::Paint::new(
+                    skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                    None,
+                ))),
                 Box::new(components::Transform {
                     inner: components::Text {
                         text: "1234".into(),
                         font: components::Font::Default,
                         style: components::FontStyle::Bold,
-                        paint: {
-                            let mut p = skia_safe::Paint::new(
-                                skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
-                                None,
-                            );
-                            p.set_anti_alias(true);
-                            p
-                        }
+                        paint: skia_safe::Paint::new(
+                            skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                            None,
+                        )
                     },
                     matrix: skia_safe::Matrix::translate((0.0, 120.0)),
+                }),
+                Box::new(components::Transform {
+                    inner: components::shapes::Throbber::new(16.0, {
+                        let mut p = skia_safe::Paint::new(
+                            skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0),
+                            None,
+                        );
+                        p.set_stroke_width(8.0);
+                        p.set_anti_alias(true);
+                        p.set_style(skia_safe::PaintStyle::Stroke);
+                        p
+                    }),
+                    matrix: skia_safe::Matrix::translate((120.0, 240.0)),
                 })
             ],
         },
         matrix: skia_safe::Matrix::translate((120.0, 120.0)),
-    };
+    });
 
     ApplicationBuilder::new()
         .app_name(CString::new("Stacks").unwrap())

@@ -1,4 +1,4 @@
-use skia_safe::{Canvas as SkCanvas, Matrix, Paint, Rect, Point};
+use skia_safe::{Canvas as SkCanvas, Matrix, Paint, Rect, Point, scalar};
 use skulpin_renderer::skia_safe;
 use crate::components::{Font, FontStyle};
 
@@ -47,6 +47,10 @@ impl Canvas {
         self.commands.push(Command::Rect(rect, paint.clone()));
     }
 
+    pub fn draw_arc(&mut self, oval: Rect, start: scalar, sweep: scalar, center: bool, paint: &Paint) {
+        self.commands.push(Command::Arc(oval, start, sweep, center, paint.clone()));
+    }
+
     pub fn draw_str(&mut self, text: String, origin: impl Into<Point>, font: Font, style: FontStyle, paint: &Paint) {
         self.commands.push(Command::Str(text, origin.into(), font, style, paint.clone()));
     }
@@ -57,6 +61,7 @@ pub enum Command {
     Save,
     Restore,
     Rect(Rect, Paint),
+    Arc(Rect, scalar, scalar, bool, Paint),
     Str(String, Point, Font, FontStyle, Paint),
 }
 
@@ -84,6 +89,9 @@ impl Command {
             }
             Command::Rect(rect, paint) => {
                 canvas.draw_rect(rect, paint);
+            }
+            Command::Arc(oval, start, sweep, center, paint) => {
+                canvas.draw_arc(oval, *start, *sweep, *center, paint);
             }
             Command::Str(str, origin, font, style,  paint) => {
                 canvas.draw_str(str, *origin, font_set.get(*font, *style), paint);
