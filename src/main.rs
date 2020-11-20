@@ -34,7 +34,14 @@ fn main() {
                     matrix: skia_safe::Matrix::translate((0.0, 120.0)),
                 }),
                 Box::new(components::Transform {
-                    inner: components::Metrics::new(64.0),
+                    inner: components::shapes::Throbber::new(64.0, {
+                        let mut p =
+                            skia_safe::Paint::new(skia_safe::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
+                        p.set_stroke_width(12.0);
+                        p.set_anti_alias(true);
+                        p.set_style(skia_safe::PaintStyle::Stroke);
+                        p
+                    }),
                     matrix: skia_safe::Matrix::translate((120.0, 240.0)),
                 }),
             ],
