@@ -277,6 +277,7 @@ impl ApplicationRunner {
                                 if let Err(e) = renderer.draw(
                                     &window,
                                     |sk_canvas, _coordinate_system_helper| {
+                                        sk_canvas.clear(skia_safe::Color::from_argb(255, 10, 10, 10));
                                         canvas.play(sk_canvas, &font_set);
                                     },
                                 ) {
