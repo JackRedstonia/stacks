@@ -1,6 +1,6 @@
 use crate::framework::components::{Font, FontStyle};
-use skia_safe::{scalar, Canvas as SkCanvas, Matrix, Paint, Point, Rect};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{scalar, Canvas as SkCanvas, Matrix, Paint, Point, Rect};
 
 pub struct Canvas {
     commands: Vec<Command>,
@@ -108,11 +108,11 @@ impl Command {
 }
 
 pub trait FontSet {
-    fn get(&self, font: Font, style: FontStyle) -> &skia_safe::Font {
+    fn get(&self, font: Font, style: FontStyle) -> &skia::Font {
         match font {
             Font::Default => self.get_default(style),
         }
     }
 
-    fn get_default(&self, style: FontStyle) -> &skia_safe::Font;
+    fn get_default(&self, style: FontStyle) -> &skia::Font;
 }

@@ -1,34 +1,137 @@
-mod composite;
+// mod composite;
 mod metrics;
 mod parallax;
 pub mod shapes;
 mod text;
 mod transform;
 
-pub use composite::Composite;
+// pub use composite::Composite;
 pub use metrics::Metrics;
 pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
 pub trait Component {
     fn update(&mut self, input_state: &InputState, time_state: &TimeState);
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas);
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent);
+    fn input(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        event: &InputEvent,
+        size: Size,
+    ) -> bool;
+
+    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize;
+    fn draw(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        canvas: &mut Canvas,
+        size: Size,
+    );
 }
 
-impl Component for Box<dyn Component + Send> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.as_mut().update(input_state, time_state);
+// impl Component for Box<dyn Component + Send> {
+//     fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
+//         self.as_mut().update(input_state, time_state);
+//     }
+
+//     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
+//         self.as_mut().draw(input_state, time_state, canvas);
+//     }
+
+//     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent) {
+//         self.as_mut().input(input_state, time_state, event);
+//     }
+// }
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct LayoutSize {
+    width: LayoutDimension,
+    height: LayoutDimension,
+}
+
+impl LayoutSize {
+    pub const ZERO: Self = Self {
+        width: LayoutDimension::ZERO,
+        height: LayoutDimension::ZERO,
+    };
+
+    pub fn min(width: scalar, height: scalar) -> Self {
+        Self {
+            width: LayoutDimension::min(width),
+            height: LayoutDimension::min(height),
+        }
     }
 
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        self.as_mut().draw(input_state, time_state, canvas);
+    pub fn map(&self, matrix: Matrix) -> Self {
+        let min = matrix
+            .map_rect(Rect::from_wh(self.width.min, self.height.min))
+            .0
+            .size();
+        let size = matrix
+            .map_rect(Rect::from_wh(self.width.size, self.height.size))
+            .0
+            .size();
+        let expand_width = self
+            .width
+            .expand
+            .map(|x| matrix.map_vector(Vector::new(x, 0.0)).x);
+        let expand_height = self
+            .height
+            .expand
+            .map(|y| matrix.map_vector(Vector::new(0.0, y)).y);
+        // expand?
+        Self {
+            width: LayoutDimension {
+                min: min.width.abs(),
+                size: size.width.abs(),
+                expand: expand_width,
+            },
+            height: LayoutDimension {
+                min: min.height.abs(),
+                size: size.height.abs(),
+                expand: expand_height,
+            },
+        }
     }
+}
 
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent) {
-        self.as_mut().input(input_state, time_state, event);
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct LayoutDimension {
+    /// The minimum number of logical pixels this dimension should receive.
+    /// May not always be respected by containers, for example when they run out
+    /// of space.
+    min: scalar,
+
+    /// The normal number of logical pixels in this dimension.
+    /// Normally ignored by containers and other UI-building components,
+    /// and is only respected when this is not part of an UI.
+    size: scalar,
+
+    /// The expansion factor in this dimension.
+    /// A Some(x) expresses this component in this dimension should take up as
+    /// much space as it is allowed, with an expansion factor of x.
+    /// A None expresses this component should take up the minimum space,
+    /// expressed in the [min](Self::min) field.
+    expand: Option<scalar>,
+}
+
+impl LayoutDimension {
+    pub const ZERO: Self = Self {
+        min: 0.0,
+        size: 0.0,
+        expand: None,
+    };
+
+    pub fn min(min: scalar) -> Self {
+        Self {
+            min,
+            size: 0.0,
+            expand: None,
+        }
     }
 }

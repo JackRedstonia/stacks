@@ -1,5 +1,5 @@
-use skia_safe::{scalar, Matrix, Point};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{scalar, Matrix, Point};
 use skulpin_renderer_winit::winit;
 use winit::{
     dpi::LogicalPosition,
@@ -22,6 +22,15 @@ pub enum InputEvent {
 }
 
 impl InputEvent {
+    pub fn position(&self) -> Option<LogicalPosition<scalar>> {
+        Some(match self {
+            Self::MouseMove(p) => *p,
+            Self::MouseDown(_, p) => *p,
+            Self::MouseUp(_, p) => *p,
+            _ => return None,
+        })
+    }
+
     pub fn reverse_map_position(&self, matrix: Matrix) -> Option<Self> {
         let m = matrix.invert()?;
         Some(match self {

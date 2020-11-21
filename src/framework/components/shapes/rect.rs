@@ -1,18 +1,20 @@
-use super::super::Component;
+use super::super::{Component, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
-use skia_safe::{Paint, Size};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{Contains, Paint, Point, Size};
 
 pub struct Rect {
-    pub rect: skia_safe::Rect,
+    pub size: LayoutSize,
     pub paint: Paint,
+    pub take_input: bool,
 }
 
 impl Rect {
-    pub fn new(size: impl Into<Size>, paint: Paint) -> Self {
+    pub fn new(size: LayoutSize, paint: Paint, take_input: bool) -> Self {
         Self {
-            rect: skia_safe::Rect::from_size(size),
+            size,
             paint,
+            take_input,
         }
     }
 }
@@ -20,9 +22,31 @@ impl Rect {
 impl Component for Rect {
     fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
 
-    fn draw(&mut self, _input_state: &InputState, _time_state: &TimeState, canvas: &mut Canvas) {
-        canvas.draw_rect(self.rect, &self.paint);
+    fn input(
+        &mut self,
+        _input_state: &InputState,
+        _time_state: &TimeState,
+        event: &InputEvent,
+        size: Size,
+    ) -> bool {
+        self.take_input
+            && event.position().map_or(false, |p| {
+                let p: Point = (p.x, p.y).into();
+                skia::Rect::from_size(size).contains(p)
+            })
     }
 
-    fn input(&mut self, _input_state: &InputState, _time_state: &TimeState, _event: &InputEvent) {}
+    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+        self.size
+    }
+
+    fn draw(
+        &mut self,
+        _input_state: &InputState,
+        _time_state: &TimeState,
+        canvas: &mut Canvas,
+        size: Size,
+    ) {
+        canvas.draw_rect(skia::Rect::from_size(size), &self.paint);
+    }
 }

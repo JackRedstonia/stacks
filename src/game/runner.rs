@@ -3,7 +3,7 @@ use std::error::Error as StdError;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread::spawn;
 
-use skulpin_renderer::{ash, skia_safe, RendererBuilder, Size};
+use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
@@ -12,6 +12,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
+
+use crate::skia;
 
 use super::default_font_set::DefaultFontSet;
 use super::input::{EventHandleResult, InputState};
@@ -63,7 +65,7 @@ impl Runner {
     pub const EVENT_QUEUE_SIZE: usize = 8;
     pub const FEEDBACK_QUEUE_SIZE: usize = 8;
 
-    pub const BACKGROUND: skia_safe::Color = skia_safe::Color::from_argb(255, 10, 10, 10);
+    pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
 }
 
 impl Runner {
