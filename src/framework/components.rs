@@ -96,7 +96,6 @@ impl LayoutSize {
             .height
             .expand
             .map(|y| matrix.map_vector(Vector::new(0.0, y)).y);
-        // expand?
         Self {
             width: LayoutDimension {
                 min: min.width.abs(),
