@@ -34,19 +34,24 @@ pub trait Component {
     );
 }
 
-// impl Component for Box<dyn Component + Send> {
-//     fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-//         self.as_mut().update(input_state, time_state);
-//     }
+impl Component for Box<dyn Component + Send> {
+    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
+        self.as_mut().update(input_state, time_state);
+    }
 
-//     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-//         self.as_mut().draw(input_state, time_state, canvas);
-//     }
+    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent, size: Size) -> bool {
+        self.as_mut().input(input_state, time_state, event, size)
+    }
 
-//     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent) {
-//         self.as_mut().input(input_state, time_state, event);
-//     }
-// }
+    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+        self.as_mut().size(input_state, time_state)
+    }
+
+    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas, size: Size) {
+        self.as_mut().draw(input_state, time_state, canvas, size);
+    }
+
+}
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LayoutSize {
