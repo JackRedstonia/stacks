@@ -31,12 +31,6 @@ impl<T: Component> Component for Transform<T> {
     }
 
     fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        // if let Some((rect, _)) = self.matrix.invert().map(|m| m.map_rect(Rect::from_size(size))) {
-        //     canvas.save();
-        //     canvas.concat(self.matrix);
-        //     self.inner.draw(input_state, time_state, canvas, rect.size());
-        //     canvas.restore();
-        // }
         if let Some(matrix) = self.matrix.invert() {
             self.inner.size(input_state, time_state).map(matrix)
         } else {
