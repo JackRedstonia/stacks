@@ -1,7 +1,7 @@
 use super::{Component, LayoutDimension, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
-use skia::{scalar, Paint, Rect, Size};
+use skia::{scalar, Paint, Size};
 
 pub struct Metrics {
     pub radius: LayoutDimension,
@@ -46,12 +46,12 @@ impl Component for Metrics {
         _input_state: &InputState,
         _time_state: &TimeState,
         _event: &InputEvent,
-        size: Size,
+        _size: Size,
     ) -> bool {
         false
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
         LayoutSize {
             width: self.radius,
             height: self.radius,

@@ -1,4 +1,4 @@
-use super::{Component, LayoutDimension, LayoutSize};
+use super::{Component, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
 use skia::{Matrix, Rect, Size};

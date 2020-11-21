@@ -36,7 +36,7 @@ impl Component for Rect {
             })
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
         self.size
     }
 

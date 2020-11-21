@@ -3,7 +3,7 @@ pub mod components;
 use super::game::Canvas;
 use super::game::{Error, Game, InputEvent, InputState, TimeState};
 use crate::skia::Size;
-use components::{Component, LayoutDimension, LayoutSize};
+use components::Component;
 
 pub struct Framework<T: Component> {
     root: T,

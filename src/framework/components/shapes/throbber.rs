@@ -1,7 +1,7 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
-use skia::{scalar, Contains, Paint, Point, Rect, Size};
+use skia::{scalar, Contains, Paint, Point, Size};
 
 pub struct Throbber {
     pub radius: LayoutDimension,
@@ -39,7 +39,7 @@ impl Component for Throbber {
             })
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
         LayoutSize {
             width: self.radius,
             height: self.radius,
