@@ -67,6 +67,13 @@ impl LayoutSize {
         }
     }
 
+    pub fn layout_one(&self, size: Size) -> Size {
+        Size::new(
+            self.width.layout_one(size.width),
+            self.height.layout_one(size.height),
+        )
+    }
+
     pub fn map(&self, matrix: Matrix) -> Self {
         let min = matrix
             .map_rect(Rect::from_wh(self.width.min, self.height.min))
@@ -132,6 +139,14 @@ impl LayoutDimension {
             min,
             size: 0.0,
             expand: None,
+        }
+    }
+
+    pub fn layout_one(&self, space: scalar) -> scalar {
+        if self.expand.is_some() {
+            space
+        } else {
+            self.min
         }
     }
 }

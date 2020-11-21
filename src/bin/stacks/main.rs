@@ -5,8 +5,8 @@ use stacks::{
     framework::{
         components::{
             shapes::{Rect, Throbber},
-            Component, Font, FontStyle, Parallax, /*Composite,*/ Text, Transform,
-            LayoutSize, LayoutDimension
+            Component, Font, FontStyle, LayoutDimension, LayoutSize, Parallax,
+            /*Composite,*/ Text, Transform,
         },
         Framework,
     },
@@ -18,7 +18,7 @@ fn main() {
     let root = Parallax::new(Rect::new(
         LayoutSize::min(200.0, 100.0),
         skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
-        false
+        false,
     ));
     // let root = Parallax::new(Transform {
     //     inner: Composite::<Box<dyn Component + Send>> {

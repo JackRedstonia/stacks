@@ -21,15 +21,15 @@ impl<T: Component> Game for Framework<T> {
     }
 
     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        let _ = self.root.size(input_state, time_state);
+        let size = self.root.size(input_state, time_state);
         self.root.draw(
             input_state,
             time_state,
             canvas,
-            Size::new(
+            size.layout_one(Size::new(
                 input_state.window_size.width,
                 input_state.window_size.height,
-            ),
+            )),
         );
     }
 
