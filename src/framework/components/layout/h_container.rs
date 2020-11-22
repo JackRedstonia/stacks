@@ -1,7 +1,7 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
-use skia::{Contains, Matrix, Paint, Point, Size, Vector};
+use skia::{Matrix, Size, Vector};
 
 pub struct HContainer<T: Component> {
     inner: Vec<HContainerComponent<T>>,
