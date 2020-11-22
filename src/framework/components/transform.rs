@@ -53,16 +53,10 @@ impl<T: Component> Component for Transform<T> {
         canvas: &mut Canvas,
         size: Size,
     ) {
-        if let Some((rect, _)) = self
-            .matrix
-            .invert()
-            .map(|m| m.map_rect(Rect::from_size(size)))
-        {
-            canvas.save();
-            canvas.concat(self.matrix);
-            self.inner
-                .draw(input_state, time_state, canvas, self.size.layout_one(size));
-            canvas.restore();
-        }
+        canvas.save();
+        canvas.concat(self.matrix);
+        self.inner
+            .draw(input_state, time_state, canvas, self.size.layout_one(size));
+        canvas.restore();
     }
 }
