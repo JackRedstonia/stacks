@@ -28,7 +28,6 @@ fn main() {
         Box::new(Rect::new(
             {
                 let mut size = LayoutSize::min(100.0, 100.0);
-                // Uncomment to expand first rectangle
                 size.width.expand = Some(3.0);
                 size
             },
