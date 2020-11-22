@@ -1,4 +1,3 @@
-// mod composite;
 pub mod layout;
 mod metrics;
 mod parallax;
@@ -6,7 +5,6 @@ pub mod shapes;
 mod text;
 mod transform;
 
-// pub use composite::Composite;
 pub use metrics::Metrics;
 pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};

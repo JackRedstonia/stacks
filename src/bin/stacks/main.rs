@@ -6,8 +6,7 @@ use stacks::{
         components::{
             layout::HContainer,
             shapes::{Rect, Throbber},
-            Component, Font, FontStyle, LayoutDimension, LayoutSize, Parallax,
-            /*Composite,*/ Text, Transform,
+            Component, LayoutDimension, LayoutSize, Transform,
         },
         Framework,
     },
