@@ -1,5 +1,5 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
-use crate::skia::{Size, scalar, Vector};
+use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ContainerSize {

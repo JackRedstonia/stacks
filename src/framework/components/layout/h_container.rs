@@ -1,5 +1,5 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
-use super::container::{ContainerSize, ContainerComponent};
+use super::container::{ContainerComponent, ContainerSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
 use skia::{Matrix, Size};
@@ -113,7 +113,11 @@ impl<T: Component> Component for HContainer<T> {
             },
             height: LayoutDimension {
                 size: height,
-                min: self.size.height.min.map_or(height_min, |pmin| pmin.max(height_min)),
+                min: self
+                    .size
+                    .height
+                    .min
+                    .map_or(height_min, |pmin| pmin.max(height_min)),
                 expand: self.size.height.expand,
             },
         }

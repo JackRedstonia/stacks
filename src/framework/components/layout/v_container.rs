@@ -1,5 +1,5 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
-use super::container::{ContainerSize, ContainerComponent};
+use super::container::{ContainerComponent, ContainerSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
 use crate::skia;
 use skia::{Matrix, Size};
