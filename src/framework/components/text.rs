@@ -1,7 +1,7 @@
-use super::Component;
+use super::{Component, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
-use skia_safe::Paint;
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{Paint, Size};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -26,7 +26,33 @@ pub struct Text {
 impl Component for Text {
     fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
 
-    fn draw(&mut self, _input_state: &InputState, _time_state: &TimeState, canvas: &mut Canvas) {
+    fn input(
+        &mut self,
+        _input_state: &InputState,
+        _time_state: &TimeState,
+        _event: &InputEvent,
+        _size: Size,
+    ) -> bool {
+        // TODO: this is mostly a placeholder value.
+        // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.
+        false
+    }
+
+    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
+        // TODO: this is also mostly a placeholder value.
+        // Proper text layout should be implemented - some fields in Self
+        // should be added to guide text layout and that sort of stuff.
+        LayoutSize::ZERO
+    }
+
+    fn draw(
+        &mut self,
+        _input_state: &InputState,
+        _time_state: &TimeState,
+        canvas: &mut Canvas,
+        _size: Size,
+    ) {
+        // TODO: text layout.
         canvas.draw_str(
             self.text.clone(),
             (0.0, 0.0),
@@ -35,6 +61,4 @@ impl Component for Text {
             &self.paint,
         );
     }
-
-    fn input(&mut self, _input_state: &InputState, _time_state: &TimeState, _event: &InputEvent) {}
 }

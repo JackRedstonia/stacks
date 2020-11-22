@@ -1,7 +1,7 @@
 use super::canvas::FontSet;
 use crate::framework::components::FontStyle;
-use skia_safe::{Font, FontStyle as SkFontStyle, Typeface};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{Font, FontStyle as SkFontStyle, Typeface};
 
 // TODO: require argument for font set instead
 pub struct DefaultFontSet {

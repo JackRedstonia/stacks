@@ -1,19 +1,21 @@
-use super::super::Component;
+use super::super::{Component, LayoutDimension, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
-use skia_safe::{scalar, Paint, Rect};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{scalar, Contains, Paint, Point, Size};
 
 pub struct Throbber {
-    pub radius: scalar,
+    pub radius: LayoutDimension,
     pub paint: Paint,
+    pub take_input: bool,
     rad: scalar,
 }
 
 impl Throbber {
-    pub fn new(radius: scalar, paint: Paint) -> Self {
+    pub fn new(radius: LayoutDimension, paint: Paint, take_input: bool) -> Self {
         Self {
             radius,
             paint,
+            take_input,
             rad: 0.0,
         }
     }
@@ -22,14 +24,40 @@ impl Throbber {
 impl Component for Throbber {
     fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
 
-    fn draw(&mut self, _input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
+    fn input(
+        &mut self,
+        _input_state: &InputState,
+        _time_state: &TimeState,
+        event: &InputEvent,
+        size: Size,
+    ) -> bool {
+        self.take_input
+            && event.position().map_or(false, |p| {
+                let p: Point = (p.x, p.y).into();
+                let s = size.width.min(size.height);
+                skia::Rect::from_wh(s, s).contains(p)
+            })
+    }
+
+    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
+        LayoutSize {
+            width: self.radius,
+            height: self.radius,
+        }
+    }
+
+    fn draw(
+        &mut self,
+        _input_state: &InputState,
+        time_state: &TimeState,
+        canvas: &mut Canvas,
+        size: Size,
+    ) {
+        let stroke_width = self.paint.stroke_width();
+        let s = size.width.min(size.height) - stroke_width;
         canvas.draw_arc(
-            Rect {
-                left: -self.radius,
-                top: -self.radius,
-                right: self.radius,
-                bottom: self.radius,
-            },
+            skia::Rect::from_wh(s, s)
+                .with_offset(skia::Vector::new(stroke_width, stroke_width) * 0.5),
             self.rad,
             240.0,
             false,
@@ -37,6 +65,4 @@ impl Component for Throbber {
         );
         self.rad += time_state.last_update_time().as_secs_f32() * 720.0;
     }
-
-    fn input(&mut self, _input_state: &InputState, _time_state: &TimeState, _event: &InputEvent) {}
 }

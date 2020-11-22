@@ -1,8 +1,9 @@
 pub mod components;
 
-use components::Component;
 use super::game::Canvas;
-use super::game::{Game, Error, InputEvent, InputState, TimeState};
+use super::game::{Error, Game, InputEvent, InputState, TimeState};
+use crate::skia::Size;
+use components::Component;
 
 pub struct Framework<T: Component> {
     root: T,
@@ -20,11 +21,28 @@ impl<T: Component> Game for Framework<T> {
     }
 
     fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        self.root.draw(input_state, time_state, canvas);
+        let size = self.root.size(input_state, time_state);
+        self.root.draw(
+            input_state,
+            time_state,
+            canvas,
+            size.layout_one(Size::new(
+                input_state.window_size.width,
+                input_state.window_size.height,
+            )),
+        );
     }
 
     fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent) {
-        self.root.input(input_state, time_state, &event);
+        self.root.input(
+            input_state,
+            time_state,
+            &event,
+            Size::new(
+                input_state.window_size.width,
+                input_state.window_size.height,
+            ),
+        );
     }
 
     fn close(&mut self) {}

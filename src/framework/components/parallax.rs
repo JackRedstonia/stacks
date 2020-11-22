@@ -1,7 +1,7 @@
-use super::Component;
+use super::{Component, LayoutSize};
 use crate::game::{Canvas, InputEvent, InputState, TimeState};
-use skia_safe::{scalar, Matrix, Point};
-use skulpin_renderer::skia_safe;
+use crate::skia;
+use skia::{scalar, Matrix, Point, Rect, Size};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
 pub struct Parallax<T: Component> {
@@ -38,23 +38,44 @@ impl<T: Component> Component for Parallax<T> {
         self.inner.update(input_state, time_state);
     }
 
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        self.interpolate_parallax(time_state.last_update_time().as_secs_f32() * 20.0);
-        canvas.save();
-        canvas.concat(self.calc_parallax());
-        self.inner.draw(input_state, time_state, canvas);
-        canvas.restore();
-    }
-
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent) {
+    fn input(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        event: &InputEvent,
+        size: Size,
+    ) -> bool {
         match event {
             InputEvent::MouseMove(LogicalPosition { x, y }) => {
                 self.last_mouse_position = (*x, *y).into();
             }
             _ => {}
         }
-        if let Some(event) = event.reverse_map_position(self.calc_parallax()) {
-            self.inner.input(input_state, time_state, &event);
-        }
+        // TODO: test this. might be a soundness hole, ngl
+        self.calc_parallax().invert().map_or(false, |m| {
+            event.reverse_map_position(m).map_or(false, |event| {
+                let (rect, _) = m.map_rect(Rect::from_size(size));
+                self.inner
+                    .input(input_state, time_state, &event, rect.size())
+            })
+        })
+    }
+
+    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+        self.inner.size(input_state, time_state)
+    }
+
+    fn draw(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        canvas: &mut Canvas,
+        size: Size,
+    ) {
+        self.interpolate_parallax(time_state.last_update_time().as_secs_f32() * 20.0);
+        canvas.save();
+        canvas.concat(self.calc_parallax());
+        self.inner.draw(input_state, time_state, canvas, size);
+        canvas.restore();
     }
 }
