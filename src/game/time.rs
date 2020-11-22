@@ -41,3 +41,9 @@ impl TimeState {
         self.elapsed
     }
 }
+
+impl Default for TimeState {
+    fn default() -> Self {
+        Self::new()
+    }
+}

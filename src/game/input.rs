@@ -40,13 +40,13 @@ impl InputEvent {
             }
             Self::MouseDown(b, LogicalPosition { x, y }) => {
                 let Point { x, y } = m.map_point((*x, *y));
-                Self::MouseDown(b.clone(), LogicalPosition { x, y })
+                Self::MouseDown(*b, LogicalPosition { x, y })
             }
             Self::MouseUp(b, LogicalPosition { x, y }) => {
                 let Point { x, y } = m.map_point((*x, *y));
-                Self::MouseUp(b.clone(), LogicalPosition { x, y })
+                Self::MouseUp(*b, LogicalPosition { x, y })
             }
-            e => e.clone(),
+            _ => *self,
         })
     }
 }

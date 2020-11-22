@@ -51,7 +51,7 @@ impl<T: Component> HContainer<T> {
                 i.position = (offset, 0.0).into();
                 offset += s;
                 // todo: expand
-                i.size.height = if let Some(_) = i.layout_size.height.expand {
+                i.size.height = if i.layout_size.height.expand.is_some() {
                     size.height
                 } else {
                     i.layout_size.height.min.min(size.height)
@@ -65,7 +65,7 @@ impl<T: Component> HContainer<T> {
                 }
                 i.position = (offset, 0.0).into();
                 offset += i.size.width;
-                i.size.height = if let Some(_) = i.layout_size.height.expand {
+                i.size.height = if i.layout_size.height.expand.is_some() {
                     size.height
                 } else {
                     i.layout_size.height.min.min(size.height)

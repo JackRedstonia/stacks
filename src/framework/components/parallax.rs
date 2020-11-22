@@ -45,11 +45,8 @@ impl<T: Component> Component for Parallax<T> {
         event: &InputEvent,
         size: Size,
     ) -> bool {
-        match event {
-            InputEvent::MouseMove(LogicalPosition { x, y }) => {
-                self.last_mouse_position = (*x, *y).into();
-            }
-            _ => {}
+        if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
+            self.last_mouse_position = (*x, *y).into();
         }
         // TODO: test this. might be a soundness hole, ngl
         self.calc_parallax().invert().map_or(false, |m| {

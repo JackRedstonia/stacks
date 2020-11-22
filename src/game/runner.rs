@@ -199,6 +199,7 @@ impl Runner {
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn handle_event<T>(
         game: &mut impl Game,
         event: Event<T>,
@@ -227,18 +228,15 @@ impl Runner {
                     }
                 }
 
-                match event {
-                    WinitEvent::RedrawRequested(_) => {
-                        *is_redraw = true;
-                        let mut canvas = Canvas::with_capacity(*canvas_cap);
-                        game.draw(&input_state, &time_state_draw, &mut canvas);
-                        *canvas_cap = (*canvas_cap).max(canvas.capacity());
-                        canvas_tx
-                            .send(canvas)
-                            .expect("Failed to send canvas to draw thread");
-                        time_state_draw.update();
-                    }
-                    _ => {}
+                if let WinitEvent::RedrawRequested(_) = event {
+                    *is_redraw = true;
+                    let mut canvas = Canvas::with_capacity(*canvas_cap);
+                    game.draw(&input_state, &time_state_draw, &mut canvas);
+                    *canvas_cap = (*canvas_cap).max(canvas.capacity());
+                    canvas_tx
+                        .send(canvas)
+                        .expect("Failed to send canvas to draw thread");
+                    time_state_draw.update();
                 }
             }
             Event::Crash(e) => {

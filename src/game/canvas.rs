@@ -73,6 +73,12 @@ impl Canvas {
     }
 }
 
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 enum Command {
     ConcatMatrix(Matrix),
     Save,
