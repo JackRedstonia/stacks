@@ -82,6 +82,36 @@ impl LayoutSize {
         }
     }
 
+    pub fn expand_width_by(mut self, expand: scalar) -> Self {
+        self.width.expand = Some(expand);
+        self
+    }
+
+    pub fn expand_width(mut self) -> Self {
+        self.width.expand = Some(1.0);
+        self
+    }
+
+    pub fn no_expand_width(mut self) -> Self {
+        self.width.expand = None;
+        self
+    }
+
+    pub fn expand_height_by(mut self, expand: scalar) -> Self {
+        self.height.expand = Some(expand);
+        self
+    }
+
+    pub fn expand_height(mut self) -> Self {
+        self.height.expand = Some(1.0);
+        self
+    }
+
+    pub fn no_expand_height(mut self) -> Self {
+        self.height.expand = None;
+        self
+    }
+
     pub fn layout_one(&self, size: Size) -> Size {
         Size::new(
             self.width.layout_one(size.width),
@@ -153,6 +183,21 @@ impl LayoutDimension {
             size: 0.0,
             expand: None,
         }
+    }
+
+    pub fn with_expand(mut self, expand: scalar) -> Self {
+        self.expand = Some(expand);
+        self
+    }
+
+    pub fn with_expand_one(mut self) -> Self {
+        self.expand = Some(1.0);
+        self
+    }
+
+    pub fn with_no_expand(mut self) -> Self {
+        self.expand = None;
+        self
     }
 
     pub fn layout_one(&self, space: scalar) -> scalar {

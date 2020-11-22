@@ -4,7 +4,7 @@ use skulpin_renderer::PresentMode;
 use stacks::{
     framework::{
         components::{
-            layout::HContainer,
+            layout::{VContainer, ContainerSize},
             shapes::{Rect, Throbber},
             Component, LayoutDimension, LayoutSize, Transform,
         },
@@ -15,22 +15,14 @@ use stacks::{
 };
 
 fn main() {
-    let root = HContainer::<Box<dyn Component + Send>>::new(vec![
+    let root = VContainer::<Box<dyn Component + Send>>::new(vec![
         Box::new(Rect::new(
-            {
-                let mut size = LayoutSize::min(200.0, 100.0);
-                size.width.expand = Some(1.0);
-                size
-            },
+            LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
             skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
             false,
         )),
         Box::new(Rect::new(
-            {
-                let mut size = LayoutSize::min(100.0, 100.0);
-                size.width.expand = Some(3.0);
-                size
-            },
+            LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
             skia::Paint::new(skia::Color4f::new(1.0, 0.0, 0.0, 1.0), None),
             false,
         )),
@@ -53,7 +45,7 @@ fn main() {
             },
             false,
         )),
-    ]);
+    ], ContainerSize::ZERO.expand_height().expand_width());
 
     Builder::new()
         .app_name(CString::new("Stacks").unwrap())
