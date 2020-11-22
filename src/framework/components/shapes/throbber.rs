@@ -53,9 +53,11 @@ impl Component for Throbber {
         canvas: &mut Canvas,
         size: Size,
     ) {
-        let s = size.width.min(size.height);
+        let stroke_width = self.paint.stroke_width();
+        let s = size.width.min(size.height) - stroke_width;
         canvas.draw_arc(
-            skia::Rect::from_wh(s, s),
+            skia::Rect::from_wh(s, s)
+                .with_offset(skia::Vector::new(stroke_width, stroke_width) * 0.5),
             self.rad,
             240.0,
             false,

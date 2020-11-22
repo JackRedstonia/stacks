@@ -1,4 +1,5 @@
 // mod composite;
+pub mod layout;
 mod metrics;
 mod parallax;
 pub mod shapes;
@@ -39,7 +40,13 @@ impl Component for Box<dyn Component + Send> {
         self.as_mut().update(input_state, time_state);
     }
 
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: &InputEvent, size: Size) -> bool {
+    fn input(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        event: &InputEvent,
+        size: Size,
+    ) -> bool {
         self.as_mut().input(input_state, time_state, event, size)
     }
 
@@ -47,16 +54,21 @@ impl Component for Box<dyn Component + Send> {
         self.as_mut().size(input_state, time_state)
     }
 
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas, size: Size) {
+    fn draw(
+        &mut self,
+        input_state: &InputState,
+        time_state: &TimeState,
+        canvas: &mut Canvas,
+        size: Size,
+    ) {
         self.as_mut().draw(input_state, time_state, canvas, size);
     }
-
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LayoutSize {
-    width: LayoutDimension,
-    height: LayoutDimension,
+    pub width: LayoutDimension,
+    pub height: LayoutDimension,
 }
 
 impl LayoutSize {
@@ -80,14 +92,8 @@ impl LayoutSize {
     }
 
     pub fn map(&self, matrix: Matrix) -> Self {
-        let min = matrix
-            .map_rect(Rect::from_wh(self.width.min, self.height.min))
-            .0
-            .size();
-        let size = matrix
-            .map_rect(Rect::from_wh(self.width.size, self.height.size))
-            .0
-            .size();
+        let min = Self::map_size(self.width.min, self.height.min, matrix);
+        let size = Self::map_size(self.width.min, self.height.min, matrix);
         let expand_width = self
             .width
             .expand
@@ -109,6 +115,11 @@ impl LayoutSize {
             },
         }
     }
+
+    fn map_size(width: scalar, height: scalar, matrix: Matrix) -> Size {
+        let r = matrix.map_rect(Rect::from_wh(width, height)).0;
+        Size::new(r.right.abs(), r.bottom.abs())
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -116,19 +127,19 @@ pub struct LayoutDimension {
     /// The minimum number of logical pixels this dimension should receive.
     /// May not always be respected by containers, for example when they run out
     /// of space.
-    min: scalar,
+    pub min: scalar,
 
     /// The normal number of logical pixels in this dimension.
     /// Normally ignored by containers and other UI-building components,
     /// and is only respected when this is not part of an UI.
-    size: scalar,
+    pub size: scalar,
 
     /// The expansion factor in this dimension.
     /// A Some(x) expresses this component in this dimension should take up as
     /// much space as it is allowed, with an expansion factor of x.
     /// A None expresses this component should take up the minimum space,
     /// expressed in the [min](Self::min) field.
-    expand: Option<scalar>,
+    pub expand: Option<scalar>,
 }
 
 impl LayoutDimension {

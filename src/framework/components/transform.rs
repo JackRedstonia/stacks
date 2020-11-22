@@ -5,7 +5,18 @@ use skia::{Matrix, Rect, Size};
 
 pub struct Transform<T: Component> {
     pub inner: T,
+    size: LayoutSize,
     pub matrix: Matrix,
+}
+
+impl<T: Component> Transform<T> {
+    pub fn new(inner: T, matrix: Matrix) -> Self {
+        Self {
+            inner,
+            size: LayoutSize::ZERO,
+            matrix,
+        }
+    }
 }
 
 impl<T: Component> Component for Transform<T> {
@@ -31,11 +42,8 @@ impl<T: Component> Component for Transform<T> {
     }
 
     fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        if let Some(matrix) = self.matrix.invert() {
-            self.inner.size(input_state, time_state).map(matrix)
-        } else {
-            LayoutSize::ZERO
-        }
+        self.size = self.inner.size(input_state, time_state);
+        self.size.map(self.matrix)
     }
 
     fn draw(
@@ -53,7 +61,7 @@ impl<T: Component> Component for Transform<T> {
             canvas.save();
             canvas.concat(self.matrix);
             self.inner
-                .draw(input_state, time_state, canvas, rect.size());
+                .draw(input_state, time_state, canvas, self.size.layout_one(size));
             canvas.restore();
         }
     }

@@ -4,6 +4,7 @@ use skulpin_renderer::PresentMode;
 use stacks::{
     framework::{
         components::{
+            layout::HContainer,
             shapes::{Rect, Throbber},
             Component, Font, FontStyle, LayoutDimension, LayoutSize, Parallax,
             /*Composite,*/ Text, Transform,
@@ -15,47 +16,46 @@ use stacks::{
 };
 
 fn main() {
-    let root = Parallax::new(Rect::new(
-        LayoutSize::min(200.0, 100.0),
-        skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
-        false,
-    ));
-    // let root = Parallax::new(Transform {
-    //     inner: Composite::<Box<dyn Component + Send>> {
-    //         inner: vec![
-    //             Box::new(Rect::new(
-    //                 (200.0, 100.0),
-    //                 skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
-    //             )),
-    //             Box::new(Transform {
-    //                 inner: Text {
-    //                     text: "1234".into(),
-    //                     font: Font::Default,
-    //                     style: FontStyle::Bold,
-    //                     paint: skia::Paint::new(
-    //                         skia::Color4f::new(0.0, 1.0, 0.0, 1.0),
-    //                         None,
-    //                     ),
-    //                 },
-    //                 matrix: skia::Matrix::translate((0.0, 120.0)),
-    //             }),
-    //             Box::new(Transform {
-    //                 inner: Throbber::new(64.0, {
-    //                     let mut p = skia::Paint::new(
-    //                         skia::Color4f::new(0.0, 1.0, 0.0, 1.0),
-    //                         None,
-    //                     );
-    //                     p.set_stroke_width(12.0);
-    //                     p.set_anti_alias(true);
-    //                     p.set_style(skia::PaintStyle::Stroke);
-    //                     p
-    //                 }),
-    //                 matrix: skia::Matrix::translate((120.0, 240.0)),
-    //             }),
-    //         ],
-    //     },
-    //     matrix: skia::Matrix::translate((120.0, 120.0)),
-    // });
+    let root = HContainer::<Box<dyn Component + Send>>::new(vec![
+        Box::new(Rect::new(
+            {
+                let mut size = LayoutSize::min(200.0, 100.0);
+                size.width.expand = Some(1.0);
+                size
+            },
+            skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
+            false,
+        )),
+        Box::new(Rect::new(
+            {
+                let mut size = LayoutSize::min(100.0, 100.0);
+                // Uncomment to expand first rectangle
+                size.width.expand = Some(3.0);
+                size
+            },
+            skia::Paint::new(skia::Color4f::new(1.0, 0.0, 0.0, 1.0), None),
+            false,
+        )),
+        Box::new(Transform::new(
+            Rect::new(
+                LayoutSize::min(50.0, 100.0),
+                skia::Paint::new(skia::Color4f::new(0.0, 0.0, 1.0, 1.0), None),
+                false,
+            ),
+            skia::Matrix::translate((20.0, 20.0)),
+        )),
+        Box::new(Throbber::new(
+            LayoutDimension::min(100.0),
+            {
+                let mut p = skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
+                p.set_stroke_width(12.0);
+                p.set_anti_alias(true);
+                p.set_stroke(true);
+                p
+            },
+            false,
+        )),
+    ]);
 
     Builder::new()
         .app_name(CString::new("Stacks").unwrap())
