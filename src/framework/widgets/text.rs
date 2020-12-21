@@ -1,4 +1,4 @@
-use super::{Component, LayoutSize};
+use super::{Widget, LayoutSize};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Paint, Size};
@@ -23,7 +23,7 @@ pub struct Text {
     pub paint: Paint,
 }
 
-impl Component for Text {
+impl Widget for Text {
     fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
         // TODO: this is mostly a placeholder value.
         // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.

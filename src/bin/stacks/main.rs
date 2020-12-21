@@ -3,10 +3,10 @@ use std::ffi::CString;
 use skulpin_renderer::PresentMode;
 use stacks::{
     framework::{
-        components::{
+        widgets::{
             layout::{ContainerSize, VContainer},
             shapes::{Rect, Throbber},
-            Component, LayoutDimension, LayoutSize, Transform,
+            Widget, LayoutDimension, LayoutSize, Transform,
         },
         Framework,
     },
@@ -15,7 +15,7 @@ use stacks::{
 };
 
 fn main() {
-    let root = VContainer::<Box<dyn Component + Send>>::new(
+    let root = VContainer::<Box<dyn Widget + Send>>::new(
         vec![
             Box::new(Rect::new(
                 LayoutSize::min(200.0, 100.0).expand_width().expand_height(),

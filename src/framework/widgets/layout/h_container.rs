@@ -1,34 +1,34 @@
-use super::super::{Component, LayoutDimension, LayoutSize};
-use super::container::{ContainerComponent, ContainerSize};
+use super::super::{Widget, LayoutDimension, LayoutSize};
+use super::container::{ContainerWidget, ContainerSize};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Size};
 
-pub struct VContainer<T: Component> {
-    inner: Vec<ContainerComponent<T>>,
+pub struct HContainer<T: Widget> {
+    inner: Vec<ContainerWidget<T>>,
     pub size: ContainerSize,
 }
 
-impl<T: Component> VContainer<T> {
+impl<T: Widget> HContainer<T> {
     pub fn new(inner: Vec<T>, size: ContainerSize) -> Self {
         Self {
             inner: inner
                 .into_iter()
-                .map(|i| ContainerComponent::new(i))
+                .map(|i| ContainerWidget::new(i))
                 .collect(),
             size,
         }
     }
 
     fn layout(&mut self, size: Size) {
-        let total_space = size.height;
+        let total_space = size.width;
 
         let mut min = 0.0f32;
         let mut expand = 0.0f32;
 
         for i in &mut self.inner {
-            min += i.layout_size.height.min;
-            if let Some(e) = i.layout_size.height.expand {
+            min += i.layout_size.width.min;
+            if let Some(e) = i.layout_size.width.expand {
                 expand += e;
             }
         }
@@ -38,34 +38,34 @@ impl<T: Component> VContainer<T> {
         if space_left < 0.0 {
             let s = total_space / self.inner.len().max(1) as f32;
             for i in &mut self.inner {
-                i.size.height = s;
-                i.position = (0.0, offset).into();
+                i.size.width = s;
+                i.position = (offset, 0.0).into();
                 offset += s;
-                i.size.width = if i.layout_size.width.expand.is_some() {
-                    size.width
+                i.size.height = if i.layout_size.height.expand.is_some() {
+                    size.height
                 } else {
-                    i.layout_size.width.min.min(size.width)
+                    i.layout_size.height.min.min(size.height)
                 }
             }
         } else {
             for i in &mut self.inner {
-                i.size.height = i.layout_size.height.min;
-                if let Some(e) = i.layout_size.height.expand {
-                    i.size.height += space_left * e / expand;
+                i.size.width = i.layout_size.width.min;
+                if let Some(e) = i.layout_size.width.expand {
+                    i.size.width += space_left * e / expand;
                 }
-                i.position = (0.0, offset).into();
-                offset += i.size.height;
-                i.size.width = if i.layout_size.width.expand.is_some() {
-                    size.width
+                i.position = (offset, 0.0).into();
+                offset += i.size.width;
+                i.size.height = if i.layout_size.height.expand.is_some() {
+                    size.height
                 } else {
-                    i.layout_size.width.min.min(size.width)
+                    i.layout_size.height.min.min(size.height)
                 }
             }
         }
     }
 }
 
-impl<T: Component> Component for VContainer<T> {
+impl<T: Widget> Widget for HContainer<T> {
     fn update(&mut self) {
         for i in &mut self.inner {
             i.inner.update();
@@ -88,26 +88,30 @@ impl<T: Component> Component for VContainer<T> {
         let mut size = 0.0f32;
         let mut min = 0.0f32;
 
-        let mut width = 0.0f32;
-        let mut width_min = 0.0f32;
+        let mut height = 0.0f32;
+        let mut height_min = 0.0f32;
         for i in &mut self.inner {
             let s = i.inner.size();
             i.layout_size = s;
-            size += s.height.size;
-            min += s.height.min;
-            width = width.max(s.width.size);
-            width_min = width_min.max(s.width.min);
+            size += s.width.size;
+            min += s.width.min;
+            height = height.max(s.height.size);
+            height_min = height_min.max(s.height.min);
         }
 
         LayoutSize {
             width: LayoutDimension {
                 size,
-                min: self.size.width.min.map_or(min, |pmin| pmin.max(width_min)),
+                min: self.size.width.min.map_or(min, |pmin| pmin.max(min)),
                 expand: self.size.width.expand,
             },
             height: LayoutDimension {
-                size: width,
-                min: self.size.height.min.map_or(width_min, |pmin| pmin.max(min)),
+                size: height,
+                min: self
+                    .size
+                    .height
+                    .min
+                    .map_or(height_min, |pmin| pmin.max(height_min)),
                 expand: self.size.height.expand,
             },
         }

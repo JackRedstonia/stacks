@@ -1,16 +1,16 @@
-use super::{Component, LayoutSize};
+use super::{Widget, LayoutSize};
 use crate::game::{Canvas, InputEvent, State};
 use crate::skia;
 use skia::{scalar, Matrix, Point, Rect, Size};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
-pub struct Parallax<T: Component> {
+pub struct Parallax<T: Widget> {
     pub inner: T,
     pub last_mouse_position: Point,
     pub interpolated_mouse_position: Point,
 }
 
-impl<T: Component> Parallax<T> {
+impl<T: Widget> Parallax<T> {
     pub fn new(inner: T) -> Self {
         Self {
             inner,
@@ -33,7 +33,7 @@ impl<T: Component> Parallax<T> {
     }
 }
 
-impl<T: Component> Component for Parallax<T> {
+impl<T: Widget> Widget for Parallax<T> {
     fn update(&mut self) {
         self.inner.update();
     }

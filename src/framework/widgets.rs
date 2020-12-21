@@ -13,7 +13,7 @@ pub use transform::Transform;
 use crate::game::{Canvas, InputEvent};
 use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
-pub trait Component {
+pub trait Widget {
     fn update(&mut self) {}
 
     fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
@@ -27,7 +27,7 @@ pub trait Component {
     fn draw(&mut self, _canvas: &mut Canvas, _size: Size) {}
 }
 
-impl Component for Box<dyn Component + Send> {
+impl Widget for Box<dyn Widget + Send> {
     fn update(&mut self) {
         self.as_mut().update();
     }
@@ -140,14 +140,14 @@ pub struct LayoutDimension {
     pub min: scalar,
 
     /// The normal number of logical pixels in this dimension.
-    /// Normally ignored by containers and other UI-building components,
+    /// Normally ignored by containers and other UI-building widgets,
     /// and is only respected when this is not part of an UI.
     pub size: scalar,
 
     /// The expansion factor in this dimension.
-    /// A Some(x) expresses this component in this dimension should take up as
+    /// A Some(x) expresses this widget in this dimension should take up as
     /// much space as it is allowed, with an expansion factor of x.
-    /// A None expresses this component should take up the minimum space,
+    /// A None expresses this widget should take up the minimum space,
     /// expressed in the [min](Self::min) field.
     pub expand: Option<scalar>,
 }

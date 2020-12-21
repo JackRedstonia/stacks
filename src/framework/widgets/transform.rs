@@ -1,15 +1,15 @@
-use super::{Component, LayoutSize};
+use super::{Widget, LayoutSize};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Rect, Size};
 
-pub struct Transform<T: Component> {
+pub struct Transform<T: Widget> {
     pub inner: T,
     size: LayoutSize,
     pub matrix: Matrix,
 }
 
-impl<T: Component> Transform<T> {
+impl<T: Widget> Transform<T> {
     pub fn new(inner: T, matrix: Matrix) -> Self {
         Self {
             inner,
@@ -19,7 +19,7 @@ impl<T: Component> Transform<T> {
     }
 }
 
-impl<T: Component> Component for Transform<T> {
+impl<T: Widget> Widget for Transform<T> {
     fn update(&mut self) {
         self.inner.update();
     }

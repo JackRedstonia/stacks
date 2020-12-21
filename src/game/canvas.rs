@@ -1,4 +1,4 @@
-use crate::framework::components::{Font, FontStyle};
+use crate::framework::widgets::{Font, FontStyle};
 use crate::skia;
 use skia::{scalar, Canvas as SkCanvas, Matrix, Paint, Point, Rect};
 

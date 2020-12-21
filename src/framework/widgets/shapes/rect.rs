@@ -1,4 +1,4 @@
-use super::super::{Component, LayoutSize};
+use super::super::{Widget, LayoutSize};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Contains, Paint, Point, Size};
@@ -19,7 +19,7 @@ impl Rect {
     }
 }
 
-impl Component for Rect {
+impl Widget for Rect {
     fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         self.take_input
             && event.position().map_or(false, |p| {

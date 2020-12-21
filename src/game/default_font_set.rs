@@ -1,5 +1,5 @@
 use super::canvas::FontSet;
-use crate::framework::components::FontStyle;
+use crate::framework::widgets::FontStyle;
 use crate::skia;
 use skia::{Font, FontStyle as SkFontStyle, Typeface};
 

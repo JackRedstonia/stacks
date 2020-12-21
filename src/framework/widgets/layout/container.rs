@@ -1,4 +1,4 @@
-use super::super::{Component, LayoutDimension, LayoutSize};
+use super::super::{Widget, LayoutDimension, LayoutSize};
 use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -104,14 +104,14 @@ impl From<LayoutDimension> for ContainerDimension {
     }
 }
 
-pub struct ContainerComponent<T: Component> {
+pub struct ContainerWidget<T: Widget> {
     pub inner: T,
     pub layout_size: LayoutSize,
     pub size: Size,
     pub position: Vector,
 }
 
-impl<T: Component> ContainerComponent<T> {
+impl<T: Widget> ContainerWidget<T> {
     pub fn new(inner: T) -> Self {
         Self {
             inner,

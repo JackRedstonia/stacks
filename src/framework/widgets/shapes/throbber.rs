@@ -1,4 +1,4 @@
-use super::super::{Component, LayoutDimension, LayoutSize};
+use super::super::{Widget, LayoutDimension, LayoutSize};
 use crate::game::{Canvas, InputEvent, State};
 use crate::skia;
 use skia::{scalar, Contains, Paint, Point, Size};
@@ -21,7 +21,7 @@ impl Throbber {
     }
 }
 
-impl Component for Throbber {
+impl Widget for Throbber {
     fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         self.take_input
             && event.position().map_or(false, |p| {
