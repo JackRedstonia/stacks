@@ -1,5 +1,5 @@
-use super::super::{Widget, LayoutDimension, LayoutSize};
-use super::container::{ContainerWidget, ContainerSize};
+use super::super::{LayoutDimension, LayoutSize, Widget};
+use super::container::{ContainerSize, ContainerWidget};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Size};
@@ -12,10 +12,7 @@ pub struct HContainer<T: Widget> {
 impl<T: Widget> HContainer<T> {
     pub fn new(inner: Vec<T>, size: ContainerSize) -> Self {
         Self {
-            inner: inner
-                .into_iter()
-                .map(|i| ContainerWidget::new(i))
-                .collect(),
+            inner: inner.into_iter().map(|i| ContainerWidget::new(i)).collect(),
             size,
         }
     }

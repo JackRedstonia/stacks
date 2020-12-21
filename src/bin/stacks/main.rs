@@ -6,7 +6,7 @@ use stacks::{
         widgets::{
             layout::{ContainerSize, VContainer},
             shapes::{Rect, Throbber},
-            Widget, LayoutDimension, LayoutSize, Transform,
+            LayoutDimension, LayoutSize, Transform, Widget,
         },
         Framework,
     },

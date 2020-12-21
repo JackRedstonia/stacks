@@ -1,4 +1,4 @@
-use super::super::{Widget, LayoutSize};
+use super::super::{LayoutSize, Widget};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Contains, Paint, Point, Size};

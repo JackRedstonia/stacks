@@ -1,4 +1,4 @@
-use super::{Widget, LayoutDimension, LayoutSize};
+use super::{LayoutDimension, LayoutSize, Widget};
 use crate::game::{Canvas, State};
 use crate::skia;
 use skia::{scalar, Paint, Size};
