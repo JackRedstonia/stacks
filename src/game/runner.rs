@@ -60,16 +60,6 @@ impl From<VkResult> for Error {
     }
 }
 
-pub struct Runner;
-
-impl Runner {
-    pub const CANVAS_QUEUE_LENGTH: usize = 8;
-    pub const EVENT_QUEUE_SIZE: usize = 8;
-    pub const FEEDBACK_QUEUE_SIZE: usize = 8;
-
-    pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
-}
-
 pub struct State {
     pub input_state: InputState,
     pub time_state: TimeState,
@@ -101,7 +91,15 @@ impl State {
     }
 }
 
+pub struct Runner;
+
 impl Runner {
+    pub const CANVAS_QUEUE_LENGTH: usize = 8;
+    pub const EVENT_QUEUE_SIZE: usize = 8;
+    pub const FEEDBACK_QUEUE_SIZE: usize = 8;
+
+    pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
+
     pub fn run<T: 'static + Game + Send>(
         game: T,
         inner_size: Size,
