@@ -69,6 +69,7 @@ pub struct State {
 impl State {
     thread_local!(pub static STATE: RefCell<Option<State>> = RefCell::new(None));
 
+    #[inline]
     pub fn with<F, R>(f: F) -> R
     where
         F: FnOnce(&mut State) -> R,
