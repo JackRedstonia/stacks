@@ -15,6 +15,7 @@ use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
 pub trait Component {
     fn update(&mut self) {}
+
     fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
         false
     }
@@ -22,6 +23,7 @@ pub trait Component {
     fn size(&mut self) -> LayoutSize {
         LayoutSize::ZERO
     }
+
     fn draw(&mut self, _canvas: &mut Canvas, _size: Size) {}
 }
 
