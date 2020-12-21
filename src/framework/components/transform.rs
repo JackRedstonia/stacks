@@ -1,5 +1,5 @@
 use super::{Component, LayoutSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Rect, Size};
 
@@ -20,43 +20,29 @@ impl<T: Component> Transform<T> {
 }
 
 impl<T: Component> Component for Transform<T> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.inner.update(input_state, time_state);
+    fn update(&mut self) {
+        self.inner.update();
     }
 
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         // TODO: test this. might be a soundness hole, ngl
         self.matrix.invert().map_or(false, |m| {
             event.reverse_map_position(m).map_or(false, |event| {
                 let (rect, _) = m.map_rect(Rect::from_size(size));
-                self.inner
-                    .input(input_state, time_state, &event, rect.size())
+                self.inner.input(&event, rect.size())
             })
         })
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        self.size = self.inner.size(input_state, time_state);
+    fn size(&mut self) -> LayoutSize {
+        self.size = self.inner.size();
         self.size.map(self.matrix)
     }
 
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         canvas.save();
         canvas.concat(self.matrix);
-        self.inner
-            .draw(input_state, time_state, canvas, self.size.layout_one(size));
+        self.inner.draw(canvas, self.size.layout_one(size));
         canvas.restore();
     }
 }

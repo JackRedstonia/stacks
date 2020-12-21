@@ -1,5 +1,5 @@
 use super::{Component, LayoutDimension, LayoutSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, State};
 use crate::skia;
 use skia::{scalar, Paint, Size};
 
@@ -36,38 +36,22 @@ impl Metrics {
 }
 
 impl Component for Metrics {
-    fn update(&mut self, _input_state: &InputState, time_state: &TimeState) {
-        self.update_accm += time_state.last_update_time().as_secs_f32();
+    fn update(&mut self) {
+        self.update_accm += State::last_update_time().as_secs_f32();
         self.update_count += 1.0;
     }
 
-    fn input(
-        &mut self,
-        _input_state: &InputState,
-        _time_state: &TimeState,
-        _event: &InputEvent,
-        _size: Size,
-    ) -> bool {
-        false
-    }
-
-    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self) -> LayoutSize {
         LayoutSize {
             width: self.radius,
             height: self.radius,
         }
     }
 
-    fn draw(
-        &mut self,
-        _input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         let s = size.width.min(size.height);
         let oval = skia::Rect::from_wh(s, s);
-        let draw_time = time_state.last_update_time().as_secs_f32();
+        let draw_time = State::last_update_time_draw().as_secs_f32();
         let update_time = self.update_accm / self.update_count;
         canvas.draw_arc(
             oval,

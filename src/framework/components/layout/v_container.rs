@@ -1,6 +1,6 @@
 use super::super::{Component, LayoutDimension, LayoutSize};
 use super::container::{ContainerComponent, ContainerSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Size};
 
@@ -66,38 +66,32 @@ impl<T: Component> VContainer<T> {
 }
 
 impl<T: Component> Component for VContainer<T> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
+    fn update(&mut self) {
         for i in &mut self.inner {
-            i.inner.update(input_state, time_state);
+            i.inner.update();
         }
     }
 
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         self.layout(size);
         self.inner.iter_mut().rev().any(|i| {
             let m = Matrix::translate(i.position);
             if let Some(event) = event.reverse_map_position(m.invert().unwrap()) {
-                i.inner.input(input_state, time_state, &event, i.size)
+                i.inner.input(&event, i.size)
             } else {
                 false
             }
         })
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self) -> LayoutSize {
         let mut size = 0.0f32;
         let mut min = 0.0f32;
 
         let mut width = 0.0f32;
         let mut width_min = 0.0f32;
         for i in &mut self.inner {
-            let s = i.inner.size(input_state, time_state);
+            let s = i.inner.size();
             i.layout_size = s;
             size += s.height.size;
             min += s.height.min;
@@ -119,19 +113,13 @@ impl<T: Component> Component for VContainer<T> {
         }
     }
 
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         self.layout(size);
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
             canvas.save();
             canvas.concat(m);
-            i.inner.draw(input_state, time_state, canvas, i.size);
+            i.inner.draw(canvas, i.size);
             canvas.restore();
         }
     }

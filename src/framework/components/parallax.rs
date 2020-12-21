@@ -1,5 +1,5 @@
 use super::{Component, LayoutSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent, State};
 use crate::skia;
 use skia::{scalar, Matrix, Point, Rect, Size};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
@@ -34,17 +34,11 @@ impl<T: Component> Parallax<T> {
 }
 
 impl<T: Component> Component for Parallax<T> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.inner.update(input_state, time_state);
+    fn update(&mut self) {
+        self.inner.update();
     }
 
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
             self.last_mouse_position = (*x, *y).into();
         }
@@ -52,27 +46,20 @@ impl<T: Component> Component for Parallax<T> {
         self.calc_parallax().invert().map_or(false, |m| {
             event.reverse_map_position(m).map_or(false, |event| {
                 let (rect, _) = m.map_rect(Rect::from_size(size));
-                self.inner
-                    .input(input_state, time_state, &event, rect.size())
+                self.inner.input(&event, rect.size())
             })
         })
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        self.inner.size(input_state, time_state)
+    fn size(&mut self) -> LayoutSize {
+        self.inner.size()
     }
 
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
-        self.interpolate_parallax(time_state.last_update_time().as_secs_f32() * 20.0);
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+        self.interpolate_parallax(State::last_update_time_draw().as_secs_f32() * 20.0);
         canvas.save();
         canvas.concat(self.calc_parallax());
-        self.inner.draw(input_state, time_state, canvas, size);
+        self.inner.draw(canvas, size);
         canvas.restore();
     }
 }

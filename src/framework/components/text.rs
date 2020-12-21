@@ -1,5 +1,5 @@
 use super::{Component, LayoutSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Paint, Size};
 
@@ -24,34 +24,20 @@ pub struct Text {
 }
 
 impl Component for Text {
-    fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
-
-    fn input(
-        &mut self,
-        _input_state: &InputState,
-        _time_state: &TimeState,
-        _event: &InputEvent,
-        _size: Size,
-    ) -> bool {
+    fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
         // TODO: this is mostly a placeholder value.
         // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.
         false
     }
 
-    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self) -> LayoutSize {
         // TODO: this is also mostly a placeholder value.
         // Proper text layout should be implemented - some fields in Self
         // should be added to guide text layout and that sort of stuff.
         LayoutSize::ZERO
     }
 
-    fn draw(
-        &mut self,
-        _input_state: &InputState,
-        _time_state: &TimeState,
-        canvas: &mut Canvas,
-        _size: Size,
-    ) {
+    fn draw(&mut self, canvas: &mut Canvas, _size: Size) {
         // TODO: text layout.
         canvas.draw_str(
             self.text.clone(),

@@ -10,56 +10,36 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent};
 use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
 pub trait Component {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState);
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool;
+    fn update(&mut self) {}
+    fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
+        false
+    }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize;
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    );
+    fn size(&mut self) -> LayoutSize {
+        LayoutSize::ZERO
+    }
+    fn draw(&mut self, _canvas: &mut Canvas, _size: Size) {}
 }
 
 impl Component for Box<dyn Component + Send> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.as_mut().update(input_state, time_state);
+    fn update(&mut self) {
+        self.as_mut().update();
     }
 
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
-        self.as_mut().input(input_state, time_state, event, size)
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
+        self.as_mut().input(event, size)
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        self.as_mut().size(input_state, time_state)
+    fn size(&mut self) -> LayoutSize {
+        self.as_mut().size()
     }
 
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
-        self.as_mut().draw(input_state, time_state, canvas, size);
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+        self.as_mut().draw(canvas, size);
     }
 }
 

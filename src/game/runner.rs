@@ -1,7 +1,9 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
+use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread::spawn;
+use std::time::Duration;
 
 use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
@@ -68,6 +70,37 @@ impl Runner {
     pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
 }
 
+pub struct State {
+    pub input_state: InputState,
+    pub time_state: TimeState,
+    pub time_state_draw: TimeState,
+}
+
+impl State {
+    thread_local!(pub static STATE: RefCell<Option<State>> = RefCell::new(None));
+
+    pub fn with<F, R>(f: F) -> R
+    where
+        F: FnOnce(&mut State) -> R,
+    {
+        Self::STATE.with(|x| f(x.borrow_mut().as_mut().unwrap()))
+    }
+
+    pub fn last_update_time() -> Duration {
+        Self::STATE.with(|x| x.borrow().as_ref().unwrap().time_state.last_update_time())
+    }
+
+    pub fn last_update_time_draw() -> Duration {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .unwrap()
+                .time_state_draw
+                .last_update_time()
+        })
+    }
+}
+
 impl Runner {
     pub fn run<T: 'static + Game + Send>(
         game: T,
@@ -105,10 +138,18 @@ impl Runner {
 
         let input_state = InputState::new(&winit_window);
         spawn(move || {
-            let mut input_state = input_state;
             let mut game = game;
-            let mut time_state = TimeState::new();
-            let mut time_state_draw = TimeState::new();
+
+            State::STATE.with(|x| {
+                let input_state = input_state;
+                let time_state = TimeState::new();
+                let time_state_draw = TimeState::new();
+                *x.borrow_mut() = Some(State {
+                    input_state,
+                    time_state,
+                    time_state_draw,
+                });
+            });
 
             let mut canvas_cap = 200_000;
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
@@ -120,9 +161,6 @@ impl Runner {
                             if Self::handle_event(
                                 &mut game,
                                 event,
-                                &mut input_state,
-                                &mut time_state,
-                                &mut time_state_draw,
                                 &canvas_tx,
                                 &feedback_tx,
                                 &mut canvas_cap,
@@ -137,14 +175,16 @@ impl Runner {
                         },
                     }
                 }
-                game.update(&input_state, &time_state);
-                if !is_redraw {
-                    let update_time = time_state.last_update().elapsed();
-                    if target_update_time > update_time {
-                        std::thread::sleep(target_update_time - update_time);
+                game.update();
+                State::with(|state| {
+                    if !is_redraw {
+                        let update_time = state.time_state.last_update().elapsed();
+                        if target_update_time > update_time {
+                            std::thread::sleep(target_update_time - update_time);
+                        }
                     }
-                }
-                time_state.update();
+                    state.time_state.update();
+                });
             }
         });
 
@@ -203,9 +243,6 @@ impl Runner {
     fn handle_event<T>(
         game: &mut impl Game,
         event: Event<T>,
-        input_state: &mut InputState,
-        time_state: &mut TimeState,
-        time_state_draw: &mut TimeState,
         canvas_tx: &SyncSender<Canvas>,
         feedback_tx: &SyncSender<FeedbackEvent>,
         canvas_cap: &mut usize,
@@ -213,11 +250,9 @@ impl Runner {
     ) -> bool {
         match event {
             Event::WinitEvent(event) => {
-                if let Some(r) = input_state.handle_event(&event) {
+                if let Some(r) = State::with(|x| x.input_state.handle_event(&event)) {
                     match r {
-                        EventHandleResult::Input(event) => {
-                            game.input(&input_state, &time_state, event)
-                        }
+                        EventHandleResult::Input(event) => game.input(event),
                         EventHandleResult::Exit => {
                             game.close();
                             feedback_tx
@@ -231,12 +266,12 @@ impl Runner {
                 if let WinitEvent::RedrawRequested(_) = event {
                     *is_redraw = true;
                     let mut canvas = Canvas::with_capacity(*canvas_cap);
-                    game.draw(&input_state, &time_state_draw, &mut canvas);
+                    game.draw(&mut canvas);
                     *canvas_cap = (*canvas_cap).max(canvas.capacity());
                     canvas_tx
                         .send(canvas)
                         .expect("Failed to send canvas to draw thread");
-                    time_state_draw.update();
+                    State::with(|x| x.time_state_draw.update());
                 }
             }
             Event::Crash(e) => {

@@ -1,5 +1,5 @@
 use super::super::{Component, LayoutSize};
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
+use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Contains, Paint, Point, Size};
 
@@ -20,15 +20,7 @@ impl Rect {
 }
 
 impl Component for Rect {
-    fn update(&mut self, _input_state: &InputState, _time_state: &TimeState) {}
-
-    fn input(
-        &mut self,
-        _input_state: &InputState,
-        _time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         self.take_input
             && event.position().map_or(false, |p| {
                 let p: Point = (p.x, p.y).into();
@@ -36,17 +28,11 @@ impl Component for Rect {
             })
     }
 
-    fn size(&mut self, _input_state: &InputState, _time_state: &TimeState) -> LayoutSize {
+    fn size(&mut self) -> LayoutSize {
         self.size
     }
 
-    fn draw(
-        &mut self,
-        _input_state: &InputState,
-        _time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         canvas.draw_rect(skia::Rect::from_size(size), &self.paint);
     }
 }

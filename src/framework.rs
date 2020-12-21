@@ -1,7 +1,7 @@
 pub mod components;
 
 use super::game::Canvas;
-use super::game::{Error, Game, InputEvent, InputState, TimeState};
+use super::game::{Error, Game, InputEvent, State};
 use crate::skia::Size;
 use components::Component;
 
@@ -16,33 +16,24 @@ impl<T: Component> Framework<T> {
 }
 
 impl<T: Component> Game for Framework<T> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.root.update(input_state, time_state);
+    fn update(&mut self) {
+        self.root.update();
     }
 
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        let size = self.root.size(input_state, time_state);
-        self.root.draw(
-            input_state,
-            time_state,
-            canvas,
-            size.layout_one(Size::new(
-                input_state.window_size.width,
-                input_state.window_size.height,
-            )),
-        );
+    fn draw(&mut self, canvas: &mut Canvas) {
+        let size = self.root.size().layout_one(State::with(|x| {
+            let win = x.input_state.window_size;
+            Size::new(win.width, win.height)
+        }));
+        self.root.draw(canvas, size);
     }
 
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent) {
-        self.root.input(
-            input_state,
-            time_state,
-            &event,
-            Size::new(
-                input_state.window_size.width,
-                input_state.window_size.height,
-            ),
-        );
+    fn input(&mut self, event: InputEvent) {
+        let size = State::with(|x| {
+            let win = x.input_state.window_size;
+            Size::new(win.width, win.height)
+        });
+        self.root.input(&event, size);
     }
 
     fn close(&mut self) {}
