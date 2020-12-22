@@ -63,7 +63,7 @@ impl<T: Widget> VContainer<T> {
 }
 
 impl<T: Widget> Widget for VContainer<T> {
-    fn update(&mut self, wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WrapState) {
         for i in &mut self.inner {
             i.inner.update();
         }

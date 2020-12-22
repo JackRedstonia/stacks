@@ -1,4 +1,4 @@
-use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState};
+use super::super::{LayoutDimension, LayoutSize, Widget, Wrap};
 use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]

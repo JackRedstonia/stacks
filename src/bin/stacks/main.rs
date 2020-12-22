@@ -7,7 +7,7 @@ use stacks::{
             Wrappable,
             layout::{ContainerSize, VContainer},
             shapes::{Rect, Throbber},
-            LayoutDimension, LayoutSize, Transform, Widget,
+            LayoutDimension, LayoutSize, Transform,
             Parallax,
         },
         Framework,

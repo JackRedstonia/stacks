@@ -20,7 +20,7 @@ impl<T: Widget> Transform<T> {
 }
 
 impl<T: Widget> Widget for Transform<T> {
-    fn update(&mut self, wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }
 

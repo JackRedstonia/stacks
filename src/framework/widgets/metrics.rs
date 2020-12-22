@@ -36,7 +36,7 @@ impl Metrics {
 }
 
 impl Widget for Metrics {
-    fn update(&mut self, wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WrapState) {
         self.update_accm += State::last_update_time().as_secs_f32();
         self.update_count += 1.0;
     }

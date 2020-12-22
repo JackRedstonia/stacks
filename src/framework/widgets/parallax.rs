@@ -34,7 +34,7 @@ impl<T: Widget> Parallax<T> {
 }
 
 impl<T: Widget> Widget for Parallax<T> {
-    fn update(&mut self, wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }
 
