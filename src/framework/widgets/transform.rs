@@ -1,16 +1,16 @@
-use super::{LayoutSize, Widget};
+use super::{LayoutSize, Widget, WidgetWrapper, WrapperState};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Rect, Size};
 
 pub struct Transform<T: Widget> {
-    pub inner: T,
+    pub inner: WidgetWrapper<T>,
     size: LayoutSize,
     pub matrix: Matrix,
 }
 
 impl<T: Widget> Transform<T> {
-    pub fn new(inner: T, matrix: Matrix) -> Self {
+    pub fn new(inner: WidgetWrapper<T>, matrix: Matrix) -> Self {
         Self {
             inner,
             size: LayoutSize::ZERO,
@@ -20,7 +20,7 @@ impl<T: Widget> Transform<T> {
 }
 
 impl<T: Widget> Widget for Transform<T> {
-    fn update(&mut self) {
+    fn update(&mut self, wrap: &mut WrapperState) {
         self.inner.update();
     }
 

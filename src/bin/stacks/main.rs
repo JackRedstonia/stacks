@@ -4,9 +4,11 @@ use skulpin_renderer::PresentMode;
 use stacks::{
     framework::{
         widgets::{
+            Wrappable,
             layout::{ContainerSize, VContainer},
             shapes::{Rect, Throbber},
             LayoutDimension, LayoutSize, Transform, Widget,
+            Parallax,
         },
         Framework,
     },
@@ -15,27 +17,27 @@ use stacks::{
 };
 
 fn main() {
-    let root = VContainer::<Box<dyn Widget + Send>>::new(
+    let root = Parallax::new(VContainer::new(
         vec![
-            Box::new(Rect::new(
+            Rect::new(
                 LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
                 skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None),
                 false,
-            )),
-            Box::new(Rect::new(
+            ).boxed().wrap(),
+            Rect::new(
                 LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
                 skia::Paint::new(skia::Color4f::new(1.0, 0.0, 0.0, 1.0), None),
                 false,
-            )),
-            Box::new(Transform::new(
+            ).boxed().wrap(),
+            Transform::new(
                 Rect::new(
                     LayoutSize::min(50.0, 100.0),
                     skia::Paint::new(skia::Color4f::new(0.0, 0.0, 1.0, 1.0), None),
                     false,
-                ),
+                ).wrap(),
                 skia::Matrix::translate((20.0, 20.0)),
-            )),
-            Box::new(Throbber::new(
+            ).boxed().wrap(),
+            Throbber::new(
                 LayoutDimension::min(100.0),
                 {
                     let mut p = skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
@@ -45,10 +47,10 @@ fn main() {
                     p
                 },
                 false,
-            )),
+            ).boxed().wrap(),
         ],
         ContainerSize::ZERO.expand_height().expand_width(),
-    );
+    ).wrap()).wrap();
 
     Builder::new()
         .app_name(CString::new("Stacks").unwrap())

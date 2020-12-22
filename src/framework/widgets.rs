@@ -14,9 +14,9 @@ use crate::game::{Canvas, InputEvent};
 use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
 pub trait Widget {
-    fn update(&mut self) {}
+    fn update(&mut self, wrap: &mut WrapperState) {}
 
-    fn input(&mut self, _event: &InputEvent, _size: Size) -> bool {
+    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         false
     }
 
@@ -24,12 +24,12 @@ pub trait Widget {
         LayoutSize::ZERO
     }
 
-    fn draw(&mut self, _canvas: &mut Canvas, _size: Size) {}
+    fn draw(&mut self, canvas: &mut Canvas, size: Size) {}
 }
 
 impl Widget for Box<dyn Widget + Send> {
-    fn update(&mut self) {
-        self.as_mut().update();
+    fn update(&mut self, wrap: &mut WrapperState) {
+        self.as_mut().update(wrap);
     }
 
     fn input(&mut self, event: &InputEvent, size: Size) -> bool {
@@ -42,6 +42,63 @@ impl Widget for Box<dyn Widget + Send> {
 
     fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         self.as_mut().draw(canvas, size);
+    }
+}
+
+pub struct WidgetWrapper<T: Widget> {
+    pub inner: T,
+    pub state: WrapperState,
+}
+
+impl<T: Widget> WidgetWrapper<T> {
+    pub fn new(inner: T) -> Self {
+        Self {
+            inner,
+            state: WrapperState::new(),
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.inner.update(&mut self.state);
+    }
+
+    pub fn input(&mut self, event: &InputEvent, size: Size) -> bool {
+        self.inner.input(event, size)
+    }
+
+    pub fn size(&mut self) -> LayoutSize {
+        self.inner.size()
+    }
+
+    pub fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+        self.inner.draw(canvas, size);
+    }
+}
+
+pub trait Wrappable<T: Widget + Send> {
+    fn wrap(self) -> WidgetWrapper<T>;
+    fn boxed(self) -> Box<dyn Widget + Send>;
+}
+
+impl<T: 'static + Widget + Send> Wrappable<T> for T {
+    fn wrap(self) -> WidgetWrapper<T> {
+        WidgetWrapper::new(self)
+    }
+
+    fn boxed(self) -> Box<dyn Widget + Send> {
+        Box::new(self)
+    }
+}
+
+pub struct WrapperState {
+
+}
+
+impl WrapperState {
+    pub fn new() -> Self {
+        Self {
+
+        }
     }
 }
 
