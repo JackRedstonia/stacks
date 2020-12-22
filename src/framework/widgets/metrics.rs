@@ -1,4 +1,4 @@
-use super::{LayoutDimension, LayoutSize, Widget, WrapperState};
+use super::{LayoutDimension, LayoutSize, Widget, WrapState};
 use crate::game::{Canvas, State};
 use crate::skia;
 use skia::{scalar, Paint, Size};
@@ -36,7 +36,7 @@ impl Metrics {
 }
 
 impl Widget for Metrics {
-    fn update(&mut self, wrap: &mut WrapperState) {
+    fn update(&mut self, wrap: &mut WrapState) {
         self.update_accm += State::last_update_time().as_secs_f32();
         self.update_count += 1.0;
     }

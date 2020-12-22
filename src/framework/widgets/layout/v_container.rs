@@ -1,4 +1,4 @@
-use super::super::{LayoutDimension, LayoutSize, Widget, WidgetWrapper, WrapperState};
+use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState};
 use super::container::{ContainerSize, ContainerWidget};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
@@ -10,7 +10,7 @@ pub struct VContainer<T: Widget> {
 }
 
 impl<T: Widget> VContainer<T> {
-    pub fn new(inner: Vec<WidgetWrapper<T>>, size: ContainerSize) -> Self {
+    pub fn new(inner: Vec<Wrap<T>>, size: ContainerSize) -> Self {
         Self {
             inner: inner.into_iter().map(|i| ContainerWidget::new(i)).collect(),
             size,
@@ -63,7 +63,7 @@ impl<T: Widget> VContainer<T> {
 }
 
 impl<T: Widget> Widget for VContainer<T> {
-    fn update(&mut self, wrap: &mut WrapperState) {
+    fn update(&mut self, wrap: &mut WrapState) {
         for i in &mut self.inner {
             i.inner.update();
         }

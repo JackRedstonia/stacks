@@ -3,14 +3,14 @@ pub mod widgets;
 use super::game::Canvas;
 use super::game::{Error, Game, InputEvent, State};
 use crate::skia::Size;
-use widgets::{Widget, WidgetWrapper};
+use widgets::{Widget, Wrap};
 
 pub struct Framework<T: Widget> {
-    root: WidgetWrapper<T>,
+    root: Wrap<T>,
 }
 
 impl<T: Widget> Framework<T> {
-    pub fn new(root: WidgetWrapper<T>) -> Self {
+    pub fn new(root: Wrap<T>) -> Self {
         Self { root }
     }
 }

@@ -1,4 +1,4 @@
-use super::super::{LayoutDimension, LayoutSize, Widget, WidgetWrapper, WrapperState};
+use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState};
 use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -105,14 +105,14 @@ impl From<LayoutDimension> for ContainerDimension {
 }
 
 pub struct ContainerWidget<T: Widget> {
-    pub inner: WidgetWrapper<T>,
+    pub inner: Wrap<T>,
     pub layout_size: LayoutSize,
     pub size: Size,
     pub position: Vector,
 }
 
 impl<T: Widget> ContainerWidget<T> {
-    pub fn new(inner: WidgetWrapper<T>) -> Self {
+    pub fn new(inner: Wrap<T>) -> Self {
         Self {
             inner,
             layout_size: LayoutSize::ZERO,

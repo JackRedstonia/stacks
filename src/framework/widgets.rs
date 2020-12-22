@@ -13,8 +13,9 @@ pub use transform::Transform;
 use crate::game::{Canvas, InputEvent};
 use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
+#[allow(unused_variables)]
 pub trait Widget {
-    fn update(&mut self, wrap: &mut WrapperState) {}
+    fn update(&mut self, wrap: &mut WrapState) {}
 
     fn input(&mut self, event: &InputEvent, size: Size) -> bool {
         false
@@ -28,7 +29,7 @@ pub trait Widget {
 }
 
 impl Widget for Box<dyn Widget + Send> {
-    fn update(&mut self, wrap: &mut WrapperState) {
+    fn update(&mut self, wrap: &mut WrapState) {
         self.as_mut().update(wrap);
     }
 
@@ -45,16 +46,16 @@ impl Widget for Box<dyn Widget + Send> {
     }
 }
 
-pub struct WidgetWrapper<T: Widget> {
+pub struct Wrap<T: Widget> {
     pub inner: T,
-    pub state: WrapperState,
+    pub state: WrapState,
 }
 
-impl<T: Widget> WidgetWrapper<T> {
+impl<T: Widget> Wrap<T> {
     pub fn new(inner: T) -> Self {
         Self {
             inner,
-            state: WrapperState::new(),
+            state: WrapState::new(),
         }
     }
 
@@ -76,13 +77,13 @@ impl<T: Widget> WidgetWrapper<T> {
 }
 
 pub trait Wrappable<T: Widget + Send> {
-    fn wrap(self) -> WidgetWrapper<T>;
+    fn wrap(self) -> Wrap<T>;
     fn boxed(self) -> Box<dyn Widget + Send>;
 }
 
 impl<T: 'static + Widget + Send> Wrappable<T> for T {
-    fn wrap(self) -> WidgetWrapper<T> {
-        WidgetWrapper::new(self)
+    fn wrap(self) -> Wrap<T> {
+        Wrap::new(self)
     }
 
     fn boxed(self) -> Box<dyn Widget + Send> {
@@ -90,11 +91,11 @@ impl<T: 'static + Widget + Send> Wrappable<T> for T {
     }
 }
 
-pub struct WrapperState {
+pub struct WrapState {
 
 }
 
-impl WrapperState {
+impl WrapState {
     pub fn new() -> Self {
         Self {
 
