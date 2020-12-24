@@ -18,11 +18,11 @@ use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ID(u64);
 
-thread_local!(static ID_KEEPER: RefCell<u64> = RefCell::new(0));
-
 impl ID {
+    thread_local!(static KEEPER: RefCell<u64> = RefCell::new(0));
+
     pub fn next() -> Self {
-        Self(ID_KEEPER.with(|x| {
+        Self(Self::KEEPER.with(|x| {
             let mut x = x.borrow_mut();
             let id = *x;
             *x += 1;
