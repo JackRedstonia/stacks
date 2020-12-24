@@ -1,4 +1,4 @@
-use super::{LayoutSize, Widget, Wrap, WrapState};
+use super::{ID, LayoutSize, Widget, Wrap, WrapState};
 use crate::game::{Canvas, InputEvent, State};
 use crate::skia;
 use skia::{scalar, Matrix, Point, Rect, Size};
@@ -42,12 +42,10 @@ impl<T: Widget> Widget for Parallax<T> {
         if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
             self.last_mouse_position = (*x, *y).into();
         }
-        // TODO: test this. might be a soundness hole, ngl
-        self.calc_parallax(size).invert().map_or(false, |m| {
-            event.reverse_map_position(m).map_or(false, |event| {
-                let (rect, _) = m.map_rect(Rect::from_size(size));
-                self.inner.input(&event, rect.size())
-            })
+        let m = self.calc_parallax(size);
+        event.reverse_map_position(m).map_or(false, |event| {
+            let (rect, _) = m.map_rect(Rect::from_size(size));
+            self.inner.input(&event, rect.size())
         })
     }
 
@@ -61,5 +59,9 @@ impl<T: Widget> Widget for Parallax<T> {
         canvas.concat(self.calc_parallax(size));
         self.inner.draw(canvas, size);
         canvas.restore();
+    }
+
+    fn get(&mut self, _wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        self.inner.get(id)
     }
 }

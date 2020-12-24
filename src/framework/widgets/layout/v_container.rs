@@ -1,4 +1,4 @@
-use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState};
+use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, ID};
 use super::container::{ContainerSize, ContainerWidget};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
@@ -72,8 +72,7 @@ impl<T: Widget> Widget for VContainer<T> {
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
         self.layout(size);
         self.inner.iter_mut().rev().any(|i| {
-            let m = Matrix::translate(i.position);
-            if let Some(event) = event.reverse_map_position(m.invert().unwrap()) {
+            if let Some(event) = event.reverse_map_position(Matrix::translate(i.position)) {
                 i.inner.input(&event, i.size)
             } else {
                 false
@@ -119,5 +118,15 @@ impl<T: Widget> Widget for VContainer<T> {
             i.inner.draw(canvas, i.size);
             canvas.restore();
         }
+    }
+
+    fn get(&mut self, _wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        for i in &mut self.inner {
+            let x = i.inner.get(id);
+            if x.is_some() {
+                return x;
+            }
+        }
+        None
     }
 }

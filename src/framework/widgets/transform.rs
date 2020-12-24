@@ -1,4 +1,4 @@
-use super::{LayoutSize, Widget, Wrap, WrapState};
+use super::{LayoutSize, Widget, Wrap, WrapState, ID};
 use crate::game::{Canvas, InputEvent};
 use crate::skia;
 use skia::{Matrix, Rect, Size};
@@ -44,5 +44,9 @@ impl<T: Widget> Widget for Transform<T> {
         canvas.concat(self.matrix);
         self.inner.draw(canvas, self.size.layout_one(size));
         canvas.restore();
+    }
+
+    fn get(&mut self, _wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        self.inner.get(id)
     }
 }

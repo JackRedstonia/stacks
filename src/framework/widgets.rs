@@ -44,6 +44,10 @@ pub trait Widget: Send {
     }
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {}
+
+    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        None
+    }
 }
 
 impl Widget for Box<dyn Widget> {
@@ -61,6 +65,10 @@ impl Widget for Box<dyn Widget> {
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         self.as_mut().draw(wrap, canvas, size);
+    }
+
+    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        self.as_mut().get(wrap, id)
     }
 }
 
@@ -92,6 +100,14 @@ impl<T: Widget> Wrap<T> {
     pub fn draw(&mut self, canvas: &mut Canvas, size: Size) {
         self.inner.draw(&mut self.state, canvas, size);
     }
+
+    pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        if self.state.id == id {
+            Some((&mut self.inner, &mut self.state))
+        } else {
+            self.inner.get(&mut self.state, id)
+        }
+    }
 }
 
 pub trait Wrappable<T: Widget> {
@@ -109,6 +125,7 @@ impl<T: 'static + Widget> Wrappable<T> for T {
     }
 }
 
+#[derive(Debug)]
 pub struct WrapState {
     id: ID,
 }
