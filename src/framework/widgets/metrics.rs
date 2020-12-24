@@ -41,14 +41,14 @@ impl Widget for Metrics {
         self.update_count += 1.0;
     }
 
-    fn size(&mut self) -> LayoutSize {
+    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
         LayoutSize {
             width: self.radius,
             height: self.radius,
         }
     }
 
-    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         let s = size.width.min(size.height);
         let oval = skia::Rect::from_wh(s, s);
         let draw_time = State::last_update_time_draw().as_secs_f32();

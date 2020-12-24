@@ -38,7 +38,7 @@ impl<T: Widget> Widget for Parallax<T> {
         self.inner.update();
     }
 
-    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
         if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
             self.last_mouse_position = (*x, *y).into();
         }
@@ -51,11 +51,11 @@ impl<T: Widget> Widget for Parallax<T> {
         })
     }
 
-    fn size(&mut self) -> LayoutSize {
+    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
         self.inner.size()
     }
 
-    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 20.0);
         canvas.save();
         canvas.concat(self.calc_parallax(size));

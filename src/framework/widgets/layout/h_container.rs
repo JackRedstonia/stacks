@@ -69,7 +69,7 @@ impl<T: Widget> Widget for HContainer<T> {
         }
     }
 
-    fn input(&mut self, event: &InputEvent, size: Size) -> bool {
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
         self.layout(size);
         self.inner.iter_mut().rev().any(|i| {
             let m = Matrix::translate(i.position);
@@ -81,7 +81,7 @@ impl<T: Widget> Widget for HContainer<T> {
         })
     }
 
-    fn size(&mut self) -> LayoutSize {
+    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
         let mut size = 0.0f32;
         let mut min = 0.0f32;
 
@@ -114,7 +114,7 @@ impl<T: Widget> Widget for HContainer<T> {
         }
     }
 
-    fn draw(&mut self, canvas: &mut Canvas, size: Size) {
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         self.layout(size);
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
