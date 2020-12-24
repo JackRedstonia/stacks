@@ -201,6 +201,10 @@ impl Runner {
                 },
                 Err(e) => match e {
                     TryRecvError::Empty => {
+                        // TODO: this simply does not work well with
+                        // presentation modes other than Immediate.
+                        // this results in window resizing and moving being
+                        // unbearably laggy if not using Immediate.
                         let frame_time = last_frame.elapsed();
                         if frame_time > target_frame_time {
                             winit_window.request_redraw();
