@@ -192,6 +192,8 @@ impl Runner {
 
         let font_set = DefaultFontSet::new();
 
+        winit_window.set_cursor_visible(false);
+
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
                 Ok(event) => match event {
