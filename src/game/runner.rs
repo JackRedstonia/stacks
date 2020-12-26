@@ -15,14 +15,12 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::skia;
+use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect};
 
-use super::default_font_set::DefaultFontSet;
+use super::{FontSet, default_font_set::DefaultFontSet};
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
-
-use super::canvas::Canvas;
 
 enum Event<T: 'static> {
     WinitEvent(WinitEvent<'static, T>),
@@ -64,6 +62,7 @@ pub struct State {
     pub input_state: InputState,
     pub time_state: TimeState,
     pub time_state_draw: TimeState,
+    pub font_set: Box<dyn FontSet>,
 }
 
 impl State {
@@ -99,7 +98,7 @@ impl Runner {
     pub const EVENT_QUEUE_SIZE: usize = 8;
     pub const FEEDBACK_QUEUE_SIZE: usize = 8;
 
-    pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
+    pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
     pub fn run<T: 'static + Game + Send>(
         game: T,
@@ -147,10 +146,10 @@ impl Runner {
                     input_state,
                     time_state,
                     time_state_draw,
+                    font_set: Box::new(DefaultFontSet::new()),
                 });
             });
 
-            let mut canvas_cap = 200_000;
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
             loop {
                 let mut is_redraw = false;
@@ -162,7 +161,6 @@ impl Runner {
                                 event,
                                 &canvas_tx,
                                 &feedback_tx,
-                                &mut canvas_cap,
                                 &mut is_redraw,
                             ) {
                                 return;
@@ -189,8 +187,6 @@ impl Runner {
 
         let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
         let mut last_frame = std::time::Instant::now();
-
-        let font_set = DefaultFontSet::new();
 
         winit_window.set_cursor_visible(false);
 
@@ -225,7 +221,7 @@ impl Runner {
                                     &window,
                                     |sk_canvas, _coordinate_system_helper| {
                                         sk_canvas.clear(Self::BACKGROUND);
-                                        canvas.play(sk_canvas, &font_set);
+                                        sk_canvas.draw_picture(canvas, Some(&Matrix::default()), None);
                                     },
                                 ) {
                                     let _ = event_tx.send(Event::Crash(e.into()));
@@ -248,9 +244,8 @@ impl Runner {
     fn handle_event<T>(
         game: &mut impl Game,
         event: Event<T>,
-        canvas_tx: &SyncSender<Canvas>,
+        canvas_tx: &SyncSender<Picture>,
         feedback_tx: &SyncSender<FeedbackEvent>,
-        canvas_cap: &mut usize,
         is_redraw: &mut bool,
     ) -> bool {
         match event {
@@ -270,11 +265,15 @@ impl Runner {
 
                 if let WinitEvent::RedrawRequested(_) = event {
                     *is_redraw = true;
-                    let mut canvas = Canvas::with_capacity(*canvas_cap);
-                    game.draw(&mut canvas);
-                    *canvas_cap = (*canvas_cap).max(canvas.capacity());
+                    let mut rec = PictureRecorder::new();
+                    let bounds = Rect::from_size(State::with(|x| {
+                        let w = x.input_state.window_size;
+                        (w.width, w.height)
+                    }));
+                    let canvas = rec.begin_recording(bounds, None);
+                    game.draw(canvas);
                     canvas_tx
-                        .send(canvas)
+                        .send(rec.finish_recording_as_picture(None).expect("Failed to finish recording picture while rendering"))
                         .expect("Failed to send canvas to draw thread");
                     State::with(|x| x.time_state_draw.update());
                 }

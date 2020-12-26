@@ -6,14 +6,14 @@ mod runner;
 mod time;
 
 pub use builder::Builder;
-pub use canvas::{Canvas, FontSet};
+pub use canvas::FontSet;
 pub use input::{EventHandleResult, InputEvent, InputState};
 pub use runner::{Error, State};
 pub use time::TimeState;
 
 pub trait Game {
     fn update(&mut self);
-    fn draw(&mut self, canvas: &mut canvas::Canvas);
+    fn draw(&mut self, canvas: &mut crate::skia::Canvas);
     fn input(&mut self, event: InputEvent);
     fn close(&mut self);
     fn crash(&mut self, err: runner::Error);

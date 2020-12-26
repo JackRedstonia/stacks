@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, Wrap, WrapState, ID};
-use crate::game::{Canvas, InputEvent};
+use crate::game::InputEvent;
 use crate::skia;
-use skia::{Matrix, Rect, Size};
+use skia::{Matrix, Rect, Size, Canvas};
 
 pub struct Transform<T: Widget> {
     pub inner: Wrap<T>,
@@ -41,7 +41,7 @@ impl<T: Widget> Widget for Transform<T> {
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         canvas.save();
-        canvas.concat(self.matrix);
+        canvas.concat(&self.matrix);
         self.inner.draw(canvas, self.size.layout_one(size));
         canvas.restore();
     }

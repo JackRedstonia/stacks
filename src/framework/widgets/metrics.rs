@@ -1,7 +1,7 @@
 use super::{LayoutDimension, LayoutSize, Widget, WrapState};
-use crate::game::{Canvas, State};
+use crate::game::State;
 use crate::skia;
-use skia::{scalar, Paint, Size};
+use skia::{scalar, Paint, Size, Canvas, Color4f, PaintStyle, Rect};
 
 pub struct Metrics {
     pub radius: LayoutDimension,
@@ -16,17 +16,17 @@ impl Metrics {
         Self {
             radius,
             update_paint: {
-                let mut p = skia::Paint::new(skia::Color4f::new(0.0, 1.0, 0.0, 1.0), None);
+                let mut p = Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None);
                 p.set_stroke_width(8.0);
                 p.set_anti_alias(true);
-                p.set_style(skia::PaintStyle::Stroke);
+                p.set_style(PaintStyle::Stroke);
                 p
             },
             draw_paint: {
-                let mut p = skia::Paint::new(skia::Color4f::new(1.0, 0.0, 0.0, 1.0), None);
+                let mut p = Paint::new(Color4f::new(1.0, 0.0, 0.0, 1.0), None);
                 p.set_stroke_width(8.0);
                 p.set_anti_alias(true);
-                p.set_style(skia::PaintStyle::Stroke);
+                p.set_style(PaintStyle::Stroke);
                 p
             },
             update_accm: 0.0,
@@ -50,7 +50,7 @@ impl Widget for Metrics {
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         let s = size.width.min(size.height);
-        let oval = skia::Rect::from_wh(s, s);
+        let oval = Rect::from_wh(s, s);
         let draw_time = State::last_update_time_draw().as_secs_f32();
         let update_time = self.update_accm / self.update_count;
         canvas.draw_arc(

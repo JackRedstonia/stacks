@@ -1,11 +1,17 @@
 use super::{LayoutSize, Widget, WrapState};
-use crate::game::{Canvas, InputEvent};
+use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{Paint, Size};
+use skia::{Paint, Size, Canvas, Font as SkFont};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
     Default,
+}
+
+impl Font {
+    pub fn resolve(&self, style: &FontStyle) -> SkFont {
+        State::with(|x| x.font_set.get(self, style))
+    }
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -40,10 +46,9 @@ impl Widget for Text {
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, _size: Size) {
         // TODO: text layout.
         canvas.draw_str(
-            self.text.clone(),
+            &self.text,
             (0.0, 0.0),
-            self.font,
-            self.style,
+            &self.font.resolve(&self.style),
             &self.paint,
         );
     }

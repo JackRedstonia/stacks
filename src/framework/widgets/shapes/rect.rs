@@ -1,7 +1,6 @@
 use super::super::{LayoutSize, Widget, WrapState};
-use crate::game::{Canvas, InputEvent};
-use crate::skia;
-use skia::{Contains, Paint, Point, Size};
+use crate::game::InputEvent;
+use crate::skia::{Contains, Paint, Point, Size, Canvas, Rect as SkRect};
 
 pub struct Rect {
     pub size: LayoutSize,
@@ -24,7 +23,7 @@ impl Widget for Rect {
         self.take_input
             && event.position().map_or(false, |p| {
                 let p: Point = (p.x, p.y).into();
-                skia::Rect::from_size(size).contains(p)
+                SkRect::from_size(size).contains(p)
             })
     }
 
@@ -33,6 +32,6 @@ impl Widget for Rect {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
-        canvas.draw_rect(skia::Rect::from_size(size), &self.paint);
+        canvas.draw_rect(SkRect::from_size(size), &self.paint);
     }
 }

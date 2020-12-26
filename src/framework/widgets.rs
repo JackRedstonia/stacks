@@ -12,8 +12,8 @@ pub use transform::Transform;
 
 use std::cell::RefCell;
 
-use crate::game::{Canvas, InputEvent};
-use crate::skia::{scalar, Matrix, Rect, Size, Vector};
+use crate::game::InputEvent;
+use crate::skia::{scalar, Matrix, Rect, Size, Vector, Canvas};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ID(u64);

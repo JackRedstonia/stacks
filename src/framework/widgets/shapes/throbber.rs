@@ -1,7 +1,6 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, WrapState};
-use crate::game::{Canvas, InputEvent, State};
-use crate::skia;
-use skia::{scalar, Contains, Paint, Point, Size};
+use crate::game::{InputEvent, State};
+use crate::skia::{scalar, Contains, Paint, Point, Size, Canvas, Rect, Vector};
 
 pub struct Throbber {
     pub radius: LayoutDimension,
@@ -27,7 +26,7 @@ impl Widget for Throbber {
             && event.position().map_or(false, |p| {
                 let p: Point = (p.x, p.y).into();
                 let s = size.width.min(size.height);
-                skia::Rect::from_wh(s, s).contains(p)
+                Rect::from_wh(s, s).contains(p)
             })
     }
 
@@ -42,8 +41,8 @@ impl Widget for Throbber {
         let stroke_width = self.paint.stroke_width();
         let s = size.width.min(size.height) - stroke_width;
         canvas.draw_arc(
-            skia::Rect::from_wh(s, s)
-                .with_offset(skia::Vector::new(stroke_width, stroke_width) * 0.5),
+            Rect::from_wh(s, s)
+                .with_offset(Vector::new(stroke_width, stroke_width) * 0.5),
             self.rad,
             240.0,
             false,

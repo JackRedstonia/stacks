@@ -1,8 +1,8 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, ID};
 use super::container::{ContainerSize, ContainerWidget};
-use crate::game::{Canvas, InputEvent};
+use crate::game::InputEvent;
 use crate::skia;
-use skia::{Matrix, Size};
+use skia::{Matrix, Size, Canvas};
 
 pub struct HContainer<T: Widget> {
     inner: Vec<ContainerWidget<T>>,
@@ -118,7 +118,7 @@ impl<T: Widget> Widget for HContainer<T> {
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
             canvas.save();
-            canvas.concat(m);
+            canvas.concat(&m);
             i.inner.draw(canvas, i.size);
             canvas.restore();
         }

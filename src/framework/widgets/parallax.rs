@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, Wrap, WrapState, ID};
-use crate::game::{Canvas, InputEvent, State};
+use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{scalar, Matrix, Point, Rect, Size};
+use skia::{scalar, Matrix, Point, Rect, Size, Canvas};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
 pub struct Parallax<T: Widget> {
@@ -56,7 +56,7 @@ impl<T: Widget> Widget for Parallax<T> {
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
         self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 20.0);
         canvas.save();
-        canvas.concat(self.calc_parallax(size));
+        canvas.concat(&self.calc_parallax(size));
         self.inner.draw(canvas, size);
         canvas.restore();
     }
