@@ -6,12 +6,12 @@ use stacks::{
         widgets::{
             layout::{ContainerSize, VContainer},
             shapes::{Rect, Throbber},
-            LayoutDimension, LayoutSize, Parallax, Transform, Wrappable, Text, Font, FontStyle,
+            Font, FontStyle, LayoutDimension, LayoutSize, Parallax, Text, Transform, Wrappable,
         },
         Framework,
     },
     game::Builder,
-    skia::{Paint, Color4f, Matrix},
+    skia::{Color4f, Matrix, Paint},
 };
 
 fn main() {
@@ -65,7 +65,9 @@ fn main() {
                             let mut p = Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None);
                             p.set_anti_alias(true);
                             p
-                        }).boxed().wrap(),
+                        })
+                        .boxed()
+                        .wrap(),
                     ],
                     ContainerSize::ZERO.expand_height().expand_width(),
                 )

@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, Wrap, WrapState, ID};
 use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{scalar, Matrix, Point, Rect, Size, Canvas};
+use skia::{scalar, Canvas, Matrix, Point, Rect, Size};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
 pub struct Parallax<T: Widget> {

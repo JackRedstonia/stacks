@@ -1,6 +1,6 @@
 use super::super::{LayoutSize, Widget, WrapState};
 use crate::game::InputEvent;
-use crate::skia::{Contains, Paint, Point, Size, Canvas, Rect as SkRect};
+use crate::skia::{Canvas, Contains, Paint, Point, Rect as SkRect, Size};
 
 pub struct Rect {
     pub size: LayoutSize,

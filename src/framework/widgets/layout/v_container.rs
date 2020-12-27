@@ -2,7 +2,7 @@ use super::super::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, ID};
 use super::container::{ContainerSize, ContainerWidget};
 use crate::game::InputEvent;
 use crate::skia;
-use skia::{Matrix, Size, Canvas};
+use skia::{Canvas, Matrix, Size};
 
 pub struct VContainer<T: Widget> {
     inner: Vec<ContainerWidget<T>>,

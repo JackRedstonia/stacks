@@ -20,18 +20,22 @@ impl DefaultFontSet {
             default_regular: Typeface::from_name(family_name, SkFontStyle::normal()).unwrap(),
             default_bold: Typeface::from_name(family_name, SkFontStyle::bold()).unwrap(),
             default_italic: Typeface::from_name(family_name, SkFontStyle::italic()).unwrap(),
-            default_bold_italic: Typeface::from_name(family_name, SkFontStyle::bold_italic()).unwrap(),
+            default_bold_italic: Typeface::from_name(family_name, SkFontStyle::bold_italic())
+                .unwrap(),
         }
     }
 }
 
 impl FontSet for DefaultFontSet {
     fn get_default(&self, style: &FontStyle) -> Font {
-        Font::new(match style {
-            FontStyle::Regular => &self.default_regular,
-            FontStyle::Bold => &self.default_bold,
-            FontStyle::Italic => &self.default_italic,
-            FontStyle::BoldItalic => &self.default_bold_italic,
-        }, self.size)
+        Font::new(
+            match style {
+                FontStyle::Regular => &self.default_regular,
+                FontStyle::Bold => &self.default_bold,
+                FontStyle::Italic => &self.default_italic,
+                FontStyle::BoldItalic => &self.default_bold_italic,
+            },
+            self.size,
+        )
     }
 }

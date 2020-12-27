@@ -1,7 +1,7 @@
 pub mod widgets;
 
 use super::game::{Error, Game, InputEvent, State};
-use crate::skia::{Color4f, Paint, Rect, Size, Canvas};
+use crate::skia::{Canvas, Color4f, Paint, Rect, Size};
 use widgets::{Widget, Wrap};
 
 pub struct Framework<T: Widget> {

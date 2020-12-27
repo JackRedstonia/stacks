@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, WrapState};
 use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{Paint, Size, Canvas, Font as SkFont, TextBlob};
+use skia::{Canvas, Font as SkFont, Paint, Size, TextBlob};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -32,10 +32,7 @@ impl Text {
     pub fn new(text: impl AsRef<str>, font: Font, style: FontStyle, paint: Paint) -> Self {
         let font = font.resolve(&style);
         let blob = Self::blob(text.as_ref(), &font);
-        Self {
-            blob, paint,
-            font,
-        }
+        Self { blob, paint, font }
     }
 
     fn blob(text: &str, font: &SkFont) -> Option<TextBlob> {
@@ -51,10 +48,13 @@ impl Widget for Text {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
-        self.blob.as_ref().map(|x| {
-            let size = x.bounds().size();
-            LayoutSize::min(size.width, size.height)
-        }).unwrap_or(LayoutSize::ZERO)
+        self.blob
+            .as_ref()
+            .map(|x| {
+                let size = x.bounds().size();
+                LayoutSize::min(size.width, size.height)
+            })
+            .unwrap_or(LayoutSize::ZERO)
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, _size: Size) {

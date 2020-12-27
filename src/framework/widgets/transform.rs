@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, Wrap, WrapState, ID};
 use crate::game::InputEvent;
 use crate::skia;
-use skia::{Matrix, Rect, Size, Canvas};
+use skia::{Canvas, Matrix, Rect, Size};
 
 pub struct Transform<T: Widget> {
     pub inner: Wrap<T>,

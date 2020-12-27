@@ -1,7 +1,7 @@
 use super::{LayoutDimension, LayoutSize, Widget, WrapState};
 use crate::game::State;
 use crate::skia;
-use skia::{scalar, Paint, Size, Canvas, Color4f, PaintStyle, Rect};
+use skia::{scalar, Canvas, Color4f, Paint, PaintStyle, Rect, Size};
 
 pub struct Metrics {
     pub radius: LayoutDimension,

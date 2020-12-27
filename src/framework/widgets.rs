@@ -13,7 +13,7 @@ pub use transform::Transform;
 use std::cell::RefCell;
 
 use crate::game::InputEvent;
-use crate::skia::{scalar, Matrix, Rect, Size, Vector, Canvas};
+use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct ID(u64);

@@ -17,10 +17,10 @@ use winit::{
 
 use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect};
 
-use super::{FontSet, default_font_set::DefaultFontSet};
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
+use super::{default_font_set::DefaultFontSet, FontSet};
 
 enum Event<T: 'static> {
     WinitEvent(WinitEvent<'static, T>),
@@ -226,7 +226,11 @@ impl Runner {
                                     &window,
                                     |sk_canvas, _coordinate_system_helper| {
                                         sk_canvas.clear(Self::BACKGROUND);
-                                        sk_canvas.draw_picture(canvas, Some(&Matrix::default()), None);
+                                        sk_canvas.draw_picture(
+                                            canvas,
+                                            Some(&Matrix::default()),
+                                            None,
+                                        );
                                     },
                                 ) {
                                     let _ = event_tx.send(Event::Crash(e.into()));
@@ -278,7 +282,10 @@ impl Runner {
                     let canvas = rec.begin_recording(bounds, None);
                     game.draw(canvas);
                     canvas_tx
-                        .send(rec.finish_recording_as_picture(None).expect("Failed to finish recording picture while rendering"))
+                        .send(
+                            rec.finish_recording_as_picture(None)
+                                .expect("Failed to finish recording picture while rendering"),
+                        )
                         .expect("Failed to send canvas to draw thread");
                     State::with(|x| x.time_state_draw.update());
                 }
