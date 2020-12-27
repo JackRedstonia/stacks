@@ -73,18 +73,28 @@ impl State {
     where
         F: FnOnce(&mut State) -> R,
     {
-        Self::STATE.with(|x| f(x.borrow_mut().as_mut().unwrap()))
+        Self::STATE.with(|x| {
+            f(x.borrow_mut()
+                .as_mut()
+                .expect("Attempt to get game state while game is uninitialised"))
+        })
     }
 
     pub fn last_update_time() -> Duration {
-        Self::STATE.with(|x| x.borrow().as_ref().unwrap().time_state.last_update_time())
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect("Attempt to get game state while game is uninitialised")
+                .time_state
+                .last_update_time()
+        })
     }
 
     pub fn last_update_time_draw() -> Duration {
         Self::STATE.with(|x| {
             x.borrow()
                 .as_ref()
-                .unwrap()
+                .expect("Attempt to get game state while game is uninitialised")
                 .time_state_draw
                 .last_update_time()
         })
