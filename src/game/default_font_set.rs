@@ -1,7 +1,10 @@
 use super::canvas::FontSet;
 use crate::framework::widgets::FontStyle;
 use crate::skia;
-use skia::{Font, FontStyle as SkFontStyle, Typeface};
+use skia::{
+    font_style::{Slant, Width, Weight},
+    Font, FontStyle as SkFontStyle, Typeface,
+};
 
 // TODO: require argument for font set instead
 pub struct DefaultFontSet {
@@ -18,10 +21,17 @@ impl DefaultFontSet {
         Self {
             size: 16.0,
             default_regular: Typeface::from_name(family_name, SkFontStyle::normal()).unwrap(),
-            default_bold: Typeface::from_name(family_name, SkFontStyle::bold()).unwrap(),
+            default_bold: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::SEMI_BOLD, Width::NORMAL, Slant::Upright),
+            )
+            .unwrap(),
             default_italic: Typeface::from_name(family_name, SkFontStyle::italic()).unwrap(),
-            default_bold_italic: Typeface::from_name(family_name, SkFontStyle::bold_italic())
-                .unwrap(),
+            default_bold_italic: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::SEMI_BOLD, Width::NORMAL, Slant::Italic),
+            )
+            .unwrap(),
         }
     }
 }
