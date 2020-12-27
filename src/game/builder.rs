@@ -70,7 +70,11 @@ impl Builder {
     /// Start the app. `app_handler` must be an implementation of [skulpin::app::AppHandler].
     /// This does not return because winit does not return. For consistency, we use the
     /// fatal_error() callback on the passed in AppHandler.
-    pub fn run<T: 'static + Game + Send>(self, game: T) -> ! {
+    pub fn run<F, T>(self, game: F) -> !
+    where
+        F: 'static + Send + FnOnce() -> T,
+        T: Game,
+    {
         Runner::run(
             game,
             self.inner_size,

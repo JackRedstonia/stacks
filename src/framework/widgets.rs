@@ -32,7 +32,7 @@ impl ID {
 }
 
 #[allow(unused_variables)]
-pub trait Widget: Send {
+pub trait Widget: 'static + Send {
     fn update(&mut self, wrap: &mut WrapState) {}
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {

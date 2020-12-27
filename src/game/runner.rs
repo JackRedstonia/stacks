@@ -100,12 +100,16 @@ impl Runner {
 
     pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
-    pub fn run<T: 'static + Game + Send>(
-        game: T,
+    pub fn run<F, T>(
+        game: F,
         inner_size: Size,
         window_title: String,
         renderer_builder: RendererBuilder,
-    ) -> ! {
+    ) -> !
+    where
+        F: 'static + Send + FnOnce() -> T,
+        T: Game,
+    {
         // Create the event loop
         let event_loop = EventLoop::<()>::with_user_event();
 
@@ -136,8 +140,6 @@ impl Runner {
 
         let input_state = InputState::new(&winit_window);
         spawn(move || {
-            let mut game = game;
-
             State::STATE.with(|x| {
                 let input_state = input_state;
                 let time_state = TimeState::new();
@@ -149,6 +151,9 @@ impl Runner {
                     font_set: Box::new(DefaultFontSet::new()),
                 });
             });
+
+            let game = game;
+            let mut game = game();
 
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
             loop {

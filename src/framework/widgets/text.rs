@@ -1,7 +1,7 @@
 use super::{LayoutSize, Widget, WrapState};
 use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{Paint, Size, Canvas, Font as SkFont};
+use skia::{Paint, Size, Canvas, Font as SkFont, TextBlob};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -23,10 +23,24 @@ pub enum FontStyle {
 }
 
 pub struct Text {
-    pub text: String,
-    pub font: Font,
-    pub style: FontStyle,
+    pub blob: Option<TextBlob>,
+    pub font: SkFont,
     pub paint: Paint,
+}
+
+impl Text {
+    pub fn new(text: impl AsRef<str>, font: Font, style: FontStyle, paint: Paint) -> Self {
+        let font = font.resolve(&style);
+        let blob = Self::blob(text.as_ref(), &font);
+        Self {
+            blob, paint,
+            font,
+        }
+    }
+
+    fn blob(text: &str, font: &SkFont) -> Option<TextBlob> {
+        TextBlob::from_str(text, font)
+    }
 }
 
 impl Widget for Text {
@@ -37,19 +51,16 @@ impl Widget for Text {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
-        // TODO: this is also mostly a placeholder value.
-        // Proper text layout should be implemented - some fields in Self
-        // should be added to guide text layout and that sort of stuff.
-        LayoutSize::ZERO
+        self.blob.as_ref().map(|x| {
+            let size = x.bounds().size();
+            LayoutSize::min(size.width, size.height)
+        }).unwrap_or(LayoutSize::ZERO)
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, _size: Size) {
-        // TODO: text layout.
-        canvas.draw_str(
-            &self.text,
-            (0.0, 0.0),
-            &self.font.resolve(&self.style),
-            &self.paint,
-        );
+        if let Some(blob) = &self.blob {
+            let bounds = blob.bounds();
+            canvas.draw_text_blob(blob, (-bounds.left, -bounds.top), &self.paint);
+        }
     }
 }
