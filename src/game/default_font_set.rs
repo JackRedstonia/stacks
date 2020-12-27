@@ -2,7 +2,7 @@ use super::canvas::FontSet;
 use crate::framework::widgets::FontStyle;
 use crate::skia;
 use skia::{
-    font_style::{Slant, Width, Weight},
+    font_style::{Slant, Weight, Width},
     Font, FontStyle as SkFontStyle, Typeface,
 };
 
