@@ -30,33 +30,19 @@ impl<T: Widget> HContainer<T> {
             }
         }
 
-        let space_left = total_space - min;
+        let space_left = (total_space - min).max(0.0);
         let mut offset = 0.0;
-        if space_left < 0.0 {
-            let s = total_space / self.inner.len().max(1) as f32;
-            for i in &mut self.inner {
-                i.size.width = s;
-                i.position = (offset, 0.0).into();
-                offset += s;
-                i.size.height = if i.layout_size.height.expand.is_some() {
-                    size.height
-                } else {
-                    i.layout_size.height.min.min(size.height)
-                }
+        for i in &mut self.inner {
+            i.size.width = i.layout_size.width.min;
+            if let Some(e) = i.layout_size.width.expand {
+                i.size.width += space_left * e / expand;
             }
-        } else {
-            for i in &mut self.inner {
-                i.size.width = i.layout_size.width.min;
-                if let Some(e) = i.layout_size.width.expand {
-                    i.size.width += space_left * e / expand;
-                }
-                i.position = (offset, 0.0).into();
-                offset += i.size.width;
-                i.size.height = if i.layout_size.height.expand.is_some() {
-                    size.height
-                } else {
-                    i.layout_size.height.min.min(size.height)
-                }
+            i.position = (offset, 0.0).into();
+            offset += i.size.width;
+            i.size.height = if i.layout_size.height.expand.is_some() {
+                size.height
+            } else {
+                i.layout_size.height.min.min(size.height)
             }
         }
     }
@@ -81,24 +67,28 @@ impl<T: Widget> Widget for HContainer<T> {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
-        let mut size = 0.0f32;
-        let mut min = 0.0f32;
+        let mut width = 0.0f32;
+        let mut width_min = 0.0f32;
 
         let mut height = 0.0f32;
         let mut height_min = 0.0f32;
         for i in &mut self.inner {
             let s = i.inner.size();
             i.layout_size = s;
-            size += s.width.size;
-            min += s.width.min;
+            width += s.width.size;
+            width_min += s.width.min;
             height = height.max(s.height.size);
             height_min = height_min.max(s.height.min);
         }
 
         LayoutSize {
             width: LayoutDimension {
-                size,
-                min: self.size.width.min.map_or(min, |pmin| pmin.max(min)),
+                size: width,
+                min: self
+                    .size
+                    .width
+                    .min
+                    .map_or(width_min, |min| min.max(width_min)),
                 expand: self.size.width.expand,
             },
             height: LayoutDimension {
@@ -107,7 +97,7 @@ impl<T: Widget> Widget for HContainer<T> {
                     .size
                     .height
                     .min
-                    .map_or(height_min, |pmin| pmin.max(height_min)),
+                    .map_or(height_min, |min| min.max(height_min)),
                 expand: self.size.height.expand,
             },
         }
