@@ -29,22 +29,22 @@ impl<T: Widget> VContainer<T> {
                 expand += e;
             }
         }
-        expand = expand.max(1.0);
 
         let space_left = (total_space - min).max(0.0);
         let mut offset = 0.0;
         for i in &mut self.inner {
-            i.size.height = i.layout_size.height.min;
+            let mut height = i.layout_size.height.min;
             if let Some(e) = i.layout_size.height.expand {
-                i.size.height += space_left * e / expand;
+                height += space_left * e / expand;
             }
-            i.position = (0.0, offset).into();
-            offset += i.size.height;
-            i.size.width = if i.layout_size.width.expand.is_some() {
+            i.position.set(0.0, offset);
+            offset += height;
+            let width = if i.layout_size.width.expand.is_some() {
                 size.width
             } else {
                 i.layout_size.width.min.min(size.width)
-            }
+            };
+            i.inner.set_size(Size::new(width, height));
         }
     }
 }
@@ -56,11 +56,10 @@ impl<T: Widget> Widget for VContainer<T> {
         }
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
-        self.layout(size);
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         self.inner.iter_mut().rev().any(|i| {
             if let Some(event) = event.reverse_map_position(Matrix::translate(i.position)) {
-                i.inner.input(&event, i.size)
+                i.inner.input(&event)
             } else {
                 false
             }
@@ -104,13 +103,16 @@ impl<T: Widget> Widget for VContainer<T> {
         }
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
         self.layout(size);
+    }
+
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
             canvas.save();
             canvas.concat(&m);
-            i.inner.draw(canvas, i.size);
+            i.inner.draw(canvas);
             canvas.restore();
         }
     }

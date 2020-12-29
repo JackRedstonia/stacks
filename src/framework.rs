@@ -20,11 +20,7 @@ impl<T: Widget> Game for Framework<T> {
     }
 
     fn draw(&mut self, canvas: &mut Canvas) {
-        let size = self.root.size().layout_one(State::with(|x| {
-            let win = x.input_state.window_size;
-            Size::new(win.width, win.height)
-        }));
-        self.root.draw(canvas, size);
+        self.root.draw(canvas);
         canvas.draw_rect(
             Rect::new(-5.0, -5.0, 5.0, 5.0).with_offset(State::with(|x| {
                 (
@@ -36,12 +32,14 @@ impl<T: Widget> Game for Framework<T> {
         );
     }
 
+    fn set_size(&mut self, window_size: Size) {
+        let size = self.root.size();
+        let min = Size::new(size.width.min.max(window_size.width), size.height.min.max(window_size.height));
+        self.root.set_size(min);
+    }
+
     fn input(&mut self, event: InputEvent) {
-        let size = State::with(|x| {
-            let win = x.input_state.window_size;
-            Size::new(win.width, win.height)
-        });
-        self.root.input(&event, size);
+        self.root.input(&event);
     }
 
     fn close(&mut self) {}

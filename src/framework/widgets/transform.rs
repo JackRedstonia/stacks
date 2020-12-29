@@ -24,14 +24,10 @@ impl<T: Widget> Widget for Transform<T> {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
-        // TODO: test this. might be a soundness hole, ngl
-        self.matrix.invert().map_or(false, |m| {
-            event.reverse_map_position(m).map_or(false, |event| {
-                let (rect, _) = m.map_rect(Rect::from_size(size));
-                self.inner.input(&event, rect.size())
-            })
-        })
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
+        event
+            .reverse_map_position(self.matrix)
+            .map_or(false, |event| self.inner.input(&event))
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
@@ -39,10 +35,17 @@ impl<T: Widget> Widget for Transform<T> {
         self.size.map(self.matrix)
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
+        if let Some(m) = self.matrix.invert() {
+            let (rect, _) = m.map_rect(Rect::from_size(size));
+            self.inner.set_size(rect.size());
+        }
+    }
+
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         canvas.save();
         canvas.concat(&self.matrix);
-        self.inner.draw(canvas, self.size.layout_one(size));
+        self.inner.draw(canvas);
         canvas.restore();
     }
 

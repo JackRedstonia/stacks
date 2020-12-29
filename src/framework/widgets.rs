@@ -35,7 +35,7 @@ impl ID {
 pub trait Widget: 'static + Send {
     fn update(&mut self, wrap: &mut WrapState) {}
 
-    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
+    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         false
     }
 
@@ -43,7 +43,9 @@ pub trait Widget: 'static + Send {
         LayoutSize::ZERO
     }
 
-    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {}
+    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
+
+    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
 
     fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
         None
@@ -55,16 +57,20 @@ impl Widget for Box<dyn Widget> {
         self.as_mut().update(wrap);
     }
 
-    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
-        self.as_mut().input(wrap, event, size)
+    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+        self.as_mut().input(wrap, event)
     }
 
     fn size(&mut self, wrap: &mut WrapState) -> LayoutSize {
         self.as_mut().size(wrap)
     }
 
-    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
-        self.as_mut().draw(wrap, canvas, size);
+    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {
+        self.as_mut().set_size(wrap, size);
+    }
+
+    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {
+        self.as_mut().draw(wrap, canvas);
     }
 
     fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
@@ -89,16 +95,20 @@ impl<T: Widget> Wrap<T> {
         self.inner.update(&mut self.state);
     }
 
-    pub fn input(&mut self, event: &InputEvent, size: Size) -> bool {
-        self.inner.input(&mut self.state, event, size)
+    pub fn input(&mut self, event: &InputEvent) -> bool {
+        self.inner.input(&mut self.state, event)
     }
 
     pub fn size(&mut self) -> LayoutSize {
         self.inner.size(&mut self.state)
     }
 
-    pub fn draw(&mut self, canvas: &mut Canvas, size: Size) {
-        self.inner.draw(&mut self.state, canvas, size);
+    pub fn set_size(&mut self, size: Size) {
+        self.inner.set_size(&mut self.state, size);
+    }
+
+    pub fn draw(&mut self, canvas: &mut Canvas) {
+        self.inner.draw(&mut self.state, canvas);
     }
 
     pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {

@@ -5,6 +5,7 @@ use skia::{scalar, Canvas, Color4f, Paint, PaintStyle, Rect, Size};
 
 pub struct Metrics {
     pub radius: LayoutDimension,
+    size: Size,
     update_paint: Paint,
     draw_paint: Paint,
     update_accm: scalar,
@@ -15,6 +16,7 @@ impl Metrics {
     pub fn new(radius: LayoutDimension) -> Self {
         Self {
             radius,
+            size: Size::new_empty(),
             update_paint: {
                 let mut p = Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None);
                 p.set_stroke_width(8.0);
@@ -48,8 +50,12 @@ impl Widget for Metrics {
         }
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
-        let s = size.width.min(size.height);
+    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
+        self.size = size;
+    }
+
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
+        let s = self.size.width.min(self.size.height);
         let oval = Rect::from_wh(s, s);
         let draw_time = State::last_update_time_draw().as_secs_f32();
         let update_time = self.update_accm / self.update_count;

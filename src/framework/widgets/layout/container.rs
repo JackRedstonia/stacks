@@ -1,5 +1,5 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, Wrap};
-use crate::skia::{scalar, Size, Vector};
+use crate::skia::{scalar, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ContainerSize {
@@ -107,7 +107,6 @@ impl From<LayoutDimension> for ContainerDimension {
 pub struct ContainerWidget<T: Widget> {
     pub inner: Wrap<T>,
     pub layout_size: LayoutSize,
-    pub size: Size,
     pub position: Vector,
 }
 
@@ -116,7 +115,6 @@ impl<T: Widget> ContainerWidget<T> {
         Self {
             inner,
             layout_size: LayoutSize::ZERO,
-            size: Size::new_empty(),
             position: (0.0, 0.0).into(),
         }
     }

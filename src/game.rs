@@ -14,6 +14,7 @@ pub use time::TimeState;
 pub trait Game: 'static + Send {
     fn update(&mut self);
     fn draw(&mut self, canvas: &mut crate::skia::Canvas);
+    fn set_size(&mut self, size: crate::skia::Size);
     fn input(&mut self, event: InputEvent);
     fn close(&mut self);
     fn crash(&mut self, err: runner::Error);

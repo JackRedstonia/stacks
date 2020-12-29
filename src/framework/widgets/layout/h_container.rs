@@ -33,17 +33,18 @@ impl<T: Widget> HContainer<T> {
         let space_left = (total_space - min).max(0.0);
         let mut offset = 0.0;
         for i in &mut self.inner {
-            i.size.width = i.layout_size.width.min;
+            let mut width = i.layout_size.width.min;
             if let Some(e) = i.layout_size.width.expand {
-                i.size.width += space_left * e / expand;
+                width += space_left * e / expand;
             }
-            i.position = (offset, 0.0).into();
-            offset += i.size.width;
-            i.size.height = if i.layout_size.height.expand.is_some() {
+            i.position.set(offset, 0.0);
+            offset += width;
+            let height = if i.layout_size.height.expand.is_some() {
                 size.height
             } else {
                 i.layout_size.height.min.min(size.height)
-            }
+            };
+            i.inner.set_size(Size::new(width, height));
         }
     }
 }
@@ -55,11 +56,10 @@ impl<T: Widget> Widget for HContainer<T> {
         }
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
-        self.layout(size);
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         self.inner.iter_mut().rev().any(|i| {
             if let Some(event) = event.reverse_map_position(Matrix::translate(i.position)) {
-                i.inner.input(&event, i.size)
+                i.inner.input(&event)
             } else {
                 false
             }
@@ -103,13 +103,16 @@ impl<T: Widget> Widget for HContainer<T> {
         }
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
         self.layout(size);
+    }
+
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
             canvas.save();
             canvas.concat(&m);
-            i.inner.draw(canvas, i.size);
+            i.inner.draw(canvas);
             canvas.restore();
         }
     }

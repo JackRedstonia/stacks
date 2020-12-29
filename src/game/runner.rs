@@ -15,7 +15,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect};
+use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
@@ -104,7 +104,7 @@ impl State {
 pub struct Runner;
 
 impl Runner {
-    pub const CANVAS_QUEUE_LENGTH: usize = 8;
+    pub const PIC_QUEUE_LENGTH: usize = 8;
     pub const EVENT_QUEUE_SIZE: usize = 8;
     pub const FEEDBACK_QUEUE_SIZE: usize = 8;
 
@@ -144,7 +144,7 @@ impl Runner {
             .build(&window)
             .expect("Failed to create renderer");
 
-        let (canvas_tx, canvas_rx) = sync_channel(Self::CANVAS_QUEUE_LENGTH);
+        let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
@@ -174,7 +174,7 @@ impl Runner {
                             if Self::handle_event(
                                 &mut game,
                                 event,
-                                &canvas_tx,
+                                &pic_tx,
                                 &feedback_tx,
                                 &mut is_redraw,
                             ) {
@@ -229,15 +229,15 @@ impl Runner {
                                 *control_flow = ControlFlow::Exit;
                             }
                         }
-                        match canvas_rx.try_recv() {
-                            Ok(canvas) => {
+                        match pic_rx.try_recv() {
+                            Ok(pic) => {
                                 let window = WinitWindow::new(&winit_window);
                                 if let Err(e) = renderer.draw(
                                     &window,
-                                    |sk_canvas, _coordinate_system_helper| {
-                                        sk_canvas.clear(Self::BACKGROUND);
-                                        sk_canvas.draw_picture(
-                                            canvas,
+                                    |canvas, _| {
+                                        canvas.clear(Self::BACKGROUND);
+                                        canvas.draw_picture(
+                                            pic,
                                             Some(&Matrix::default()),
                                             None,
                                         );
@@ -272,6 +272,9 @@ impl Runner {
                 if let Some(r) = State::with(|x| x.input_state.handle_event(&event)) {
                     match r {
                         EventHandleResult::Input(event) => game.input(event),
+                        EventHandleResult::Resized(size) => {
+                            game.set_size(SkSize::new(size.width, size.height))
+                        }
                         EventHandleResult::Exit => {
                             game.close();
                             feedback_tx

@@ -1,11 +1,12 @@
 use super::{LayoutSize, Widget, Wrap, WrapState, ID};
 use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{scalar, Canvas, Matrix, Point, Rect, Size};
+use skia::{scalar, Canvas, Matrix, Point, Size};
 use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
 pub struct Parallax<T: Widget> {
     pub inner: Wrap<T>,
+    size: Size,
     pub last_mouse_position: Point,
     pub interpolated_mouse_position: Point,
 }
@@ -14,13 +15,14 @@ impl<T: Widget> Parallax<T> {
     pub fn new(inner: Wrap<T>) -> Self {
         Self {
             inner,
+            size: Size::new_empty(),
             last_mouse_position: (0.0, 0.0).into(),
             interpolated_mouse_position: (0.0, 0.0).into(),
         }
     }
 
-    fn calc_parallax(&self, size: Size) -> Matrix {
-        Matrix::translate((self.interpolated_mouse_position - (size / 2.0)) * 0.05)
+    fn calc_parallax(&self) -> Matrix {
+        Matrix::translate((self.interpolated_mouse_position - (self.size / 2.0)) * 0.05)
     }
 
     fn interpolate_mouse(&mut self, factor: scalar) {
@@ -38,26 +40,30 @@ impl<T: Widget> Widget for Parallax<T> {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent, size: Size) -> bool {
+    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
             self.last_mouse_position = (*x, *y).into();
         }
-        let m = self.calc_parallax(size);
-        event.reverse_map_position(m).map_or(false, |event| {
-            let (rect, _) = m.map_rect(Rect::from_size(size));
-            self.inner.input(&event, rect.size())
-        })
+        let m = self.calc_parallax();
+        event
+            .reverse_map_position(m)
+            .map_or(false, |event| self.inner.input(&event))
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
         self.inner.size()
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
+        self.size = size;
+        self.inner.set_size(size);
+    }
+
+    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 20.0);
         canvas.save();
-        canvas.concat(&self.calc_parallax(size));
-        self.inner.draw(canvas, size);
+        canvas.concat(&self.calc_parallax());
+        self.inner.draw(canvas);
         canvas.restore();
     }
 
