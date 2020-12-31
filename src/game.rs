@@ -8,7 +8,7 @@ mod time;
 pub use builder::Builder;
 pub use canvas::FontSet;
 pub use input::{EventHandleResult, InputEvent, InputState};
-pub use runner::{Error, State};
+pub use runner::{Error, State, ID};
 pub use time::TimeState;
 
 pub trait Game: 'static + Send {

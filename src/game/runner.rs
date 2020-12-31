@@ -58,11 +58,25 @@ impl From<VkResult> for Error {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct ID(u64);
+
+impl ID {
+    pub fn next() -> Self {
+        Self(State::with_mut(|x| {
+            let id = x.id_keeper;
+            x.id_keeper += 1;
+            id
+        }))
+    }
+}
+
 pub struct State {
     pub input_state: InputState,
     pub time_state: TimeState,
     pub time_state_draw: TimeState,
     pub font_set: Box<dyn FontSet>,
+    id_keeper: u64,
 }
 
 impl State {
@@ -116,9 +130,9 @@ impl State {
 pub struct Runner;
 
 impl Runner {
-    pub const PIC_QUEUE_LENGTH: usize = 8;
+    pub const PIC_QUEUE_LENGTH: usize = 1;
     pub const EVENT_QUEUE_SIZE: usize = 8;
-    pub const FEEDBACK_QUEUE_SIZE: usize = 8;
+    pub const FEEDBACK_QUEUE_SIZE: usize = 1;
 
     pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
@@ -171,6 +185,7 @@ impl Runner {
                     time_state,
                     time_state_draw,
                     font_set: Box::new(DefaultFontSet::new()),
+                    id_keeper: 0,
                 });
             });
 

@@ -10,26 +10,8 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use std::cell::RefCell;
-
-use crate::game::InputEvent;
+use crate::game::{ID, InputEvent};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct ID(u64);
-
-impl ID {
-    thread_local!(static KEEPER: RefCell<u64> = RefCell::new(0));
-
-    pub fn next() -> Self {
-        Self(Self::KEEPER.with(|x| {
-            let mut x = x.borrow_mut();
-            let id = *x;
-            *x += 1;
-            id
-        }))
-    }
-}
 
 #[allow(unused_variables)]
 pub trait Widget: 'static + Send {
