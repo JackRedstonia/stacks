@@ -1,7 +1,7 @@
 [package]
 name = "stacks"
 version = "0.1.0"
-authors = ["reverb"]
+authors = ["JackRedstonia <jackredstonia64@gmail.com>"]
 edition = "2018"
 
 [profile.release]
