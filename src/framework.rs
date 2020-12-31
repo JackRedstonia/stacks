@@ -1,48 +1,58 @@
-pub mod components;
+pub mod widgets;
 
-use super::game::Canvas;
-use super::game::{Error, Game, InputEvent, InputState, TimeState};
-use crate::skia::Size;
-use components::Component;
+use super::game::{Error, Game, InputEvent, State};
+use crate::skia::{Canvas, Color4f, Paint, Rect, Size};
+use widgets::{LayoutSize, Widget, Wrap};
 
-pub struct Framework<T: Component> {
-    root: T,
+pub struct Framework<T: Widget> {
+    root: Wrap<T>,
+    layout_size: LayoutSize,
+    size: Size,
 }
 
-impl<T: Component> Framework<T> {
-    pub fn new(root: T) -> Self {
-        Self { root }
+impl<T: Widget> Framework<T> {
+    pub fn new(root: Wrap<T>) -> Self {
+        Self {
+            root,
+            layout_size: LayoutSize::ZERO,
+            size: Size::new_empty(),
+        }
     }
 }
 
-impl<T: Component> Game for Framework<T> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.root.update(input_state, time_state);
+impl<T: Widget> Game for Framework<T> {
+    fn update(&mut self) {
+        let (size, changed) = self.root.size();
+        if size != self.layout_size || changed {
+            self.layout_size = size;
+            self.root.set_size(self.size);
+        }
+        self.root.update();
     }
 
-    fn draw(&mut self, input_state: &InputState, time_state: &TimeState, canvas: &mut Canvas) {
-        let size = self.root.size(input_state, time_state);
-        self.root.draw(
-            input_state,
-            time_state,
-            canvas,
-            size.layout_one(Size::new(
-                input_state.window_size.width,
-                input_state.window_size.height,
-            )),
+    fn draw(&mut self, canvas: &mut Canvas) {
+        self.root.draw(canvas);
+        canvas.draw_rect(
+            Rect::new(-5.0, -5.0, 5.0, 5.0).with_offset(State::with(|x| {
+                (
+                    x.input_state.mouse_position.x,
+                    x.input_state.mouse_position.y,
+                )
+            })),
+            &Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None),
         );
     }
 
-    fn input(&mut self, input_state: &InputState, time_state: &TimeState, event: InputEvent) {
-        self.root.input(
-            input_state,
-            time_state,
-            &event,
-            Size::new(
-                input_state.window_size.width,
-                input_state.window_size.height,
-            ),
+    fn set_size(&mut self, window_size: Size) {
+        self.size = Size::new(
+            self.layout_size.width.min.max(window_size.width),
+            self.layout_size.height.min.max(window_size.height),
         );
+        self.root.set_size(self.size);
+    }
+
+    fn input(&mut self, event: InputEvent) {
+        self.root.input(&event);
     }
 
     fn close(&mut self) {}

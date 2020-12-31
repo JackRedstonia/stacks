@@ -62,6 +62,7 @@ pub struct InputState {
 
 pub enum EventHandleResult {
     Input(InputEvent),
+    Resized(LogicalSize<scalar>),
     Exit,
 }
 
@@ -93,7 +94,8 @@ impl InputState {
                     self.window_size = new_inner_size.to_logical(*scale_factor);
                 }
                 WindowEvent::Resized(window_size) => {
-                    self.window_size = window_size.to_logical(self.scale_factor)
+                    self.window_size = window_size.to_logical(self.scale_factor);
+                    return Some(EventHandleResult::Resized(self.window_size));
                 }
                 WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(k) = input.virtual_keycode {

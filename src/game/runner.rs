@@ -1,7 +1,9 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
+use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread::spawn;
+use std::time::Duration;
 
 use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
@@ -13,14 +15,12 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::skia;
+use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize};
 
-use super::default_font_set::DefaultFontSet;
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
-
-use super::canvas::Canvas;
+use super::{default_font_set::DefaultFontSet, FontSet};
 
 enum Event<T: 'static> {
     WinitEvent(WinitEvent<'static, T>),
@@ -58,23 +58,97 @@ impl From<VkResult> for Error {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct ID(u64);
+
+impl ID {
+    pub fn next() -> Self {
+        Self(State::with_mut(|x| {
+            let id = x.id_keeper;
+            x.id_keeper += 1;
+            id
+        }))
+    }
+}
+
+pub struct State {
+    pub input_state: InputState,
+    pub time_state: TimeState,
+    pub time_state_draw: TimeState,
+    pub font_set: Box<dyn FontSet>,
+    id_keeper: u64,
+}
+
+impl State {
+    const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialised";
+    thread_local!(pub static STATE: RefCell<Option<State>> = RefCell::new(None));
+
+    #[inline]
+    pub fn with<F, R>(f: F) -> R
+    where
+        F: FnOnce(&State) -> R,
+    {
+        Self::STATE.with(|x| f(x.borrow().as_ref().expect(Self::PANIC_MESSAGE)))
+    }
+
+    #[inline]
+    pub fn with_mut<F, R>(f: F) -> R
+    where
+        F: FnOnce(&mut State) -> R,
+    {
+        Self::STATE.with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
+    }
+
+    pub fn last_update_time() -> Duration {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect(Self::PANIC_MESSAGE)
+                .time_state
+                .last_update_time()
+        })
+    }
+
+    pub fn elapsed() -> Duration {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect(Self::PANIC_MESSAGE)
+                .time_state
+                .elapsed()
+        })
+    }
+
+    pub fn last_update_time_draw() -> Duration {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect("Attempt to get game state while game is uninitialised")
+                .time_state_draw
+                .last_update_time()
+        })
+    }
+}
+
 pub struct Runner;
 
 impl Runner {
-    pub const CANVAS_QUEUE_LENGTH: usize = 8;
+    pub const PIC_QUEUE_LENGTH: usize = 1;
     pub const EVENT_QUEUE_SIZE: usize = 8;
-    pub const FEEDBACK_QUEUE_SIZE: usize = 8;
+    pub const FEEDBACK_QUEUE_SIZE: usize = 1;
 
-    pub const BACKGROUND: skia::Color = skia::Color::from_argb(255, 10, 10, 10);
-}
+    pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
-impl Runner {
-    pub fn run<T: 'static + Game + Send>(
-        game: T,
+    pub fn run<F, T>(
+        game: F,
         inner_size: Size,
         window_title: String,
         renderer_builder: RendererBuilder,
-    ) -> ! {
+    ) -> !
+    where
+        F: 'static + Send + FnOnce() -> T,
+        T: Game,
+    {
         // Create the event loop
         let event_loop = EventLoop::<()>::with_user_event();
 
@@ -99,20 +173,31 @@ impl Runner {
             .build(&window)
             .expect("Failed to create renderer");
 
-        let (canvas_tx, canvas_rx) = sync_channel(Self::CANVAS_QUEUE_LENGTH);
+        let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         let input_state = InputState::new(&winit_window);
         spawn(move || {
-            let mut input_state = input_state;
-            let mut game = game;
-            let mut time_state = TimeState::new();
-            let mut time_state_draw = TimeState::new();
+            State::STATE.with(|x| {
+                let input_state = input_state;
+                let time_state = TimeState::new();
+                let time_state_draw = TimeState::new();
+                *x.borrow_mut() = Some(State {
+                    input_state,
+                    time_state,
+                    time_state_draw,
+                    font_set: Box::new(DefaultFontSet::new()),
+                    id_keeper: 0,
+                });
+            });
 
-            let mut canvas_cap = 200_000;
+            let game = game;
+            let mut game = game();
+
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
             loop {
+                game.update();
                 let mut is_redraw = false;
                 loop {
                     match event_rx.try_recv() {
@@ -120,12 +205,8 @@ impl Runner {
                             if Self::handle_event(
                                 &mut game,
                                 event,
-                                &mut input_state,
-                                &mut time_state,
-                                &mut time_state_draw,
-                                &canvas_tx,
+                                &pic_tx,
                                 &feedback_tx,
-                                &mut canvas_cap,
                                 &mut is_redraw,
                             ) {
                                 return;
@@ -137,21 +218,22 @@ impl Runner {
                         },
                     }
                 }
-                game.update(&input_state, &time_state);
-                if !is_redraw {
-                    let update_time = time_state.last_update().elapsed();
-                    if target_update_time > update_time {
-                        std::thread::sleep(target_update_time - update_time);
+                State::with_mut(|state| {
+                    if !is_redraw {
+                        let update_time = state.time_state.last_update().elapsed();
+                        if target_update_time > update_time {
+                            std::thread::sleep(target_update_time - update_time);
+                        }
                     }
-                }
-                time_state.update();
+                    state.time_state.update();
+                });
             }
         });
 
         let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
         let mut last_frame = std::time::Instant::now();
 
-        let font_set = DefaultFontSet::new();
+        winit_window.set_cursor_visible(false);
 
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
@@ -162,6 +244,10 @@ impl Runner {
                 },
                 Err(e) => match e {
                     TryRecvError::Empty => {
+                        // TODO: this simply does not work well with
+                        // presentation modes other than Immediate.
+                        // this results in window resizing and moving being
+                        // unbearably laggy if not using Immediate.
                         let frame_time = last_frame.elapsed();
                         if frame_time > target_frame_time {
                             winit_window.request_redraw();
@@ -173,16 +259,13 @@ impl Runner {
                                 *control_flow = ControlFlow::Exit;
                             }
                         }
-                        match canvas_rx.try_recv() {
-                            Ok(canvas) => {
+                        match pic_rx.try_recv() {
+                            Ok(pic) => {
                                 let window = WinitWindow::new(&winit_window);
-                                if let Err(e) = renderer.draw(
-                                    &window,
-                                    |sk_canvas, _coordinate_system_helper| {
-                                        sk_canvas.clear(Self::BACKGROUND);
-                                        canvas.play(sk_canvas, &font_set);
-                                    },
-                                ) {
+                                if let Err(e) = renderer.draw(&window, |canvas, _| {
+                                    canvas.clear(Self::BACKGROUND);
+                                    canvas.draw_picture(pic, Some(&Matrix::default()), None);
+                                }) {
                                     let _ = event_tx.send(Event::Crash(e.into()));
                                     *control_flow = ControlFlow::Exit;
                                 }
@@ -203,20 +286,17 @@ impl Runner {
     fn handle_event<T>(
         game: &mut impl Game,
         event: Event<T>,
-        input_state: &mut InputState,
-        time_state: &mut TimeState,
-        time_state_draw: &mut TimeState,
-        canvas_tx: &SyncSender<Canvas>,
+        canvas_tx: &SyncSender<Picture>,
         feedback_tx: &SyncSender<FeedbackEvent>,
-        canvas_cap: &mut usize,
         is_redraw: &mut bool,
     ) -> bool {
         match event {
             Event::WinitEvent(event) => {
-                if let Some(r) = input_state.handle_event(&event) {
+                if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
                     match r {
-                        EventHandleResult::Input(event) => {
-                            game.input(&input_state, &time_state, event)
+                        EventHandleResult::Input(event) => game.input(event),
+                        EventHandleResult::Resized(size) => {
+                            game.set_size(SkSize::new(size.width, size.height))
                         }
                         EventHandleResult::Exit => {
                             game.close();
@@ -230,13 +310,20 @@ impl Runner {
 
                 if let WinitEvent::RedrawRequested(_) = event {
                     *is_redraw = true;
-                    let mut canvas = Canvas::with_capacity(*canvas_cap);
-                    game.draw(&input_state, &time_state_draw, &mut canvas);
-                    *canvas_cap = (*canvas_cap).max(canvas.capacity());
+                    let mut rec = PictureRecorder::new();
+                    let bounds = Rect::from_size(State::with(|x| {
+                        let w = x.input_state.window_size;
+                        (w.width, w.height)
+                    }));
+                    let canvas = rec.begin_recording(bounds, None);
+                    game.draw(canvas);
                     canvas_tx
-                        .send(canvas)
+                        .send(
+                            rec.finish_recording_as_picture(None)
+                                .expect("Failed to finish recording picture while rendering"),
+                        )
                         .expect("Failed to send canvas to draw thread");
-                    time_state_draw.update();
+                    State::with_mut(|x| x.time_state_draw.update());
                 }
             }
             Event::Crash(e) => {

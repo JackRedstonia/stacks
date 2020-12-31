@@ -1,65 +1,128 @@
 pub mod layout;
-mod metrics;
 mod parallax;
 pub mod shapes;
 mod text;
 mod transform;
 
-pub use metrics::Metrics;
 pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use crate::game::{Canvas, InputEvent, InputState, TimeState};
-use crate::skia::{scalar, Matrix, Rect, Size, Vector};
+use crate::game::{InputEvent, ID};
+use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
-pub trait Component {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState);
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool;
+#[allow(unused_variables)]
+pub trait Widget: 'static + Send {
+    fn update(&mut self, wrap: &mut WrapState) {}
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize;
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    );
+    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+        false
+    }
+
+    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
+        (LayoutSize::ZERO, false)
+    }
+
+    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
+
+    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
+
+    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        None
+    }
 }
 
-impl Component for Box<dyn Component + Send> {
-    fn update(&mut self, input_state: &InputState, time_state: &TimeState) {
-        self.as_mut().update(input_state, time_state);
+impl Widget for Box<dyn Widget> {
+    fn update(&mut self, wrap: &mut WrapState) {
+        self.as_mut().update(wrap);
     }
 
-    fn input(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        event: &InputEvent,
-        size: Size,
-    ) -> bool {
-        self.as_mut().input(input_state, time_state, event, size)
+    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+        self.as_mut().input(wrap, event)
     }
 
-    fn size(&mut self, input_state: &InputState, time_state: &TimeState) -> LayoutSize {
-        self.as_mut().size(input_state, time_state)
+    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
+        self.as_mut().size(wrap)
     }
 
-    fn draw(
-        &mut self,
-        input_state: &InputState,
-        time_state: &TimeState,
-        canvas: &mut Canvas,
-        size: Size,
-    ) {
-        self.as_mut().draw(input_state, time_state, canvas, size);
+    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {
+        self.as_mut().set_size(wrap, size);
+    }
+
+    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {
+        self.as_mut().draw(wrap, canvas);
+    }
+
+    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        self.as_mut().get(wrap, id)
+    }
+}
+
+pub struct Wrap<T: Widget> {
+    pub inner: T,
+    pub state: WrapState,
+}
+
+impl<T: Widget> Wrap<T> {
+    pub fn new(inner: T) -> Self {
+        Self {
+            inner,
+            state: WrapState::new(),
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.inner.update(&mut self.state);
+    }
+
+    pub fn input(&mut self, event: &InputEvent) -> bool {
+        self.inner.input(&mut self.state, event)
+    }
+
+    pub fn size(&mut self) -> (LayoutSize, bool) {
+        self.inner.size(&mut self.state)
+    }
+
+    pub fn set_size(&mut self, size: Size) {
+        self.inner.set_size(&mut self.state, size);
+    }
+
+    pub fn draw(&mut self, canvas: &mut Canvas) {
+        self.inner.draw(&mut self.state, canvas);
+    }
+
+    pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+        if self.state.id == id {
+            Some((&mut self.inner, &mut self.state))
+        } else {
+            self.inner.get(&mut self.state, id)
+        }
+    }
+}
+
+pub trait Wrappable<T: Widget> {
+    fn wrap(self) -> Wrap<T>;
+    fn boxed(self) -> Box<dyn Widget>;
+}
+
+impl<T: 'static + Widget> Wrappable<T> for T {
+    fn wrap(self) -> Wrap<T> {
+        Wrap::new(self)
+    }
+
+    fn boxed(self) -> Box<dyn Widget> {
+        Box::new(self)
+    }
+}
+
+#[derive(Debug)]
+pub struct WrapState {
+    id: ID,
+}
+
+impl WrapState {
+    pub fn new() -> Self {
+        Self { id: ID::next() }
     }
 }
 
@@ -158,14 +221,14 @@ pub struct LayoutDimension {
     pub min: scalar,
 
     /// The normal number of logical pixels in this dimension.
-    /// Normally ignored by containers and other UI-building components,
+    /// Normally ignored by containers and other UI-building widgets,
     /// and is only respected when this is not part of an UI.
     pub size: scalar,
 
     /// The expansion factor in this dimension.
-    /// A Some(x) expresses this component in this dimension should take up as
+    /// A Some(x) expresses this widget in this dimension should take up as
     /// much space as it is allowed, with an expansion factor of x.
-    /// A None expresses this component should take up the minimum space,
+    /// A None expresses this widget should take up the minimum space,
     /// expressed in the [min](Self::min) field.
     pub expand: Option<scalar>,
 }
