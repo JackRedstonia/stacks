@@ -6,6 +6,7 @@ use skia::{Canvas, Matrix, Size};
 
 pub struct VContainer<T: Widget> {
     inner: Vec<ContainerWidget<T>>,
+    sizes_changed: bool,
     pub size: ContainerSize,
 }
 
@@ -13,6 +14,7 @@ impl<T: Widget> VContainer<T> {
     pub fn new(inner: Vec<Wrap<T>>, size: ContainerSize) -> Self {
         Self {
             inner: inner.into_iter().map(|i| ContainerWidget::new(i)).collect(),
+            sizes_changed: false,
             size,
         }
     }
@@ -44,7 +46,7 @@ impl<T: Widget> VContainer<T> {
             } else {
                 i.layout_size.width.min.min(size.width)
             };
-            i.inner.set_size(Size::new(width, height));
+            i.maybe_set_size(Size::new(width, height));
         }
     }
 }
@@ -66,41 +68,48 @@ impl<T: Widget> Widget for VContainer<T> {
         })
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
+    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
         let mut height = 0.0f32;
         let mut height_min = 0.0f32;
         let mut width = 0.0f32;
         let mut width_min = 0.0f32;
 
+        self.sizes_changed = false;
+        let mut children_changed = false;
+
         for i in &mut self.inner {
-            let s = i.inner.size();
-            i.layout_size = s;
-            height += s.height.size;
-            height_min += s.height.min;
-            width = width.max(s.width.size);
-            width_min = width_min.max(s.width.min);
+            let (size, s, c) = i.size();
+            self.sizes_changed |= s;
+            children_changed |= c;
+            height += size.height.size;
+            height_min += size.height.min;
+            width = width.max(size.width.size);
+            width_min = width_min.max(size.width.min);
         }
 
-        LayoutSize {
-            width: LayoutDimension {
-                size: height,
-                min: self
-                    .size
-                    .height
-                    .min
-                    .map_or(width_min, |min| min.max(height_min)),
-                expand: self.size.width.expand,
+        (
+            LayoutSize {
+                width: LayoutDimension {
+                    size: height,
+                    min: self
+                        .size
+                        .height
+                        .min
+                        .map_or(width_min, |min| min.max(height_min)),
+                    expand: self.size.width.expand,
+                },
+                height: LayoutDimension {
+                    size: width,
+                    min: self
+                        .size
+                        .width
+                        .min
+                        .map_or(height_min, |min| min.max(width_min)),
+                    expand: self.size.height.expand,
+                },
             },
-            height: LayoutDimension {
-                size: width,
-                min: self
-                    .size
-                    .width
-                    .min
-                    .map_or(height_min, |min| min.max(width_min)),
-                expand: self.size.height.expand,
-            },
-        }
+            children_changed,
+        )
     }
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {

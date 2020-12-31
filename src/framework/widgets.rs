@@ -1,16 +1,14 @@
 pub mod layout;
-mod metrics;
 mod parallax;
 pub mod shapes;
 mod text;
 mod transform;
 
-pub use metrics::Metrics;
 pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use crate::game::{ID, InputEvent};
+use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
 #[allow(unused_variables)]
@@ -21,8 +19,8 @@ pub trait Widget: 'static + Send {
         false
     }
 
-    fn size(&mut self, wrap: &mut WrapState) -> LayoutSize {
-        LayoutSize::ZERO
+    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
+        (LayoutSize::ZERO, false)
     }
 
     fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
@@ -43,7 +41,7 @@ impl Widget for Box<dyn Widget> {
         self.as_mut().input(wrap, event)
     }
 
-    fn size(&mut self, wrap: &mut WrapState) -> LayoutSize {
+    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
         self.as_mut().size(wrap)
     }
 
@@ -81,7 +79,7 @@ impl<T: Widget> Wrap<T> {
         self.inner.input(&mut self.state, event)
     }
 
-    pub fn size(&mut self) -> LayoutSize {
+    pub fn size(&mut self) -> (LayoutSize, bool) {
         self.inner.size(&mut self.state)
     }
 

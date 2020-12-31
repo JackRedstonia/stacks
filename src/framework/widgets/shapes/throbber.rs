@@ -32,11 +32,14 @@ impl Widget for Throbber {
             })
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
-        LayoutSize {
-            width: self.radius,
-            height: self.radius,
-        }
+    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
+        (
+            LayoutSize {
+                width: self.radius,
+                height: self.radius,
+            },
+            false,
+        )
     }
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {

@@ -50,7 +50,7 @@ impl<T: Widget> Widget for Parallax<T> {
             .map_or(false, |event| self.inner.input(&event))
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
+    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
         self.inner.size()
     }
 

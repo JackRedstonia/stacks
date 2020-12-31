@@ -56,8 +56,8 @@ impl Widget for Text {
         false
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> LayoutSize {
-        self.layout_size
+    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
+        (self.layout_size, false)
     }
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {

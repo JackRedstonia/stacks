@@ -1,5 +1,5 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, Wrap};
-use crate::skia::{scalar, Vector};
+use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ContainerSize {
@@ -108,6 +108,9 @@ pub struct ContainerWidget<T: Widget> {
     pub inner: Wrap<T>,
     pub layout_size: LayoutSize,
     pub position: Vector,
+    size: Size,
+    changed: bool,
+    children_changed: bool,
 }
 
 impl<T: Widget> ContainerWidget<T> {
@@ -116,6 +119,25 @@ impl<T: Widget> ContainerWidget<T> {
             inner,
             layout_size: LayoutSize::ZERO,
             position: (0.0, 0.0).into(),
+            size: Size::new_empty(),
+            changed: true,
+            children_changed: true,
+        }
+    }
+
+    pub fn size(&mut self) -> (LayoutSize, bool, bool) {
+        let (s, c) = self.inner.size();
+        self.changed = self.layout_size != s;
+        self.layout_size = s;
+        self.children_changed = c;
+
+        (s, self.changed, c)
+    }
+
+    pub fn maybe_set_size(&mut self, size: Size) {
+        if self.changed || self.children_changed || size != self.size {
+            self.size = size;
+            self.inner.set_size(size);
         }
     }
 }

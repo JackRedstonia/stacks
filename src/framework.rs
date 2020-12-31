@@ -2,20 +2,31 @@ pub mod widgets;
 
 use super::game::{Error, Game, InputEvent, State};
 use crate::skia::{Canvas, Color4f, Paint, Rect, Size};
-use widgets::{Widget, Wrap};
+use widgets::{LayoutSize, Widget, Wrap};
 
 pub struct Framework<T: Widget> {
     root: Wrap<T>,
+    layout_size: LayoutSize,
+    size: Size,
 }
 
 impl<T: Widget> Framework<T> {
     pub fn new(root: Wrap<T>) -> Self {
-        Self { root }
+        Self {
+            root,
+            layout_size: LayoutSize::ZERO,
+            size: Size::new_empty(),
+        }
     }
 }
 
 impl<T: Widget> Game for Framework<T> {
     fn update(&mut self) {
+        let (size, changed) = self.root.size();
+        if size != self.layout_size || changed {
+            self.layout_size = size;
+            self.root.set_size(self.size);
+        }
         self.root.update();
     }
 
@@ -33,9 +44,11 @@ impl<T: Widget> Game for Framework<T> {
     }
 
     fn set_size(&mut self, window_size: Size) {
-        let size = self.root.size();
-        let min = Size::new(size.width.min.max(window_size.width), size.height.min.max(window_size.height));
-        self.root.set_size(min);
+        self.size = Size::new(
+            self.layout_size.width.min.max(window_size.width),
+            self.layout_size.height.min.max(window_size.height),
+        );
+        self.root.set_size(self.size);
     }
 
     fn input(&mut self, event: InputEvent) {
