@@ -71,12 +71,24 @@ impl State {
     #[inline]
     pub fn with<F, R>(f: F) -> R
     where
+        F: FnOnce(&State) -> R,
+    {
+        Self::STATE.with(|x| {
+            f(x.borrow()
+                .as_ref()
+                .expect("Attempt to get game state while game is uninitialised"))
+        })
+    }
+
+    #[inline]
+    pub fn with_mut<F, R>(f: F) -> R
+    where
         F: FnOnce(&mut State) -> R,
     {
         Self::STATE.with(|x| {
             f(x.borrow_mut()
                 .as_mut()
-                .expect("Attempt to get game state while game is uninitialised"))
+                .expect("Attempt to mutably get game state while game is uninitialised"))
         })
     }
 
@@ -188,7 +200,7 @@ impl Runner {
                     }
                 }
                 game.update();
-                State::with(|state| {
+                State::with_mut(|state| {
                     if !is_redraw {
                         let update_time = state.time_state.last_update().elapsed();
                         if target_update_time > update_time {
@@ -269,7 +281,7 @@ impl Runner {
     ) -> bool {
         match event {
             Event::WinitEvent(event) => {
-                if let Some(r) = State::with(|x| x.input_state.handle_event(&event)) {
+                if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
                     match r {
                         EventHandleResult::Input(event) => game.input(event),
                         EventHandleResult::Resized(size) => {
@@ -300,7 +312,7 @@ impl Runner {
                                 .expect("Failed to finish recording picture while rendering"),
                         )
                         .expect("Failed to send canvas to draw thread");
-                    State::with(|x| x.time_state_draw.update());
+                    State::with_mut(|x| x.time_state_draw.update());
                 }
             }
             Event::Crash(e) => {
