@@ -80,6 +80,7 @@ pub struct State {
 }
 
 impl State {
+    const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialised";
     thread_local!(pub static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
@@ -87,11 +88,7 @@ impl State {
     where
         F: FnOnce(&State) -> R,
     {
-        Self::STATE.with(|x| {
-            f(x.borrow()
-                .as_ref()
-                .expect("Attempt to get game state while game is uninitialised"))
-        })
+        Self::STATE.with(|x| f(x.borrow().as_ref().expect(Self::PANIC_MESSAGE)))
     }
 
     #[inline]
@@ -99,20 +96,26 @@ impl State {
     where
         F: FnOnce(&mut State) -> R,
     {
-        Self::STATE.with(|x| {
-            f(x.borrow_mut()
-                .as_mut()
-                .expect("Attempt to mutably get game state while game is uninitialised"))
-        })
+        Self::STATE.with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
     }
 
     pub fn last_update_time() -> Duration {
         Self::STATE.with(|x| {
             x.borrow()
                 .as_ref()
-                .expect("Attempt to get game state while game is uninitialised")
+                .expect(Self::PANIC_MESSAGE)
                 .time_state
                 .last_update_time()
+        })
+    }
+
+    pub fn elapsed() -> Duration {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect(Self::PANIC_MESSAGE)
+                .time_state
+                .elapsed()
         })
     }
 
@@ -194,6 +197,7 @@ impl Runner {
 
             let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
             loop {
+                game.update();
                 let mut is_redraw = false;
                 loop {
                     match event_rx.try_recv() {
@@ -214,7 +218,6 @@ impl Runner {
                         },
                     }
                 }
-                game.update();
                 State::with_mut(|state| {
                     if !is_redraw {
                         let update_time = state.time_state.last_update().elapsed();
@@ -259,17 +262,10 @@ impl Runner {
                         match pic_rx.try_recv() {
                             Ok(pic) => {
                                 let window = WinitWindow::new(&winit_window);
-                                if let Err(e) = renderer.draw(
-                                    &window,
-                                    |canvas, _| {
-                                        canvas.clear(Self::BACKGROUND);
-                                        canvas.draw_picture(
-                                            pic,
-                                            Some(&Matrix::default()),
-                                            None,
-                                        );
-                                    },
-                                ) {
+                                if let Err(e) = renderer.draw(&window, |canvas, _| {
+                                    canvas.clear(Self::BACKGROUND);
+                                    canvas.draw_picture(pic, Some(&Matrix::default()), None);
+                                }) {
                                     let _ = event_tx.send(Event::Crash(e.into()));
                                     *control_flow = ControlFlow::Exit;
                                 }
