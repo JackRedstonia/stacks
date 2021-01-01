@@ -1,7 +1,9 @@
 use super::{LayoutSize, Widget, WrapState};
 use crate::game::{InputEvent, State};
 use crate::skia;
-use skia::{shaper::TextBlobBuilderRunHandler, Canvas, Font as SkFont, Paint, Shaper, Size};
+use skia::{
+    shaper::TextBlobBuilderRunHandler, Canvas, Font as SkFont, Paint, Shaper, Size, TextBlob,
+};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -24,10 +26,11 @@ pub enum FontStyle {
 
 pub struct Text {
     pub layout_size: LayoutSize,
-    size: Size,
-    pub text: String,
     pub font: SkFont,
     pub paint: Paint,
+    size: Size,
+    text: String,
+    blob: Option<TextBlob>,
 }
 
 impl Text {
@@ -39,13 +42,22 @@ impl Text {
         paint: Paint,
     ) -> Self {
         let font = font.resolve(&style);
+        let text = text.as_ref();
         Self {
             layout_size: size,
-            size: Size::new_empty(),
-            text: text.as_ref().to_owned(),
-            paint,
             font,
+            paint,
+            size: Size::new_empty(),
+            text: text.to_owned(),
+            blob: None,
         }
+    }
+
+    fn shape(&mut self) {
+        let mut handler = TextBlobBuilderRunHandler::new(&self.text, (0.0, 0.0));
+        let shaper = Shaper::new(None);
+        shaper.shape(&self.text, &self.font, true, self.size.width, &mut handler);
+        self.blob = handler.make_blob();
     }
 }
 
@@ -62,15 +74,13 @@ impl Widget for Text {
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
         self.size = size;
+        self.shape();
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
-        let mut handler = TextBlobBuilderRunHandler::new(&self.text, (0.0, 0.0));
-        let shaper = Shaper::new(None);
-        shaper.shape(&self.text, &self.font, true, self.size.width, &mut handler);
-        if let Some(blob) = handler.make_blob() {
+        if let Some(blob) = &self.blob {
             let bounds = blob.bounds();
-            canvas.draw_text_blob(&blob, (-bounds.left, -bounds.top), &self.paint);
+            canvas.draw_text_blob(blob, (-bounds.left, -bounds.top), &self.paint);
         }
     }
 }
