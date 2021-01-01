@@ -9,8 +9,11 @@ pub struct Transform<T: Widget> {
 }
 
 impl<T: Widget> Transform<T> {
-    pub fn new(inner: Wrap<T>, matrix: Matrix) -> Self {
-        Self { inner, matrix }
+    pub fn new(inner: impl Into<Wrap<T>>, matrix: Matrix) -> Self {
+        Self {
+            inner: inner.into(),
+            matrix,
+        }
     }
 }
 

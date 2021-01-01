@@ -11,9 +11,17 @@ pub struct VContainer<T: Widget> {
 }
 
 impl<T: Widget> VContainer<T> {
-    pub fn new(inner: Vec<Wrap<T>>, size: ContainerSize) -> Self {
+    pub fn new<I, W>(inner: I, size: ContainerSize) -> Self
+    where
+        W: Into<Wrap<T>>,
+        I: IntoIterator<Item = W>,
+    {
         Self {
-            inner: inner.into_iter().map(ContainerWidget::new).collect(),
+            inner: inner
+                .into_iter()
+                .map(Into::into)
+                .map(ContainerWidget::new)
+                .collect(),
             sizes_changed: false,
             size,
         }

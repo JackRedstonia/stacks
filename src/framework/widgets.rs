@@ -100,6 +100,12 @@ impl<T: Widget> Wrap<T> {
     }
 }
 
+impl<T: Widget> From<T> for Wrap<T> {
+    fn from(t: T) -> Self {
+        Self::new(t)
+    }
+}
+
 pub trait Wrappable<T: Widget> {
     fn wrap(self) -> Wrap<T>;
     fn boxed(self) -> Box<dyn Widget>;

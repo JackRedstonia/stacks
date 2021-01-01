@@ -12,9 +12,9 @@ pub struct Parallax<T: Widget> {
 }
 
 impl<T: Widget> Parallax<T> {
-    pub fn new(inner: Wrap<T>) -> Self {
+    pub fn new(inner: impl Into<Wrap<T>>) -> Self {
         Self {
-            inner,
+            inner: inner.into(),
             size: Size::new_empty(),
             last_mouse_position: (0.0, 0.0).into(),
             interpolated_mouse_position: (0.0, 0.0).into(),
