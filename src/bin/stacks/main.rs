@@ -63,7 +63,7 @@ fn main() {
                         .wrap(),
                         Text::new(
                             LayoutSize::min(500.0, 100.0).expand_width(),
-                            "lorem ipsum dolor sit amet.  いろはにほへと",
+                            "lorem ipsum dolor sit amet. いろはにほへと",
                             Font::Default,
                             FontStyle::Bold,
                             {
