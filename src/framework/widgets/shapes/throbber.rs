@@ -1,6 +1,6 @@
-use super::super::{LayoutDimension, LayoutSize, Widget, WrapState};
-use crate::game::{InputEvent, State};
-use crate::skia::{scalar, Canvas, Contains, Paint, Point, Rect, Size, Vector};
+use crate::prelude::*;
+use game::{InputEvent, State};
+use skia::{scalar, Canvas, Contains, Paint, Rect, Size, Vector};
 
 pub struct Throbber {
     pub radius: LayoutDimension,
@@ -26,9 +26,8 @@ impl Widget for Throbber {
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         self.take_input
             && event.position().map_or(false, |p| {
-                let p: Point = (p.x, p.y).into();
                 let s = self.size.width.min(self.size.height);
-                Rect::from_wh(s, s).contains(p)
+                Rect::from_wh(s, s).contains(p.to_point())
             })
     }
 

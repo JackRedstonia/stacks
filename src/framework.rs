@@ -1,7 +1,10 @@
 pub mod widgets;
 
-use super::game::{Error, Game, InputEvent, State};
-use crate::skia::{Canvas, Color4f, Paint, Size};
+use std::collections::VecDeque;
+
+use crate::prelude::*;
+use game::{Error, Game, InputEvent, State};
+use skia::{Canvas, Color4f, Data, Image, Paint, Point, Size};
 use widgets::{LayoutSize, Widget, Wrap};
 
 pub struct Framework<T: Widget> {

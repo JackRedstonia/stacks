@@ -1,8 +1,6 @@
-use super::{LayoutSize, Widget, Wrap, WrapState, ID};
-use crate::game::{InputEvent, State};
-use crate::skia;
+use crate::prelude::*;
+use game::{InputEvent, State, ID};
 use skia::{scalar, Canvas, Matrix, Point, Size};
-use skulpin_renderer_winit::winit::dpi::LogicalPosition;
 
 pub struct Parallax<T: Widget> {
     pub inner: Wrap<T>,
@@ -41,8 +39,8 @@ impl<T: Widget> Widget for Parallax<T> {
     }
 
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        if let InputEvent::MouseMove(LogicalPosition { x, y }) = event {
-            self.last_mouse_position = (*x, *y).into();
+        if let InputEvent::MouseMove(p) = event {
+            self.last_mouse_position = p.to_point();
         }
         let m = self.calc_parallax();
         event
