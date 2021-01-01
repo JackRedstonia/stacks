@@ -126,6 +126,12 @@ impl WrapState {
     }
 }
 
+impl Default for WrapState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct LayoutSize {
     pub width: LayoutDimension,

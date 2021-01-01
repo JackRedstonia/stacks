@@ -1,7 +1,7 @@
 pub mod widgets;
 
 use super::game::{Error, Game, InputEvent, State};
-use crate::skia::{Canvas, Color4f, Paint, Rect, Size};
+use crate::skia::{Canvas, Color4f, Paint, Size};
 use widgets::{LayoutSize, Widget, Wrap};
 
 pub struct Framework<T: Widget> {
@@ -32,14 +32,17 @@ impl<T: Widget> Game for Framework<T> {
 
     fn draw(&mut self, canvas: &mut Canvas) {
         self.root.draw(canvas);
-        canvas.draw_rect(
-            Rect::new(-5.0, -5.0, 5.0, 5.0).with_offset(State::with(|x| {
-                (
-                    x.input_state.mouse_position.x,
-                    x.input_state.mouse_position.y,
-                )
-            })),
-            &Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None),
+        canvas.draw_circle(
+            {
+                let p = State::mouse_position();
+                (p.x, p.y)
+            },
+            8.0,
+            &{
+                let mut p = Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None);
+                p.set_anti_alias(true);
+                p
+            },
         );
     }
 

@@ -13,7 +13,7 @@ pub struct VContainer<T: Widget> {
 impl<T: Widget> VContainer<T> {
     pub fn new(inner: Vec<Wrap<T>>, size: ContainerSize) -> Self {
         Self {
-            inner: inner.into_iter().map(|i| ContainerWidget::new(i)).collect(),
+            inner: inner.into_iter().map(ContainerWidget::new).collect(),
             sizes_changed: false,
             size,
         }

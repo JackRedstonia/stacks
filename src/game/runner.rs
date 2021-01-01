@@ -9,9 +9,14 @@ use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
-use winit::{dpi::LogicalPosition, event::Event as WinitEvent, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
+use winit::{
+    dpi::LogicalPosition,
+    event::Event as WinitEvent,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
 
-use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize, scalar};
+use crate::skia::{scalar, Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
