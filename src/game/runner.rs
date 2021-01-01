@@ -9,13 +9,9 @@ use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
-use winit::{
-    event::Event as WinitEvent,
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
+use winit::{dpi::LogicalPosition, event::Event as WinitEvent, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 
-use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize};
+use crate::skia::{Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize, scalar};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
@@ -123,9 +119,19 @@ impl State {
         Self::STATE.with(|x| {
             x.borrow()
                 .as_ref()
-                .expect("Attempt to get game state while game is uninitialised")
+                .expect(Self::PANIC_MESSAGE)
                 .time_state_draw
                 .last_update_time()
+        })
+    }
+
+    pub fn mouse_position() -> LogicalPosition<scalar> {
+        Self::STATE.with(|x| {
+            x.borrow()
+                .as_ref()
+                .expect(Self::PANIC_MESSAGE)
+                .input_state
+                .mouse_position
         })
     }
 }
