@@ -66,8 +66,7 @@ fn main() {
                     .boxed(),
                 ],
                 ContainerSize::ZERO.expand_height().expand_width(),
-            ))
-            .wrap();
+            ));
             Framework::new(root)
         })
 }

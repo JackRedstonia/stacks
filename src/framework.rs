@@ -24,9 +24,9 @@ pub struct Framework<T: Widget> {
 }
 
 impl<T: Widget> Framework<T> {
-    pub fn new(root: Wrap<T>) -> Self {
+    pub fn new(root: impl Into<Wrap<T>>) -> Self {
         Self {
-            root,
+            root: root.into(),
             layout_size: LayoutSize::ZERO,
             size: Size::new_empty(),
 
