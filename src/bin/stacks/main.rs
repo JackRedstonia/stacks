@@ -13,13 +13,11 @@ use stacks::{
         Framework,
     },
 };
-use skulpin_renderer::PresentMode;
 
 fn main() {
     Builder::new()
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
-        .present_mode_priority(vec![PresentMode::Immediate])
         .run(|| {
             let root = Parallax::new(VContainer::new(
                 vec![

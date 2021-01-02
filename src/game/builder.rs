@@ -51,25 +51,9 @@ impl Builder {
         self
     }
 
-    /// Specify which PresentMode is preferred. Some of this is hardware/platform dependent and
-    /// it's a good idea to read the Vulkan spec. You
-    ///
-    /// `present_mode_priority` should be a list of desired present modes, in descending order of
-    /// preference. In other words, passing `[Mailbox, Fifo]` will direct Skulpin to use mailbox
-    /// where available, but otherwise use `Fifo`.
-    ///
-    /// Since `Fifo` is always available, this is the mode that will be chosen if no desired mode is
-    /// available.
-    pub fn present_mode_priority(mut self, present_mode_priority: Vec<PresentMode>) -> Self {
-        self.renderer_builder = self
-            .renderer_builder
-            .present_mode_priority(present_mode_priority);
-        self
-    }
-
-    /// Start the app. `app_handler` must be an implementation of [skulpin::app::AppHandler].
+    /// Start the app.
     /// This does not return because winit does not return. For consistency, we use the
-    /// fatal_error() callback on the passed in AppHandler.
+    /// crash() callback on the passed in `Game`.
     pub fn run<F, T>(self, game: F) -> !
     where
         F: 'static + Send + FnOnce() -> T,
@@ -79,7 +63,7 @@ impl Builder {
             game,
             self.inner_size,
             self.window_title.clone(),
-            self.renderer_builder,
+            self.renderer_builder.present_mode_priority(vec![PresentMode::Immediate]),
         )
     }
 }
