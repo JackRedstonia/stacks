@@ -63,7 +63,8 @@ impl Builder {
             game,
             self.inner_size,
             self.window_title.clone(),
-            self.renderer_builder.present_mode_priority(vec![PresentMode::Immediate]),
+            self.renderer_builder
+                .present_mode_priority(vec![PresentMode::Immediate]),
         )
     }
 }

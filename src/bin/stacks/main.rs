@@ -1,18 +1,16 @@
 use std::ffi::CString;
 
-use stacks::prelude::*;
 use game::Builder;
 use skia::{Color4f, Matrix, Paint};
-use stacks::{
-    framework::{
-        widgets::{
-            layout::{ContainerSize, VContainer},
-            shapes::{Rect, Throbber},
-            Font, FontStyle, Parallax, Text, Transform,
-        },
-        Framework,
+use stacks::framework::{
+    widgets::{
+        layout::{ContainerSize, VContainer},
+        shapes::{Rect, Throbber},
+        Font, FontStyle, Parallax, Text, Transform,
     },
+    Framework,
 };
+use stacks::prelude::*;
 
 fn main() {
     Builder::new()
