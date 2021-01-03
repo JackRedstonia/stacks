@@ -8,7 +8,6 @@ use winit::{
         ElementState, Event as WinitEvent, MouseButton, MouseScrollDelta, VirtualKeyCode,
         WindowEvent,
     },
-    window::Window,
 };
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -70,11 +69,10 @@ impl InputState {
     pub const KEYBOARD_BUTTON_COUNT: usize = 255;
     pub const MOUSE_BUTTON_COUNT: usize = 7;
 
-    pub fn new(window: &Window) -> Self {
-        let scale_factor = window.scale_factor();
+    pub fn new(window_size: LogicalSize<scalar>) -> Self {
         Self {
-            window_size: window.inner_size().to_logical(scale_factor),
-            scale_factor,
+            window_size,
+            scale_factor: 1.0,
             keys: [false; Self::KEYBOARD_BUTTON_COUNT],
             mouse_position: LogicalPosition::new(0.0, 0.0),
             mouse_buttons: [false; Self::MOUSE_BUTTON_COUNT],

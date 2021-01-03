@@ -2,18 +2,18 @@ use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
-use std::thread::spawn;
-use std::time::Duration;
+use std::thread::{sleep, spawn};
+use std::time::{Duration, Instant};
 
 use skulpin_renderer::{ash, RendererBuilder, Size};
 use skulpin_renderer_winit::{winit, WinitWindow};
 
 use ash::vk::Result as VkResult;
 use winit::{
-    dpi::LogicalPosition,
-    event::Event as WinitEvent,
+    dpi::{LogicalPosition, PhysicalSize},
+    event::{Event as WinitEvent, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
+    window::{WindowBuilder, WindowId},
 };
 
 use crate::skia::{scalar, Color, Matrix, Picture, PictureRecorder, Rect, Size as SkSize};
@@ -25,6 +25,7 @@ use super::{default_font_set::DefaultFontSet, FontSet};
 
 enum Event<T: 'static> {
     WinitEvent(WinitEvent<'static, T>),
+    ScaleFactorChanged(WindowId, f64, PhysicalSize<u32>),
     Crash(Error),
 }
 
@@ -160,9 +161,6 @@ impl Runner {
         F: 'static + Send + FnOnce() -> T,
         T: Game,
     {
-        // Create the event loop
-        let event_loop = EventLoop::<()>::with_user_event();
-
         let winit_size = match inner_size {
             Size::Physical(physical_size) => winit::dpi::Size::Physical(
                 winit::dpi::PhysicalSize::new(physical_size.width, physical_size.height),
@@ -173,27 +171,18 @@ impl Runner {
             )),
         };
 
-        // Create a single window
-        let winit_window = WindowBuilder::new()
-            .with_title(window_title)
-            .with_inner_size(winit_size)
-            .build(&event_loop)
-            .expect("Failed to create winit window");
-        let window = WinitWindow::new(&winit_window);
-        let mut renderer = renderer_builder
-            .build(&window)
-            .expect("Failed to create renderer");
+        // Create the event loop
+        let event_loop = EventLoop::<()>::with_user_event();
 
         let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
-        let input_state = InputState::new(&winit_window);
         spawn(move || {
+            let input_state = InputState::new(winit_size.to_logical(1.0));
+            let time_state = TimeState::new();
+            let time_state_draw = TimeState::new();
             State::STATE.with(|x| {
-                let input_state = input_state;
-                let time_state = TimeState::new();
-                let time_state_draw = TimeState::new();
                 *x.borrow_mut() = Some(State {
                     input_state,
                     time_state,
@@ -203,10 +192,9 @@ impl Runner {
                 });
             });
 
-            let game = game;
             let mut game = game();
 
-            let target_update_time = std::time::Duration::MILLISECOND; // 1000 fps
+            let target_update_time = Duration::MILLISECOND; // 1000 fps
             loop {
                 game.update();
                 let mut is_redraw = false;
@@ -233,7 +221,7 @@ impl Runner {
                     if !is_redraw {
                         let update_time = state.time_state.last_update().elapsed();
                         if target_update_time > update_time {
-                            std::thread::sleep(target_update_time - update_time);
+                            sleep(target_update_time - update_time);
                         }
                     }
                     state.time_state.update();
@@ -241,11 +229,32 @@ impl Runner {
             }
         });
 
-        let target_frame_time = std::time::Duration::MILLISECOND * 8; // 120 fps
-        let mut last_frame = std::time::Instant::now();
+        // Create a single window
+        let winit_window = WindowBuilder::new()
+            .with_title(window_title)
+            .with_inner_size(winit_size)
+            .build(&event_loop)
+            .expect("Failed to create winit window");
+
+        let window = WinitWindow::new(&winit_window);
+        let mut renderer = renderer_builder
+            .build(&window)
+            .expect("Failed to create renderer");
 
         winit_window.set_cursor_visible(false);
+        if event_tx
+            .send(Event::ScaleFactorChanged(
+                winit_window.id(),
+                winit_window.scale_factor(),
+                winit_window.inner_size(),
+            ))
+            .is_err()
+        {
+            panic!("Failed to send events to game thread, probably already crashed");
+        };
 
+        let target_frame_time = Duration::MILLISECOND * 8; // 120 fps
+        let mut last_frame = Instant::now();
         event_loop.run(
             move |event, _window_target, control_flow| match feedback_rx.try_recv() {
                 Ok(event) => match event {
@@ -262,12 +271,34 @@ impl Runner {
                         let frame_time = last_frame.elapsed();
                         if frame_time > target_frame_time {
                             winit_window.request_redraw();
-                            last_frame =
-                                std::time::Instant::now() - (frame_time - target_frame_time);
+                            last_frame = Instant::now() - (frame_time - target_frame_time);
                         }
-                        if let Some(event) = event.to_static() {
-                            if event_tx.send(Event::WinitEvent(event)).is_err() {
-                                *control_flow = ControlFlow::Exit;
+                        match event {
+                            WinitEvent::WindowEvent {
+                                window_id,
+                                event:
+                                    WindowEvent::ScaleFactorChanged {
+                                        scale_factor,
+                                        new_inner_size,
+                                    },
+                            } => {
+                                if event_tx
+                                    .send(Event::ScaleFactorChanged(
+                                        window_id,
+                                        scale_factor,
+                                        *new_inner_size,
+                                    ))
+                                    .is_err()
+                                {
+                                    *control_flow = ControlFlow::Exit;
+                                }
+                            }
+                            event => {
+                                if let Some(event) = event.to_static() {
+                                    if event_tx.send(Event::WinitEvent(event)).is_err() {
+                                        *control_flow = ControlFlow::Exit;
+                                    }
+                                }
                             }
                         }
                         match pic_rx.try_recv() {
@@ -336,6 +367,16 @@ impl Runner {
                         .expect("Failed to send canvas to draw thread");
                     State::with_mut(|x| x.time_state_draw.update());
                 }
+            }
+            Event::ScaleFactorChanged(window_id, scale_factor, mut new_inner_size) => {
+                let e: WinitEvent<()> = WinitEvent::WindowEvent {
+                    window_id,
+                    event: WindowEvent::ScaleFactorChanged {
+                        scale_factor,
+                        new_inner_size: &mut new_inner_size,
+                    },
+                };
+                State::with_mut(|x| x.input_state.handle_event(&e));
             }
             Event::Crash(e) => {
                 game.crash(e);
