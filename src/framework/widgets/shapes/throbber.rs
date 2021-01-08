@@ -27,7 +27,7 @@ impl Widget for Throbber {
         self.take_input
             && event.position().map_or(false, |p| {
                 let s = self.size.width.min(self.size.height);
-                Rect::from_wh(s, s).contains(p.to_point())
+                Rect::from_wh(s, s).contains(p)
             })
     }
 

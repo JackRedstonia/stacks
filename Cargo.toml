@@ -9,4 +9,4 @@ lto = "thin"
 
 [dependencies]
 skulpin-renderer = "0.5"
-skulpin-renderer-winit = { version = "0.5", features = ["winit-latest"] }
+skulpin-renderer-sdl2 = "0.5"

@@ -1,6 +1,4 @@
-use skulpin_renderer_winit::winit::dpi::LogicalPosition;
-
-use crate::skia::{scalar, IRect, ISize, Point, Rect, Size};
+use crate::skia::{IRect, ISize, Point, Rect, Size};
 
 pub trait BottomRight {
     fn bottom_right(&self) -> Point;
@@ -50,8 +48,8 @@ pub trait ToPoint {
     fn to_point(&self) -> Point;
 }
 
-impl ToPoint for LogicalPosition<scalar> {
-    fn to_point(&self) -> Point {
-        Point::new(self.x, self.y)
-    }
-}
+// impl ToPoint for LogicalPosition<scalar> {
+//     fn to_point(&self) -> Point {
+//         Point::new(self.x, self.y)
+//     }
+// }

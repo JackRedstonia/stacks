@@ -40,7 +40,7 @@ impl<T: Widget> Widget for Parallax<T> {
 
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         if let InputEvent::MouseMove(p) = event {
-            self.last_mouse_position = p.to_point();
+            self.last_mouse_position = *p;
         }
         let m = self.calc_parallax();
         event

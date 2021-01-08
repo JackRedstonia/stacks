@@ -1,38 +1,38 @@
-use skulpin_renderer::{CoordinateSystem, LogicalSize, PresentMode, RendererBuilder, Size};
+use skulpin_renderer::{CoordinateSystem, LogicalSize, PresentMode, RendererBuilder};
 
 use super::{runner::Runner, Game};
 
-pub struct Builder {
-    inner_size: Size,
-    window_title: String,
+pub struct Builder<'a> {
+    inner_size: LogicalSize,
+    window_title: &'a str,
     renderer_builder: RendererBuilder,
 }
 
-impl Default for Builder {
+impl<'a> Default for Builder<'a> {
     fn default() -> Self {
         Builder::new()
     }
 }
 
-impl Builder {
+impl<'a> Builder<'a> {
     /// Construct the app builder initialized with default options
     pub fn new() -> Self {
         Self {
             inner_size: LogicalSize::new(1280, 720).into(),
-            window_title: "Stacks".to_string(),
+            window_title: "Stacks",
             renderer_builder: RendererBuilder::new().use_vulkan_debug_layer(false),
         }
     }
 
     /// Specifies the inner size of the window. Both physical and logical coordinates are accepted.
-    pub fn inner_size<S: Into<Size>>(mut self, inner_size: S) -> Self {
+    pub fn inner_size(mut self, inner_size: LogicalSize) -> Self {
         self.inner_size = inner_size.into();
         self
     }
 
     /// Specifies the title that the window will be created with
-    pub fn window_title<T: Into<String>>(mut self, window_title: T) -> Self {
-        self.window_title = window_title.into();
+    pub fn window_title(mut self, title: &'a str) -> Self {
+        self.window_title = title.as_ref();
         self
     }
 
@@ -52,9 +52,7 @@ impl Builder {
     }
 
     /// Start the app.
-    /// This does not return because winit does not return. For consistency, we use the
-    /// crash() callback on the passed in `Game`.
-    pub fn run<F, T>(self, game: F) -> !
+    pub fn run<F, T>(self, game: F)
     where
         F: 'static + Send + FnOnce() -> T,
         T: Game,
@@ -62,7 +60,7 @@ impl Builder {
         Runner::run(
             game,
             self.inner_size,
-            self.window_title.clone(),
+            self.window_title,
             self.renderer_builder
                 .present_mode_priority(vec![PresentMode::Immediate]),
         )

@@ -23,9 +23,9 @@ impl Rect {
 impl Widget for Rect {
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         self.take_input
-            && event.position().map_or(false, |p| {
-                SkRect::from_size(self.size).contains(p.to_point())
-            })
+            && event
+                .position()
+                .map_or(false, |p| SkRect::from_size(self.size).contains(p))
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {

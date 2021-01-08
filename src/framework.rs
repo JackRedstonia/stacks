@@ -73,7 +73,7 @@ impl<T: Widget> Game for Framework<T> {
 
         let scale = self.cursor_scale;
         let scale_inv = 1.0 / scale;
-        let mouse_pos = State::mouse_position().to_point() * scale_inv;
+        let mouse_pos = State::mouse_position() * scale_inv;
         let cursor_mid = self.cursor.dimensions().center();
         let trail_mid: Point = self.cursor_trail.dimensions().center();
         canvas.save();
@@ -106,7 +106,7 @@ impl<T: Widget> Game for Framework<T> {
         self.root.input(&event);
         if let InputEvent::MouseMove(pos) = event {
             self.cursor_history
-                .push_back((pos.to_point(), State::elapsed().as_secs_f32()))
+                .push_back((pos, State::elapsed().as_secs_f32()))
         }
     }
 
