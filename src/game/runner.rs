@@ -227,7 +227,7 @@ impl Runner {
                                 }
                             }
                             Err(e) => match e {
-                                TryRecvError::Empty => {}
+                                TryRecvError::Empty => sleep(Duration::MILLISECOND),
                                 TryRecvError::Disconnected => break 'events,
                             },
                         }
