@@ -43,13 +43,3 @@ impl Center for ISize {
         self.bottom_right() * 0.5
     }
 }
-
-pub trait ToPoint {
-    fn to_point(&self) -> Point;
-}
-
-// impl ToPoint for LogicalPosition<scalar> {
-//     fn to_point(&self) -> Point {
-//         Point::new(self.x, self.y)
-//     }
-// }

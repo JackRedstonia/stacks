@@ -105,21 +105,21 @@ impl InputState {
         None
     }
 
-    /// Returns true if the given key is down
+    /// Returns whether the given key is down
     pub fn is_key_down(&self, key: Keycode) -> bool {
         Self::keyboard_key_to_index(key)
             .map(|k| self.keys[k])
             .unwrap_or(false)
     }
 
-    /// Returns true if the given button is down
+    /// Returns whether the given button is down
     pub fn is_mouse_down(&self, button: MouseButton) -> bool {
         Self::mouse_button_to_index(button)
             .map(|k| self.mouse_buttons[k])
             .unwrap_or(false)
     }
 
-    /// Convert the winit mouse button enum into a numerical index
+    /// Convert the mouse button enum into a numerical index
     fn mouse_button_to_index(button: MouseButton) -> Option<usize> {
         let index = match button {
             MouseButton::Left => 0,
@@ -137,7 +137,7 @@ impl InputState {
         }
     }
 
-    /// Convert the winit virtual key code into a numerical index
+    /// Convert the key code into a numerical index
     fn keyboard_key_to_index(key: Keycode) -> Option<usize> {
         let index = key as usize;
         if index >= Self::KEYBOARD_BUTTON_COUNT {
