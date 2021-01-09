@@ -1,6 +1,6 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::error::Error as StdError;
-use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
+use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError, TrySendError};
 use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 use std::{cell::RefCell, sync::mpsc::Receiver};
@@ -276,12 +276,19 @@ impl Runner {
                 }));
                 let canvas = rec.begin_recording(bounds, None);
                 game.draw(canvas);
-                pic_tx
-                    .send(
-                        rec.finish_recording_as_picture(None)
-                            .expect("Failed to finish recording picture while rendering"),
-                    )
-                    .expect("Failed to send canvas to draw thread");
+                if let Err(why) = pic_tx.try_send(
+                    rec.finish_recording_as_picture(None)
+                        .expect("Failed to finish recording picture while rendering"),
+                ) {
+                    match why {
+                        // Skip any unsent frames, just in case the renderer
+                        // fails to catch up, and to prevent lockups.
+                        TrySendError::Full(_) => {}
+                        TrySendError::Disconnected(_) => {
+                            panic!("Failed to send canvas to draw thread (disconnected channel)")
+                        }
+                    }
+                }
                 State::with_mut(|x| x.time_state_draw.update());
             }
             State::with_mut(|state| {
