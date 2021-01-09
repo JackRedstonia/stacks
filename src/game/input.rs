@@ -66,6 +66,7 @@ impl InputState {
 
     pub fn handle_event(&mut self, event: &Sdl2Event) -> Option<EventHandleResult> {
         match event {
+            Sdl2Event::Quit { .. } => return Some(EventHandleResult::Exit),
             Sdl2Event::Window { win_event, .. } => match win_event {
                 WindowEvent::Close => return Some(EventHandleResult::Exit),
                 WindowEvent::Resized(width, height) => {
