@@ -10,3 +10,4 @@ lto = "thin"
 [dependencies]
 skulpin-renderer = "0.5"
 skulpin-renderer-sdl2 = "0.5"
+gstreamer = "0.16"
