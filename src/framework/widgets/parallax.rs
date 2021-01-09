@@ -58,7 +58,7 @@ impl<T: Widget> Widget for Parallax<T> {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
-        self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 20.0);
+        self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 60.0);
         canvas.save();
         canvas.concat(&self.calc_parallax());
         self.inner.draw(canvas);
