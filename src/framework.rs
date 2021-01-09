@@ -52,11 +52,6 @@ impl<T: Widget> Framework<T> {
 
 impl<T: Widget> Game for Framework<T> {
     fn update(&mut self) {
-        let (size, changed) = self.root.size();
-        if size != self.layout_size || changed {
-            self.layout_size = size;
-            self.root.set_size(self.size);
-        }
         self.root.update();
         let n = State::elapsed().as_secs_f32() - self.cursor_fade_time;
         while let Some((_, t)) = self.cursor_history.iter().next() {
@@ -69,6 +64,11 @@ impl<T: Widget> Game for Framework<T> {
     }
 
     fn draw(&mut self, canvas: &mut Canvas) {
+        let (size, changed) = self.root.size();
+        if size != self.layout_size || changed {
+            self.layout_size = size;
+            self.root.set_size(self.size);
+        }
         self.root.draw(canvas);
 
         let scale = self.cursor_scale;
