@@ -1,4 +1,4 @@
-use crate::skia::{IRect, ISize, Point, Rect, Size};
+use crate::skia::{IRect, ISize, Point, Rect, Size, Paint};
 
 pub trait BottomRight {
     fn bottom_right(&self) -> Point;
@@ -41,5 +41,16 @@ impl Center for Size {
 impl Center for ISize {
     fn center(&self) -> Point {
         self.bottom_right() * 0.5
+    }
+}
+
+pub trait AntiAlias {
+    fn with_anti_alias(self, anti_alias: bool) -> Self;
+}
+
+impl AntiAlias for Paint {
+    fn with_anti_alias(mut self, anti_alias: bool) -> Self {
+        self.set_anti_alias(anti_alias);
+        self
     }
 }
