@@ -1,7 +1,7 @@
 use std::ffi::CString;
 
 use game::Builder;
-use skia::{Color4f, Matrix, Paint};
+use skia::{Matrix, Paint};
 use stacks::framework::{
     widgets::{
         layout::{ContainerSize, VContainer},
@@ -51,8 +51,8 @@ fn main() {
                     .boxed(),
                     AudioPlayer::new(
                         LayoutSize::min(500.0, 100.0).expand_width(),
-                        Paint::new(Color4f::new(0.8, 0.8, 1.0, 1.0), None).with_anti_alias(true),
-                        Paint::new(Color4f::new(0.7, 0.7, 0.9, 0.7), None).with_anti_alias(true),
+                        Paint::new_color4f(0.8, 0.8, 1.0, 1.0).anti_alias(),
+                        Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
                     )
                     .boxed(),
                 ],
