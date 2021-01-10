@@ -1,7 +1,9 @@
 use crate::prelude::*;
 use game::InputEvent;
-use gstreamer::{prelude::*, ClockTime, Element, Format, SeekFlags, State as GstState};
-use skia::{Canvas, Contains, Paint, Rect as SkRect, Size};
+use gstreamer::{
+    glib::FlagsClass, prelude::*, ClockTime, Element, Format, SeekFlags, State as GstState,
+};
+use skia::{Canvas, Contains, Paint, Rect, Size};
 use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 
 pub struct AudioPlayer {
@@ -23,6 +25,16 @@ impl AudioPlayer {
         player
             .set_property("uri", &("file://".to_owned() + path.to_str().unwrap()))
             .unwrap();
+        let flags = player.get_property("flags").unwrap();
+        let flags_class = FlagsClass::new(flags.type_()).unwrap();
+        let flags = flags_class
+            .builder_with_value(flags)
+            .unwrap()
+            .unset_by_nick("text")
+            .unset_by_nick("video")
+            .build()
+            .unwrap();
+        player.set_property("flags", &flags).unwrap();
         player.set_property("volume", &0.6).unwrap();
         player.set_state(GstState::Paused).unwrap();
 
@@ -59,7 +71,7 @@ impl AudioPlayer {
                 if seekable {
                     let _ = self
                         .player
-                        .seek_simple(SeekFlags::FLUSH | SeekFlags::KEY_UNIT, pos);
+                        .seek_simple(SeekFlags::FLUSH | SeekFlags::TRICKMODE_KEY_UNITS, pos);
                 }
             }
         }
@@ -82,7 +94,7 @@ impl Widget for AudioPlayer {
                 true
             }
             InputEvent::MouseDown(MouseButton::Left, pos) => {
-                let c = SkRect::from_size(self.size).contains(*pos);
+                let c = Rect::from_size(self.size).contains(*pos);
                 if c {
                     if let Some(p) = self.duration() {
                         let p = p as f32 * (pos.x / self.size.width);
@@ -104,14 +116,14 @@ impl Widget for AudioPlayer {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
-        canvas.draw_rect(SkRect::from_size(self.size), &self.background);
+        canvas.draw_rect(Rect::from_size(self.size), &self.background);
         if let Some(duration) = self.duration() {
             if let Some(position) = self.position() {
                 self.last_percentage = position as f32 / duration as f32;
             }
         }
         let width = self.size.width * self.last_percentage;
-        let foreground = SkRect::from_wh(width, self.size.height);
+        let foreground = Rect::from_wh(width, self.size.height);
         canvas.draw_rect(foreground, &self.foreground);
     }
 }
