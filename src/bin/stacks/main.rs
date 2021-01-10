@@ -21,21 +21,20 @@ fn main() {
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
-                        Paint::new(Color4f::new(0.2, 0.8, 0.0, 0.3), None).with_anti_alias(true),
+                        Paint::new_color4f(0.2, 0.8, 0.0, 0.3),
                         false,
                     )
                     .boxed(),
                     Rect::new(
                         LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
-                        Paint::new(Color4f::new(0.7, 0.1, 0.2, 0.3), None).with_anti_alias(true),
+                        Paint::new_color4f(0.7, 0.1, 0.2, 0.3).anti_alias(),
                         false,
                     )
                     .boxed(),
                     Transform::new(
                         Rect::new(
                             LayoutSize::min(50.0, 100.0),
-                            Paint::new(Color4f::new(0.0, 0.0, 1.0, 1.0), None)
-                                .with_anti_alias(true),
+                            Paint::new_color4f(0.0, 0.0, 1.0, 1.0).anti_alias(),
                             false,
                         ),
                         Matrix::translate((20.0, 20.0)),
@@ -43,13 +42,10 @@ fn main() {
                     .boxed(),
                     Throbber::new(
                         LayoutDimension::min(100.0),
-                        {
-                            let mut p = Paint::new(Color4f::new(0.0, 1.0, 0.0, 1.0), None)
-                                .with_anti_alias(true);
-                            p.set_stroke_width(12.0);
-                            p.set_stroke(true);
-                            p
-                        },
+                        Paint::new_color4f(0.0, 1.0, 0.0, 1.0)
+                            .with_stroke_width(12.0)
+                            .anti_alias()
+                            .stroke(),
                         false,
                     )
                     .boxed(),
