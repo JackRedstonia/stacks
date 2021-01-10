@@ -1,12 +1,12 @@
 use std::ffi::CString;
 
 use game::Builder;
-use skia::{Color4f, Matrix, Paint};
+use skia::{Matrix, Paint};
 use stacks::framework::{
     widgets::{
         layout::{ContainerSize, VContainer},
         shapes::{Rect, Throbber},
-        Font, FontStyle, Parallax, Text, Transform,
+        AudioPlayer, Parallax, Transform,
     },
     Framework,
 };
@@ -49,12 +49,10 @@ fn main() {
                         false,
                     )
                     .boxed(),
-                    Text::new(
+                    AudioPlayer::new(
                         LayoutSize::min(500.0, 100.0).expand_width(),
-                        "lorem ipsum dolor sit amet. いろはにほへと",
-                        Font::Default,
-                        FontStyle::Bold,
-                        Paint::new(Color4f::new(1.0, 1.0, 1.0, 1.0), None).anti_alias(),
+                        Paint::new_color4f(0.8, 0.8, 1.0, 1.0).anti_alias(),
+                        Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
                     )
                     .boxed(),
                 ],
