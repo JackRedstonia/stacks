@@ -5,13 +5,15 @@ It adopts a model similar to osu!framework and Flutter, where widgets parent oth
 
 A few noteworthy features:
 - Lazy layout and sizing
-- Game logic and rendering are done in separate threads (1000 updates/s, 120fps, hardcoded for now)
+- Separate threads for game logic and rendering
 - No sweeping garbage collector
+- Absolute memory safety
+- Short compile times (3-5 seconds on a modern Linux machine)
 
 ## Current state
-For graphics, Stacks utilises Skia on Vulkan. OpenGL/DirectX/Metal support not planned. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` performs poorly and a fix is not to come anytime soon.
+For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` introduces a very noticeable delay and a fix is unplanned.
 
-Audio is not yet implemented and is not the main focus (issue [#4](https://gitlab.com/JackRedstonia/stacks/-/issues/4)).
+Audio is a work-in-progress effort, entirely based on GStreamer (see [`gstreamer` branch](https://gitlab.com/JackRedstonia/stacks/-/tree/gstreamer)).
 
 The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
 
@@ -19,7 +21,9 @@ The repository currently contains both a binary and a library. The binary crate 
 Mozilla Public License version 2.0. See the LICENSE file for more information.
 
 ## Contributing
-This repository is actively reviewing and accepting pull requests and issues, especially those that improve performance, code quality and compile times. Please follow the same code of conduct as the Rust project when participating.
+This repository is actively reviewing and accepting pull requests & issues, especially those that improve performance and code quality. Please follow the same code of conduct as the Rust project when participating.
+
+Any code you contribute to this repository is to be under the same license of Mozilla Public License version 2.0.
 
 ## Note for GitHub users
 This repository is mirrored from GitLab, at https://gitlab.com/JackRedstonia/stacks.
