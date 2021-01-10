@@ -17,7 +17,7 @@ pub struct Music {
     // Current state
     state: GstState,
     duration: Option<Duration>,
-    seekable: Option<(Duration, Duration)>,
+    seekable: RefCell<Seekability>,
 
     // Position cache to work around seeking shenanigans
     last_position: RefCell<Duration>,
@@ -52,7 +52,7 @@ impl Music {
             player,
             state: initial_state,
             duration: None,
-            seekable: None,
+            seekable: RefCell::new(Seekability::Unknown),
             last_position: RefCell::new(Duration::ZERO),
         })
     }
@@ -64,10 +64,7 @@ impl Music {
                     MessageView::StateChanged(state_changed) => {
                         self.state = state_changed.get_current();
                         if self.is_playing() {
-                            let mut query = Seeking::new(Format::Time);
-                            if self.player.query(&mut query) {
-                                self.set_seekable(Seeking::get_result(&query));
-                            }
+                            self.trigger_seekable();
                         }
                     }
                     MessageView::Error(err) => {
@@ -163,15 +160,42 @@ impl Music {
     }
 
     fn is_seekable_to(&self, position: Duration) -> bool {
-        self.seekable
-            .map(|(start, end)| start <= position && position <= end)
-            .unwrap_or(false)
+        let seekable = self.seekable.borrow();
+        match &*seekable {
+            Seekability::Seekable(start, end) => Self::is_seekable_to_range(*start, *end, position),
+            Seekability::Unknown => {
+                drop(seekable);
+                self.trigger_seekable();
+                match &*self.seekable.borrow() {
+                    Seekability::Seekable(start, end) => {
+                        Self::is_seekable_to_range(*start, *end, position)
+                    }
+                    _ => false,
+                }
+            }
+            Seekability::Unseekable => false,
+        }
     }
 
-    fn set_seekable(&mut self, result: (bool, Gfv, Gfv)) {
+    fn is_seekable_to_range(start: Duration, end: Duration, position: Duration) -> bool {
+        start <= position && position <= end
+    }
+
+    fn trigger_seekable(&self) {
+        let mut query = Seeking::new(Format::Time);
+        if self.player.query(&mut query) {
+            self.set_seekable(Seeking::get_result(&query));
+        }
+    }
+
+    fn set_seekable(&self, result: (bool, Gfv, Gfv)) {
         if let (seekable, Gfv::Time(start), Gfv::Time(end)) = result {
             if let (Ok(start), Ok(end)) = (start.try_into(), end.try_into()) {
-                self.seekable = if seekable { Some((start, end)) } else { None };
+                *self.seekable.borrow_mut() = if seekable {
+                    Seekability::Seekable(start, end)
+                } else {
+                    Seekability::Unseekable
+                };
             }
         }
     }
@@ -181,6 +205,12 @@ impl Drop for Music {
     fn drop(&mut self) {
         let _ = self.player.set_state(GstState::Null);
     }
+}
+
+enum Seekability {
+    Seekable(Duration, Duration),
+    Unknown,
+    Unseekable,
 }
 
 #[derive(Debug)]
