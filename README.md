@@ -13,7 +13,7 @@ A few noteworthy features:
 ## Current state
 For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` introduces a very noticeable delay and a fix is unplanned.
 
-Audio is a work-in-progress effort, entirely based on GStreamer (see [`gstreamer` branch](https://gitlab.com/JackRedstonia/stacks/-/tree/gstreamer)).
+Audio is a work-in-progress effort, entirely based on GStreamer.
 
 The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
 
