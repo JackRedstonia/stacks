@@ -1,3 +1,4 @@
+pub mod music;
 pub mod widgets;
 
 use std::collections::VecDeque;
