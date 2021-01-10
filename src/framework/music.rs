@@ -61,14 +61,17 @@ impl Music {
         if let Some(bus) = self.player.get_bus() {
             if let Some(msg) = bus.pop() {
                 match msg.view() {
+                    MessageView::Eos(..) => {
+                        let _ = self.player.set_state(GstState::Ready);
+                    }
+                    MessageView::Error(err) => {
+                        return Err(err.get_debug());
+                    }
                     MessageView::StateChanged(state_changed) => {
                         self.state = state_changed.get_current();
                         if self.is_playing() {
                             self.trigger_seekable();
                         }
-                    }
-                    MessageView::Error(err) => {
-                        return Err(err.get_debug());
                     }
                     MessageView::DurationChanged(..) => {
                         // The duration was updated, invalidate old duration
@@ -147,7 +150,7 @@ impl Music {
     pub fn toggle_playing(&self) {
         let _ = self.player.set_state(match self.state {
             GstState::Playing => GstState::Paused,
-            GstState::Paused | GstState::Null => GstState::Playing,
+            GstState::Ready | GstState::Paused | GstState::Null => GstState::Playing,
             _ => return,
         });
     }
