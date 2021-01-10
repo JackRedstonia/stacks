@@ -1,8 +1,5 @@
 use crate::prelude::*;
 use game::InputEvent;
-use gstreamer::{
-    glib::FlagsClass, prelude::*, ClockTime, Element, Format, SeekFlags, State as GstState,
-};
 use skia::{Canvas, Contains, Paint, Rect, Size};
 use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 
@@ -11,95 +8,39 @@ pub struct AudioPlayer {
     pub foreground: Paint,
     pub background: Paint,
     size: Size,
-    player: Element,
-    last_percentage: f32,
+    music: Music,
 }
 
 impl AudioPlayer {
     pub fn new(size: LayoutSize, foreground: Paint, background: Paint) -> Self {
-        let player = gstreamer::ElementFactory::make("playbin", Some("player"))
-            .expect("Failed to create GStreamer playbin element");
-        let path = std::path::Path::new("./src/resources/sound.ogg")
-            .canonicalize()
-            .unwrap();
-        player
-            .set_property("uri", &("file://".to_owned() + path.to_str().unwrap()))
-            .unwrap();
-        let flags = player.get_property("flags").unwrap();
-        let flags_class = FlagsClass::new(flags.type_()).unwrap();
-        let flags = flags_class
-            .builder_with_value(flags)
-            .unwrap()
-            .unset_by_nick("text")
-            .unset_by_nick("video")
-            .build()
-            .unwrap();
-        player.set_property("flags", &flags).unwrap();
-        player.set_property("volume", &0.6).unwrap();
-        player.set_state(GstState::Paused).unwrap();
-
+        let music = Music::new("./src/resources/sound.ogg").unwrap();
         Self {
             layout_size: size,
             size: Size::new_empty(),
             foreground,
             background,
-            player,
-            last_percentage: 0.0,
-        }
-    }
-
-    fn position(&self) -> Option<u64> {
-        self.player
-            .query_position::<ClockTime>()
-            .map(|p| p.mseconds())
-            .flatten()
-    }
-
-    fn duration(&self) -> Option<u64> {
-        self.player
-            .query_duration::<ClockTime>()
-            .map(|p| p.mseconds())
-            .flatten()
-    }
-
-    fn seek(&self, ms: u64) {
-        if self.player.get_state(ClockTime::from_mseconds(1)).1 == GstState::Playing {
-            let pos = ClockTime::from_mseconds(ms);
-            let mut seek_query = gstreamer::query::Seeking::new(Format::Time);
-            if self.player.query(&mut seek_query) {
-                let seekable = gstreamer::query::Seeking::get_result(&seek_query).0;
-                if seekable {
-                    let _ = self
-                        .player
-                        .seek_simple(SeekFlags::FLUSH | SeekFlags::TRICKMODE_KEY_UNITS, pos);
-                }
-            }
+            music,
         }
     }
 }
 
 impl Widget for AudioPlayer {
+    fn update(&mut self, _wrap: &mut WrapState) {
+        if let Err(Some(s)) = self.music.update() {
+            eprintln!("Music player received error: {}", s);
+        }
+    }
+
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
-                match self.player.get_state(ClockTime::from_mseconds(1)).1 {
-                    GstState::Playing => {
-                        self.player.set_state(GstState::Paused).unwrap();
-                    }
-                    GstState::Paused | GstState::Null => {
-                        self.player.set_state(GstState::Playing).unwrap();
-                    }
-                    _ => {}
-                };
+                self.music.toggle_playing();
                 true
             }
             InputEvent::MouseDown(MouseButton::Left, pos) => {
                 let c = Rect::from_size(self.size).contains(*pos);
                 if c {
-                    if let Some(p) = self.duration() {
-                        let p = p as f32 * (pos.x / self.size.width);
-                        self.seek(p as _);
-                    }
+                    self.music.seek_percentage(pos.x / self.size.width);
                 }
                 c
             }
@@ -117,13 +58,9 @@ impl Widget for AudioPlayer {
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
-        if let Some(duration) = self.duration() {
-            if let Some(position) = self.position() {
-                self.last_percentage = position as f32 / duration as f32;
-            }
+        if let Some(percentage) = self.music.position_percentage() {
+            let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
+            canvas.draw_rect(foreground, &self.foreground);
         }
-        let width = self.size.width * self.last_percentage;
-        let foreground = Rect::from_wh(width, self.size.height);
-        canvas.draw_rect(foreground, &self.foreground);
     }
 }
