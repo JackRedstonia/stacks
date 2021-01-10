@@ -7,12 +7,19 @@ use gstreamer::{
     glib::{BoolError, FlagsClass},
     prelude::*,
     query::Seeking,
-    ClockTime, Element, Format, MessageView, SeekFlags, State as GstState, StateChangeError,
+    ClockTime, Element, Format, GenericFormattedValue as Gfv, MessageView, SeekFlags,
+    State as GstState, StateChangeError,
 };
 
 pub struct Music {
     player: Element,
+
+    // Current state
+    state: GstState,
     duration: Option<Duration>,
+    seekable: Option<(Duration, Duration)>,
+
+    // Position cache to work around seeking shenanigans
     last_position: RefCell<Duration>,
 }
 
@@ -38,11 +45,14 @@ impl Music {
         player.set_property("flags", &flags)?;
         player.set_property("uri", &path)?;
 
-        player.set_state(GstState::Paused)?;
+        let initial_state = GstState::Paused;
+        player.set_state(initial_state)?;
 
         Ok(Self {
             player,
+            state: initial_state,
             duration: None,
+            seekable: None,
             last_position: RefCell::new(Duration::ZERO),
         })
     }
@@ -51,9 +61,14 @@ impl Music {
         if let Some(bus) = self.player.get_bus() {
             if let Some(msg) = bus.pop() {
                 match msg.view() {
-                    MessageView::StateChanged(_state_changed) => {
-                        // TODO: we can actually check for seekability, state,
-                        // and other things here.
+                    MessageView::StateChanged(state_changed) => {
+                        self.state = state_changed.get_current();
+                        if self.is_playing() {
+                            let mut query = Seeking::new(Format::Time);
+                            if self.player.query(&mut query) {
+                                self.set_seekable(Seeking::get_result(&query));
+                            }
+                        }
                     }
                     MessageView::Error(err) => {
                         return Err(err.get_debug());
@@ -103,8 +118,7 @@ impl Music {
     }
 
     pub fn seek(&self, position: Duration) {
-        // TODO: check if a check on is_playing is needed
-        if self.is_seekable() {
+        if self.is_seekable_to(position) {
             let position: ClockTime = position.into();
             let seek_flags = SeekFlags::FLUSH | SeekFlags::TRICKMODE_KEY_UNITS;
             let _ = self.player.seek_simple(seek_flags, position);
@@ -122,7 +136,7 @@ impl Music {
     }
 
     pub fn is_playing(&self) -> bool {
-        self.get_state() == GstState::Playing
+        self.state == GstState::Playing
     }
 
     pub fn play(&self) {
@@ -134,20 +148,11 @@ impl Music {
     }
 
     pub fn toggle_playing(&self) {
-        let _ = self.player.set_state(match self.get_state() {
+        let _ = self.player.set_state(match self.state {
             GstState::Playing => GstState::Paused,
             GstState::Paused | GstState::Null => GstState::Playing,
             _ => return,
         });
-    }
-
-    fn get_state(&self) -> GstState {
-        self.player.get_state(ClockTime::from_mseconds(1)).1
-    }
-
-    fn is_seekable(&self) -> bool {
-        let mut query = Seeking::new(Format::Time);
-        self.player.query(&mut query) && Seeking::get_result(&query).0
     }
 
     fn get_duration(&self) -> Option<Duration> {
@@ -155,6 +160,20 @@ impl Music {
             .query_duration::<ClockTime>()
             .map(|e| e.try_into().ok())
             .flatten()
+    }
+
+    fn is_seekable_to(&self, position: Duration) -> bool {
+        self.seekable
+            .map(|(start, end)| start <= position && position <= end)
+            .unwrap_or(false)
+    }
+
+    fn set_seekable(&mut self, result: (bool, Gfv, Gfv)) {
+        if let (seekable, Gfv::Time(start), Gfv::Time(end)) = result {
+            if let (Ok(start), Ok(end)) = (start.try_into(), end.try_into()) {
+                self.seekable = if seekable { Some((start, end)) } else { None };
+            }
+        }
     }
 }
 
