@@ -1,4 +1,4 @@
-use crate::skia::{IRect, ISize, Point, Rect, Size, Paint};
+use crate::skia::{IRect, ISize, Paint, Point, Rect, Size};
 
 pub trait BottomRight {
     fn bottom_right(&self) -> Point;
