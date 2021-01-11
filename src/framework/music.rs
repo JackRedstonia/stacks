@@ -26,7 +26,7 @@ pub struct Music {
 impl Music {
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, MusicCreateError> {
         let path = path.as_ref().canonicalize()?;
-        let path = "file://".to_owned() + path.to_str().ok_or(MusicCreateError::InvalidPath)?;
+        let path = "file:///".to_owned() + path.to_str().ok_or(MusicCreateError::InvalidPath)?;
 
         let player = gstreamer::ElementFactory::make("playbin", None)?;
         // Since the file may contain more than just the audio stream,
