@@ -1,1 +1,5 @@
+# Cargo build output folder
 /target
+# Ignore .dll and .lib files for Windows
+/*.dll
+/*.lib
