@@ -3,6 +3,7 @@ name = "stacks"
 version = "0.1.0"
 authors = ["JackRedstonia <jackredstonia64@gmail.com>"]
 edition = "2018"
+build = "build.rs"
 
 [profile.release]
 lto = "thin"
