@@ -17,6 +17,22 @@ Audio is a work-in-progress effort, entirely based on GStreamer.
 
 The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
 
+## Compiling
+This project depends on SDL2 and GStreamer. When all these build dependencies are in place, compiling is simply `cargo build --release`.
+
+### Linux
+Any nightly Rust toolchain should work. Run the following command to install SDL2 & GStreamer.
+```sh
+$ apt-get install libsdl2-dev libgstreamer1.0-dev \
+      libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base \
+      gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+      gstreamer1.0-plugins-ugly gstreamer1.0-libav libgstrtspserver-1.0-dev
+```
+When shipping your applications, remember to include the SDL2 and GStreamer dynamic libraries.
+
+### Windows
+Nightly MSVC toolchain is required. Follow the `sdl2` and `gstreamer` crates' instructions on how to install dependencies.
+
 ## License
 Mozilla Public License version 2.0. See the LICENSE file for more information.
 
