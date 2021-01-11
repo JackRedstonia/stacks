@@ -218,7 +218,8 @@ enum Seekability {
 
 #[derive(Debug)]
 pub enum MusicCreateError {
-    GStreamerError,
+    GStreamerBoolError(BoolError),
+    GStreamerStateChangeError(StateChangeError),
     IoError(IoError),
     InvalidPath,
 }
@@ -230,13 +231,13 @@ impl From<IoError> for MusicCreateError {
 }
 
 impl From<BoolError> for MusicCreateError {
-    fn from(_: BoolError) -> Self {
-        Self::GStreamerError
+    fn from(err: BoolError) -> Self {
+        Self::GStreamerBoolError(err)
     }
 }
 
 impl From<StateChangeError> for MusicCreateError {
-    fn from(_: StateChangeError) -> Self {
-        Self::GStreamerError
+    fn from(err: StateChangeError) -> Self {
+        Self::GStreamerStateChangeError(err)
     }
 }
