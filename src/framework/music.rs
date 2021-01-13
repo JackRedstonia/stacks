@@ -62,7 +62,9 @@ impl Music {
             if let Some(msg) = bus.pop() {
                 match msg.view() {
                     MessageView::Eos(..) => {
-                        let _ = self.player.set_state(GstState::Ready);
+                        if self.player.set_state(GstState::Null).is_ok() {
+                            let _ = self.player.set_state(GstState::Paused);
+                        }
                     }
                     MessageView::Error(err) => {
                         return Err(err.get_debug());
