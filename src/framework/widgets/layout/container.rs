@@ -147,18 +147,6 @@ impl<T: Widget> ContainerWidget<T> {
         (s, self.changed, c)
     }
 
-    pub fn maybe_set_position(&mut self, x: scalar, y: scalar) {
-        let position = Point::new(x, y);
-        if position != self.position {
-            // This child has moved. This means we need to re-emit MouseMove,
-            // as from its perspective, the mouse really has moved.
-            let delta = position - self.position;
-            self.position = position;
-            self.inner
-                .input(&InputEvent::MouseMove(self.mouse_position - delta));
-        }
-    }
-
     pub fn maybe_set_size(&mut self, size: Size) {
         if self.changed || self.children_changed || size != self.size {
             self.size = size;

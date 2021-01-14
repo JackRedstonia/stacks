@@ -47,7 +47,7 @@ impl<T: Widget> VContainer<T> {
             if let Some(e) = i.layout_size.height.expand {
                 height += space_left * e / expand;
             }
-            i.maybe_set_position(0.0, offset);
+            i.position.set(0.0, offset);
             offset += height;
             let width = if i.layout_size.width.expand.is_some() {
                 size.width

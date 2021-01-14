@@ -13,6 +13,8 @@ pub use transform::Transform;
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
+use super::FrameworkState;
+
 #[allow(unused_variables)]
 pub trait Widget: 'static + Send {
     fn update(&mut self, wrap: &mut WrapState) {}
@@ -33,7 +35,11 @@ pub trait Widget: 'static + Send {
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
 
-    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+    fn get<'a>(
+        &'a mut self,
+        wrap: &mut WrapState,
+        id: ID,
+    ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
         None
     }
 }
@@ -86,42 +92,27 @@ impl<T: Widget> Wrap<T> {
     }
 
     pub fn update(&mut self) {
-        self.inner.update(&mut self.state);
+        self.state.update(&mut self.inner);
     }
 
     pub fn input(&mut self, event: &InputEvent) -> bool {
-        let b = self.inner.input(&mut self.state, event);
-        if matches!(event, InputEvent::MouseMove(_)) {
-            if self.state.was_hovered != b {
-                self.state.was_hovered = b;
-                if b {
-                    self.inner.hover(&mut self.state);
-                } else {
-                    self.inner.hover_lost(&mut self.state);
-                }
-            }
-        }
-        b
+        self.state.input(&mut self.inner, event)
     }
 
     pub fn size(&mut self) -> (LayoutSize, bool) {
-        self.inner.size(&mut self.state)
+        self.state.size(&mut self.inner)
     }
 
     pub fn set_size(&mut self, size: Size) {
-        self.inner.set_size(&mut self.state, size);
+        self.state.set_size(&mut self.inner, size);
     }
 
     pub fn draw(&mut self, canvas: &mut Canvas) {
-        self.inner.draw(&mut self.state, canvas);
+        self.state.draw(&mut self.inner, canvas);
     }
 
     pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-        if self.state.id == id {
-            Some((&mut self.inner, &mut self.state))
-        } else {
-            self.inner.get(&mut self.state, id)
-        }
+        self.state.get(&mut self.inner, id)
     }
 }
 
@@ -149,6 +140,7 @@ impl<T: 'static + Widget> Wrappable<T> for T {
 #[derive(Debug)]
 pub struct WrapState {
     id: ID,
+    is_hovered: bool,
     was_hovered: bool,
 }
 
@@ -156,6 +148,7 @@ impl WrapState {
     pub fn new() -> Self {
         Self {
             id: ID::next(),
+            is_hovered: false,
             was_hovered: false,
         }
     }
@@ -165,7 +158,77 @@ impl WrapState {
     }
 
     pub fn is_hovered(&self) -> bool {
-        self.was_hovered
+        self.is_hovered
+    }
+
+    pub fn update<T: Widget + ?Sized>(&mut self, widget: &mut T) {
+        if self.is_hovered != self.was_hovered {
+            self.was_hovered = self.is_hovered;
+            if self.is_hovered {
+                widget.hover(self);
+            } else {
+                widget.hover_lost(self);
+            }
+        }
+        widget.update(self);
+    }
+
+    pub fn input<T: Widget + ?Sized>(&mut self, widget: &mut T, event: &InputEvent) -> bool {
+        let b = widget.input(self, event);
+        if matches!(event, InputEvent::MouseMove(_)) {
+            self.is_hovered = b;
+        }
+        b
+    }
+
+    pub fn size<T: Widget + ?Sized>(&mut self, widget: &mut T) -> (LayoutSize, bool) {
+        widget.size(self)
+    }
+
+    pub fn set_size<T: Widget + ?Sized>(&mut self, widget: &mut T, size: Size) {
+        widget.set_size(self, size);
+    }
+
+    pub fn draw<T: Widget + ?Sized>(&mut self, widget: &mut T, canvas: &mut Canvas) {
+        widget.draw(self, canvas);
+    }
+
+    pub fn get<'a, T: Widget>(
+        &'a mut self,
+        widget: &'a mut T,
+        id: ID,
+    ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
+        if self.id == id {
+            Some((widget, self))
+        } else {
+            widget.get(self, id)
+        }
+    }
+
+    pub fn get_dyn<'a>(
+        &'a mut self,
+        widget: &'a mut dyn Widget,
+        id: ID,
+    ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
+        if self.id == id {
+            Some((widget, self))
+        } else {
+            widget.get(self, id)
+        }
+    }
+
+    pub fn grab_focus(&self) {
+        FrameworkState::grab_focus(self.id);
+    }
+
+    pub fn release_focus(&self) {
+        FrameworkState::release_focus(self.id);
+    }
+
+    pub fn is_focused(&self) -> bool {
+        FrameworkState::current_focus()
+            .map(|id| self.id == id)
+            .unwrap_or(false)
     }
 }
 

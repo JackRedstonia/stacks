@@ -23,15 +23,13 @@ impl<T: Widget> Parallax<T> {
         Matrix::translate((self.interpolated_mouse_position - (self.size / 2.0)) * 0.05)
     }
 
-    fn interpolate_mouse(&mut self, factor: scalar) -> bool {
+    fn interpolate_mouse(&mut self, factor: scalar) {
         let diff = self.last_mouse_position - self.interpolated_mouse_position;
-        let snap = diff.distance_to_origin() < 1.0;
-        if snap {
+        if diff.distance_to_origin() < 1.0 {
             self.interpolated_mouse_position = self.last_mouse_position;
         } else {
             self.interpolated_mouse_position += diff * factor;
         }
-        snap
     }
 }
 
@@ -60,19 +58,9 @@ impl<T: Widget> Widget for Parallax<T> {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
-        let p = self.calc_parallax();
-        if !self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 60.0) {
-            // `interpolate_mouse` has reported that the child's position has
-            // moved significantly. This means we need to re-emit MouseMove,
-            // as from its perspective, the mouse really has moved.
-            if let Some(p_inv) = p.invert() {
-                self.inner.input(&InputEvent::MouseMove(
-                    p_inv.map_point(self.last_mouse_position),
-                ));
-            }
-        }
+        self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 60.0);
         canvas.save();
-        canvas.concat(&p);
+        canvas.concat(&self.calc_parallax());
         self.inner.draw(canvas);
         canvas.restore();
     }

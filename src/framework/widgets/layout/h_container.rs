@@ -47,7 +47,7 @@ impl<T: Widget> HContainer<T> {
             if let Some(e) = i.layout_size.width.expand {
                 width += space_left * e / expand;
             }
-            i.maybe_set_position(offset, 0.0);
+            i.position.set(offset, 0.0);
             offset += width;
             let height = if i.layout_size.height.expand.is_some() {
                 size.height
