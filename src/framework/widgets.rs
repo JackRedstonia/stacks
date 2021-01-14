@@ -21,6 +21,10 @@ pub trait Widget: 'static + Send {
         false
     }
 
+    fn hover(&mut self, wrap: &mut WrapState) {}
+
+    fn hover_lost(&mut self, wrap: &mut WrapState) {}
+
     fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
         (LayoutSize::ZERO, false)
     }
@@ -41,6 +45,14 @@ impl Widget for Box<dyn Widget> {
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         self.as_mut().input(wrap, event)
+    }
+
+    fn hover(&mut self, wrap: &mut WrapState) {
+        self.as_mut().hover(wrap);
+    }
+
+    fn hover_lost(&mut self, wrap: &mut WrapState) {
+        self.as_mut().hover_lost(wrap);
     }
 
     fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
@@ -78,7 +90,18 @@ impl<T: Widget> Wrap<T> {
     }
 
     pub fn input(&mut self, event: &InputEvent) -> bool {
-        self.inner.input(&mut self.state, event)
+        let b = self.inner.input(&mut self.state, event);
+        if matches!(event, InputEvent::MouseMove(_)) {
+            if self.state.was_hovered != b {
+                self.state.was_hovered = b;
+                if b {
+                    self.inner.hover(&mut self.state);
+                } else {
+                    self.inner.hover_lost(&mut self.state);
+                }
+            }
+        }
+        b
     }
 
     pub fn size(&mut self) -> (LayoutSize, bool) {
@@ -126,11 +149,23 @@ impl<T: 'static + Widget> Wrappable<T> for T {
 #[derive(Debug)]
 pub struct WrapState {
     id: ID,
+    was_hovered: bool,
 }
 
 impl WrapState {
     pub fn new() -> Self {
-        Self { id: ID::next() }
+        Self {
+            id: ID::next(),
+            was_hovered: false,
+        }
+    }
+
+    pub fn id(&self) -> &ID {
+        &self.id
+    }
+
+    pub fn is_hovered(&self) -> bool {
+        self.was_hovered
     }
 }
 

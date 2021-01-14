@@ -44,6 +44,7 @@ impl Widget for AudioPlayer {
                 }
                 c
             }
+            InputEvent::MouseMove(pos) => Rect::from_size(self.size).contains(*pos),
             _ => false,
         }
     }

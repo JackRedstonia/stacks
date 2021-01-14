@@ -47,7 +47,7 @@ impl<T: Widget> VContainer<T> {
             if let Some(e) = i.layout_size.height.expand {
                 height += space_left * e / expand;
             }
-            i.position.set(0.0, offset);
+            i.maybe_set_position(0.0, offset);
             offset += height;
             let width = if i.layout_size.width.expand.is_some() {
                 size.width
@@ -67,13 +67,19 @@ impl<T: Widget> Widget for VContainer<T> {
     }
 
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        self.inner.iter_mut().rev().any(|i| {
+        let c = event.consumable();
+        let mut any = false;
+        for i in self.inner.iter_mut().rev() {
             if let Some(event) = event.reverse_map_position(Matrix::translate(i.position)) {
-                i.inner.input(&event)
-            } else {
-                false
+                if i.input(&event) {
+                    any = true;
+                    if c {
+                        break;
+                    }
+                }
             }
-        })
+        }
+        any
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {

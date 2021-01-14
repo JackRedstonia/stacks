@@ -1,5 +1,8 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, Wrap};
-use crate::skia::{scalar, Size, Vector};
+use crate::{
+    game::InputEvent,
+    skia::{scalar, Point, Size, Vector},
+};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ContainerSize {
@@ -111,6 +114,7 @@ pub struct ContainerWidget<T: Widget> {
     size: Size,
     changed: bool,
     children_changed: bool,
+    mouse_position: Point,
 }
 
 impl<T: Widget> ContainerWidget<T> {
@@ -122,7 +126,16 @@ impl<T: Widget> ContainerWidget<T> {
             size: Size::new_empty(),
             changed: true,
             children_changed: true,
+            mouse_position: (0.0, 0.0).into(),
         }
+    }
+
+    pub fn input(&mut self, event: &InputEvent) -> bool {
+        let b = self.inner.input(event);
+        if let InputEvent::MouseMove(pos) = event {
+            self.mouse_position = *pos;
+        }
+        b
     }
 
     pub fn size(&mut self) -> (LayoutSize, bool, bool) {
@@ -132,6 +145,18 @@ impl<T: Widget> ContainerWidget<T> {
         self.children_changed = c;
 
         (s, self.changed, c)
+    }
+
+    pub fn maybe_set_position(&mut self, x: scalar, y: scalar) {
+        let position = Point::new(x, y);
+        if position != self.position {
+            // This child has moved. This means we need to re-emit MouseMove,
+            // as from its perspective, the mouse really has moved.
+            let delta = position - self.position;
+            self.position = position;
+            self.inner
+                .input(&InputEvent::MouseMove(self.mouse_position - delta));
+        }
     }
 
     pub fn maybe_set_size(&mut self, size: Size) {

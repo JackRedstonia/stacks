@@ -6,26 +6,23 @@ pub struct Rect {
     pub layout_size: LayoutSize,
     size: Size,
     pub paint: Paint,
-    pub take_input: bool,
 }
 
 impl Rect {
-    pub fn new(size: LayoutSize, paint: Paint, take_input: bool) -> Self {
+    pub fn new(size: LayoutSize, paint: Paint) -> Self {
         Self {
             layout_size: size,
             size: Size::new_empty(),
             paint,
-            take_input,
         }
     }
 }
 
 impl Widget for Rect {
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        self.take_input
-            && event
-                .position()
-                .map_or(false, |p| SkRect::from_size(self.size).contains(p))
+        event
+            .position()
+            .map_or(false, |p| SkRect::from_size(self.size).contains(p))
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {

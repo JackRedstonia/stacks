@@ -27,6 +27,17 @@ impl InputEvent {
         })
     }
 
+    pub fn consumable(&self) -> bool {
+        match self {
+            InputEvent::MouseMove(_) => false,
+            InputEvent::KeyDown(_)
+            | InputEvent::KeyUp(_)
+            | InputEvent::MouseDown(_, _)
+            | InputEvent::MouseUp(_, _)
+            | InputEvent::MouseScroll(_) => true,
+        }
+    }
+
     pub fn reverse_map_position(&self, matrix: Matrix) -> Option<Self> {
         let m = matrix.invert()?;
         Some(match self {

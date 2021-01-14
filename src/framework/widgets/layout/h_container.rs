@@ -47,7 +47,7 @@ impl<T: Widget> HContainer<T> {
             if let Some(e) = i.layout_size.width.expand {
                 width += space_left * e / expand;
             }
-            i.position.set(offset, 0.0);
+            i.maybe_set_position(offset, 0.0);
             offset += width;
             let height = if i.layout_size.height.expand.is_some() {
                 size.height
@@ -67,13 +67,19 @@ impl<T: Widget> Widget for HContainer<T> {
     }
 
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        self.inner.iter_mut().rev().any(|i| {
+        let c = event.consumable();
+        let mut any = false;
+        for i in self.inner.iter_mut().rev() {
             if let Some(event) = event.reverse_map_position(Matrix::translate(i.position)) {
-                i.inner.input(&event)
-            } else {
-                false
+                if i.input(&event) {
+                    any = true;
+                    if c {
+                        break;
+                    }
+                }
             }
-        })
+        }
+        any
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {

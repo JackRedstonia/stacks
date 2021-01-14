@@ -6,17 +6,15 @@ pub struct Throbber {
     pub radius: LayoutDimension,
     size: Size,
     pub paint: Paint,
-    pub take_input: bool,
     rad: scalar,
 }
 
 impl Throbber {
-    pub fn new(radius: LayoutDimension, paint: Paint, take_input: bool) -> Self {
+    pub fn new(radius: LayoutDimension, paint: Paint) -> Self {
         Self {
             radius,
             size: Size::new_empty(),
             paint,
-            take_input,
             rad: 0.0,
         }
     }
@@ -24,11 +22,10 @@ impl Throbber {
 
 impl Widget for Throbber {
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        self.take_input
-            && event.position().map_or(false, |p| {
-                let s = self.size.width.min(self.size.height);
-                Rect::from_wh(s, s).contains(p)
-            })
+        event.position().map_or(false, |p| {
+            let s = self.size.width.min(self.size.height);
+            Rect::from_wh(s, s).contains(p)
+        })
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
