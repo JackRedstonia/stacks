@@ -78,12 +78,12 @@ pub struct State {
 
 impl State {
     const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialised";
-    thread_local!(pub static STATE: RefCell<Option<State>> = RefCell::new(None));
+    thread_local!(static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
     pub fn with<F, R>(f: F) -> R
     where
-        F: FnOnce(&State) -> R,
+        F: FnOnce(&Self) -> R,
     {
         Self::STATE.with(|x| f(x.borrow().as_ref().expect(Self::PANIC_MESSAGE)))
     }
@@ -91,7 +91,7 @@ impl State {
     #[inline]
     pub fn with_mut<F, R>(f: F) -> R
     where
-        F: FnOnce(&mut State) -> R,
+        F: FnOnce(&mut Self) -> R,
     {
         Self::STATE.with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
     }
