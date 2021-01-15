@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use game::{InputEvent, State, ID};
+use game::{InputEvent, State};
 use skia::{scalar, Canvas, Matrix, Point, Size};
 
 pub struct Parallax<T: Widget> {
