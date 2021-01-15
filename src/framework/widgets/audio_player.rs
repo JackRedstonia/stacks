@@ -7,6 +7,7 @@ pub struct AudioPlayer {
     pub layout_size: LayoutSize,
     pub foreground: Paint,
     pub background: Paint,
+    seek_preview_percentage: Option<f32>,
     size: Size,
     music: Music,
 }
@@ -19,6 +20,7 @@ impl AudioPlayer {
             size: Size::new_empty(),
             foreground,
             background,
+            seek_preview_percentage: None,
             music,
         }
     }
@@ -31,30 +33,39 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
+    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
                 self.music.toggle_playing();
                 true
             }
+            InputEvent::MouseUp(MouseButton::Left, pos) => {
+                if wrap.is_focused() {
+                    let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
+                    self.music.seek_percentage(pos);
+                    wrap.release_focus();
+                    self.seek_preview_percentage = None;
+                }
+                Rect::from_size(self.size).contains(*pos)
+            }
             InputEvent::MouseDown(MouseButton::Left, pos) => {
                 let c = Rect::from_size(self.size).contains(*pos);
                 if c {
-                    self.music.seek_percentage(pos.x / self.size.width);
+                    wrap.grab_focus();
+                    let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
+                    self.seek_preview_percentage = Some(pos);
                 }
                 c
             }
-            InputEvent::MouseMove(pos) => Rect::from_size(self.size).contains(*pos),
+            InputEvent::MouseMove(pos) => {
+                if wrap.is_focused() {
+                    let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
+                    self.seek_preview_percentage = Some(pos);
+                }
+                Rect::from_size(self.size).contains(*pos)
+            },
             _ => false,
         }
-    }
-
-    fn hover(&mut self, _wrap: &mut WrapState) {
-        println!("I was hovered!");
-    }
-
-    fn hover_lost(&mut self, _wrap: &mut WrapState) {
-        println!("I lost hover!");
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
@@ -70,6 +81,11 @@ impl Widget for AudioPlayer {
         if let Some(percentage) = self.music.position_percentage() {
             let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
             canvas.draw_rect(foreground, &self.foreground);
+        }
+        if let Some(preview) = self.seek_preview_percentage {
+            let center = self.size.width * preview;
+            let p = Rect::new((center - 2.0).max(0.0), 0.0, (center + 2.0).min(self.size.width), self.size.height);
+            canvas.draw_rect(p, &self.background);
         }
     }
 }
