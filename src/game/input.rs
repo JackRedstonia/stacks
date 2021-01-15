@@ -7,6 +7,8 @@ use skulpin_renderer_sdl2::sdl2::{
     mouse::MouseButton,
 };
 
+use super::ID;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum InputEvent {
     KeyDown(Keycode),
@@ -15,6 +17,7 @@ pub enum InputEvent {
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
     MouseScroll(i32),
+    RemoveHoverExcept(ID),
 }
 
 impl InputEvent {
@@ -29,7 +32,7 @@ impl InputEvent {
 
     pub fn consumable(&self) -> bool {
         match self {
-            InputEvent::MouseMove(_) => false,
+            InputEvent::MouseMove(_) | InputEvent::RemoveHoverExcept(_) => false,
             InputEvent::KeyDown(_)
             | InputEvent::KeyUp(_)
             | InputEvent::MouseDown(_, _)

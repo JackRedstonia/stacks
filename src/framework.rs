@@ -26,7 +26,10 @@ pub struct Framework<T: Widget> {
 
 impl<T: Widget> Framework<T> {
     pub fn new(root: impl Into<Wrap<T>>) -> Self {
-        let state = FrameworkState { current_focused_id: None };
+        let state = FrameworkState {
+            current_focused_id: None,
+            just_grabbed_focus: false,
+        };
         FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(state));
         Self {
             root: root.into(),
@@ -51,6 +54,23 @@ impl<T: Widget> Framework<T> {
             cursor_fade_time: 0.1,
         }
     }
+
+    fn focus_aware_input(&mut self, event: &InputEvent) {
+        FrameworkState::with_mut(|x| {
+            if x.just_grabbed_focus {
+                x.just_grabbed_focus = false;
+                let id = x.current_focused_id.expect("Framework state's current focused widget ID is None despite focus just being grabbed");
+                self.root.input(&InputEvent::RemoveHoverExcept(id));
+            }
+        });
+        if let Some(id) = FrameworkState::current_focus() {
+            if let Some((widget, wrap)) = self.root.get(id) {
+                wrap.input(widget, event);
+            }
+        } else {
+            self.root.input(event);
+        }
+    }
 }
 
 impl<T: Widget> Game for Framework<T> {
@@ -68,7 +88,7 @@ impl<T: Widget> Game for Framework<T> {
 
     fn draw(&mut self, canvas: &mut Canvas) {
         // Trigger widget wrappers to check whether they are hovered on
-        self.root.input(&InputEvent::MouseMove(State::mouse_position()));
+        self.focus_aware_input(&InputEvent::MouseMove(State::mouse_position()));
 
         // Trigger layout
         let (size, changed) = self.root.size();
@@ -113,13 +133,7 @@ impl<T: Widget> Game for Framework<T> {
     }
 
     fn input(&mut self, event: InputEvent) {
-        if let Some(id) = FrameworkState::current_focus() {
-            if let Some((widget, wrap)) = self.root.get(id) {
-                wrap.input(widget, &event);
-            }
-        } else {
-            self.root.input(&event);
-        }
+        self.focus_aware_input(&event);
         if let InputEvent::MouseMove(pos) = event {
             self.cursor_history
                 .push_back((pos, State::elapsed().as_secs_f32()))
@@ -135,6 +149,7 @@ impl<T: Widget> Game for Framework<T> {
 
 pub struct FrameworkState {
     current_focused_id: Option<ID>,
+    just_grabbed_focus: bool,
 }
 
 impl FrameworkState {
@@ -147,7 +162,10 @@ impl FrameworkState {
     }
 
     pub fn grab_focus(id: ID) {
-        Self::with_mut(|x| x.current_focused_id = Some(id));
+        Self::with_mut(|x| {
+            x.current_focused_id = Some(id);
+            x.just_grabbed_focus = true;
+        });
     }
 
     pub fn release_focus(id: ID) {
@@ -155,13 +173,17 @@ impl FrameworkState {
             if let Some(prev) = x.current_focused_id {
                 if prev == id {
                     x.current_focused_id = None;
+                    x.just_grabbed_focus = false;
                 }
             }
         });
     }
 
     pub fn force_release_focus() {
-        Self::with_mut(|x| x.current_focused_id = None);
+        Self::with_mut(|x| {
+            x.current_focused_id = None;
+            x.just_grabbed_focus = false;
+        });
     }
 
     #[inline]

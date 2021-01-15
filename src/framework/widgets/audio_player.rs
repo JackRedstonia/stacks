@@ -49,6 +49,14 @@ impl Widget for AudioPlayer {
         }
     }
 
+    fn hover(&mut self, _wrap: &mut WrapState) {
+        println!("I was hovered!");
+    }
+
+    fn hover_lost(&mut self, _wrap: &mut WrapState) {
+        println!("I lost hover!");
+    }
+
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
         (self.layout_size, false)
     }

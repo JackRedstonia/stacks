@@ -162,23 +162,27 @@ impl WrapState {
     }
 
     pub fn update<T: Widget + ?Sized>(&mut self, widget: &mut T) {
-        if self.is_hovered != self.was_hovered {
-            self.was_hovered = self.is_hovered;
-            if self.is_hovered {
-                widget.hover(self);
-            } else {
-                widget.hover_lost(self);
-            }
-        }
         widget.update(self);
     }
 
     pub fn input<T: Widget + ?Sized>(&mut self, widget: &mut T, event: &InputEvent) -> bool {
-        let b = widget.input(self, event);
-        if matches!(event, InputEvent::MouseMove(_)) {
-            self.is_hovered = b;
+        match event {
+            InputEvent::RemoveHoverExcept(id) => {
+                let b = self.id == *id;
+                if !b {
+                    widget.input(self, event);
+                    self.is_hovered = false;
+                }
+                return b;
+            }
+            event => {
+                let b = widget.input(self, event);
+                if matches!(event, InputEvent::MouseMove(_)) {
+                    self.is_hovered = b;
+                }
+                return b;
+            }
         }
-        b
     }
 
     pub fn size<T: Widget + ?Sized>(&mut self, widget: &mut T) -> (LayoutSize, bool) {
@@ -190,6 +194,14 @@ impl WrapState {
     }
 
     pub fn draw<T: Widget + ?Sized>(&mut self, widget: &mut T, canvas: &mut Canvas) {
+        if self.is_hovered != self.was_hovered {
+            self.was_hovered = self.is_hovered;
+            if self.is_hovered {
+                widget.hover(self);
+            } else {
+                widget.hover_lost(self);
+            }
+        }
         widget.draw(self, canvas);
     }
 
