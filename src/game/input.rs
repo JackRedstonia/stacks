@@ -9,7 +9,7 @@ use skulpin_renderer_sdl2::sdl2::{
 
 use super::ID;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum InputEvent {
     KeyDown(Keycode),
     KeyUp(Keycode),
@@ -17,6 +17,7 @@ pub enum InputEvent {
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
     MouseScroll(i32),
+    Focused(ID, Box<Self>),
     RemoveHoverExcept(ID),
 }
 
@@ -32,7 +33,9 @@ impl InputEvent {
 
     pub fn consumable(&self) -> bool {
         match self {
-            InputEvent::MouseMove(_) | InputEvent::RemoveHoverExcept(_) => false,
+            InputEvent::MouseMove(_)
+            | InputEvent::RemoveHoverExcept(_)
+            | InputEvent::Focused(..) => false,
             InputEvent::KeyDown(_)
             | InputEvent::KeyUp(_)
             | InputEvent::MouseDown(_, _)
@@ -47,7 +50,11 @@ impl InputEvent {
             Self::MouseMove(p) => Self::MouseMove(m.map_point(*p)),
             Self::MouseDown(b, p) => Self::MouseDown(*b, m.map_point(*p)),
             Self::MouseUp(b, p) => Self::MouseUp(*b, m.map_point(*p)),
-            _ => *self,
+            Self::Focused(i, b) => {
+                let inner = b.reverse_map_position(matrix)?;
+                Self::Focused(*i, Box::new(inner))
+            }
+            _ => self.clone(),
         })
     }
 }

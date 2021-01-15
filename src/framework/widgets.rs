@@ -35,13 +35,13 @@ pub trait Widget: 'static + Send {
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
 
-    fn get<'a>(
-        &'a mut self,
-        wrap: &mut WrapState,
-        id: ID,
-    ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
-        None
-    }
+    // fn get<'a>(
+    //     &'a mut self,
+    //     wrap: &mut WrapState,
+    //     id: ID,
+    // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
+    //     None
+    // }
 }
 
 impl Widget for Box<dyn Widget> {
@@ -73,9 +73,9 @@ impl Widget for Box<dyn Widget> {
         self.as_mut().draw(wrap, canvas);
     }
 
-    fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-        self.as_mut().get(wrap, id)
-    }
+    // fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+    //     self.as_mut().get(wrap, id)
+    // }
 }
 
 pub struct Wrap<T: Widget> {
@@ -111,9 +111,9 @@ impl<T: Widget> Wrap<T> {
         self.state.draw(&mut self.inner, canvas);
     }
 
-    pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-        self.state.get(&mut self.inner, id)
-    }
+    // pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
+    //     self.state.get(&mut self.inner, id)
+    // }
 }
 
 impl<T: Widget> From<T> for Wrap<T> {
@@ -175,6 +175,13 @@ impl WrapState {
                 }
                 return b;
             }
+            InputEvent::Focused(id, inner) => {
+                if self.id == *id {
+                    widget.input(self, inner)
+                } else {
+                    widget.input(self, event)
+                }
+            }
             event => {
                 let b = widget.input(self, event);
                 if matches!(event, InputEvent::MouseMove(_)) {
@@ -205,29 +212,29 @@ impl WrapState {
         widget.draw(self, canvas);
     }
 
-    pub fn get<'a, T: Widget>(
-        &'a mut self,
-        widget: &'a mut T,
-        id: ID,
-    ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
-        if self.id == id {
-            Some((widget, self))
-        } else {
-            widget.get(self, id)
-        }
-    }
+    // pub fn get<'a, T: Widget>(
+    //     &'a mut self,
+    //     widget: &'a mut T,
+    //     id: ID,
+    // ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
+    //     if self.id == id {
+    //         Some((widget, self))
+    //     } else {
+    //         widget.get(self, id)
+    //     }
+    // }
 
-    pub fn get_dyn<'a>(
-        &'a mut self,
-        widget: &'a mut dyn Widget,
-        id: ID,
-    ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
-        if self.id == id {
-            Some((widget, self))
-        } else {
-            widget.get(self, id)
-        }
-    }
+    // pub fn get_dyn<'a>(
+    //     &'a mut self,
+    //     widget: &'a mut dyn Widget,
+    //     id: ID,
+    // ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
+    //     if self.id == id {
+    //         Some((widget, self))
+    //     } else {
+    //         widget.get(self, id)
+    //     }
+    // }
 
     pub fn grab_focus(&self) {
         FrameworkState::grab_focus(self.id);

@@ -63,7 +63,7 @@ impl Widget for AudioPlayer {
                     self.seek_preview_percentage = Some(pos);
                 }
                 Rect::from_size(self.size).contains(*pos)
-            },
+            }
             _ => false,
         }
     }
@@ -84,7 +84,12 @@ impl Widget for AudioPlayer {
         }
         if let Some(preview) = self.seek_preview_percentage {
             let center = self.size.width * preview;
-            let p = Rect::new((center - 2.0).max(0.0), 0.0, (center + 2.0).min(self.size.width), self.size.height);
+            let p = Rect::new(
+                (center - 2.0).max(0.0),
+                0.0,
+                (center + 2.0).min(self.size.width),
+                self.size.height,
+            );
             canvas.draw_rect(p, &self.background);
         }
     }

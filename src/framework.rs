@@ -55,7 +55,7 @@ impl<T: Widget> Framework<T> {
         }
     }
 
-    fn focus_aware_input(&mut self, event: &InputEvent) {
+    fn focus_aware_input(&mut self, event: InputEvent) {
         FrameworkState::with_mut(|x| {
             if x.just_grabbed_focus {
                 x.just_grabbed_focus = false;
@@ -64,11 +64,9 @@ impl<T: Widget> Framework<T> {
             }
         });
         if let Some(id) = FrameworkState::current_focus() {
-            if let Some((widget, wrap)) = self.root.get(id) {
-                wrap.input(widget, event);
-            }
+            self.root.input(&InputEvent::Focused(id, Box::new(event)));
         } else {
-            self.root.input(event);
+            self.root.input(&event);
         }
     }
 }
@@ -88,7 +86,7 @@ impl<T: Widget> Game for Framework<T> {
 
     fn draw(&mut self, canvas: &mut Canvas) {
         // Trigger widget wrappers to check whether they are hovered on
-        self.focus_aware_input(&InputEvent::MouseMove(State::mouse_position()));
+        self.focus_aware_input(InputEvent::MouseMove(State::mouse_position()));
 
         // Trigger layout
         let (size, changed) = self.root.size();
@@ -133,11 +131,11 @@ impl<T: Widget> Game for Framework<T> {
     }
 
     fn input(&mut self, event: InputEvent) {
-        self.focus_aware_input(&event);
-        if let InputEvent::MouseMove(pos) = event {
+        if let InputEvent::MouseMove(pos) = &event {
             self.cursor_history
-                .push_back((pos, State::elapsed().as_secs_f32()))
+                .push_back((*pos, State::elapsed().as_secs_f32()))
         }
+        self.focus_aware_input(event);
     }
 
     fn close(&mut self) {}
