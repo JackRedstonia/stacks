@@ -1,12 +1,15 @@
 use crate::prelude::*;
 use game::{InputEvent, State};
-use skia::{scalar, Canvas, Matrix, Point, Size};
+use skia::{Canvas, Matrix, Point, Size};
 
+/// Container that moves its contents to the mouse cursor.
+///
+/// Should only be used for backgrounds, as putting any UI element behind this
+/// will certainly hinder accessiblity, especially for those with trackpads.
 pub struct Parallax<T: Widget> {
     pub inner: Wrap<T>,
     size: Size,
-    pub last_mouse_position: Point,
-    pub interpolated_mouse_position: Point,
+    interpolated_mouse_position: Point,
 }
 
 impl<T: Widget> Parallax<T> {
@@ -14,19 +17,25 @@ impl<T: Widget> Parallax<T> {
         Self {
             inner: inner.into(),
             size: Size::new_empty(),
-            last_mouse_position: (0.0, 0.0).into(),
             interpolated_mouse_position: (0.0, 0.0).into(),
         }
     }
 
     fn calc_parallax(&self) -> Matrix {
-        Matrix::translate((self.interpolated_mouse_position - (self.size / 2.0)) * 0.05)
+        let center = self.size / 2.0;
+        let offset = self.interpolated_mouse_position - center;
+        Matrix::translate(offset * 0.05)
     }
 
-    fn interpolate_mouse(&mut self, factor: scalar) {
-        let diff = self.last_mouse_position - self.interpolated_mouse_position;
+    fn interpolate_mouse(&mut self) {
+        let factor = State::last_update_time_draw().as_secs_f32() * 60.0;
+        let position = State::mouse_position();
+        let diff = position - self.interpolated_mouse_position;
         if diff.distance_to_origin() < 1.0 {
-            self.interpolated_mouse_position = self.last_mouse_position;
+            // The difference between the interpolated position and the current
+            // position is less than 1px. Snap to the position instead to
+            // prevent floating point gotchas.
+            self.interpolated_mouse_position = position;
         } else {
             self.interpolated_mouse_position += diff * factor;
         }
@@ -39,9 +48,6 @@ impl<T: Widget> Widget for Parallax<T> {
     }
 
     fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
-        if let InputEvent::MouseMove(p) = event {
-            self.last_mouse_position = *p;
-        }
         let m = self.calc_parallax();
         event
             .reverse_map_position(m)
@@ -58,7 +64,7 @@ impl<T: Widget> Widget for Parallax<T> {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
-        self.interpolate_mouse(State::last_update_time_draw().as_secs_f32() * 60.0);
+        self.interpolate_mouse();
         canvas.save();
         canvas.concat(&self.calc_parallax());
         self.inner.draw(canvas);

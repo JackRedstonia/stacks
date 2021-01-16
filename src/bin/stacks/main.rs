@@ -6,7 +6,7 @@ use stacks::framework::{
     widgets::{
         layout::{ContainerSize, VContainer},
         shapes::{Rect, Throbber},
-        AudioPlayer, Parallax, Transform,
+        AudioPlayer, Transform,
     },
     Framework,
 };
@@ -17,7 +17,7 @@ fn main() {
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .run(|| {
-            let root = Parallax::new(VContainer::new(
+            let root = VContainer::new(
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
@@ -53,7 +53,7 @@ fn main() {
                     .boxed(),
                 ],
                 ContainerSize::ZERO.expand_height().expand_width(),
-            ));
+            );
             Framework::new(root)
         })
 }
