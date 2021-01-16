@@ -13,25 +13,21 @@ A few noteworthy features:
 ## Current state
 For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` introduces a very noticeable delay and a fix is unplanned.
 
-Audio is a work-in-progress effort, entirely based on GStreamer.
+Audio is a work-in-progress effort, based on SDL2.
 
 The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
 
 ## Compiling
-This project depends on SDL2 and GStreamer. When all these build dependencies are in place, compiling is simply `cargo build --release`.
+This project depends on SDL2. When all these build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output is a single binary, no dynamic libraries.
 
 ### Linux
-Any nightly Rust toolchain should work. Run the following command to install SDL2 & GStreamer.
+Any nightly Rust toolchain should work. Run the following command to install SDL2 development packages.
 ```sh
-$ apt-get install libsdl2-dev libgstreamer1.0-dev \
-      libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base \
-      gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
-      gstreamer1.0-plugins-ugly gstreamer1.0-libav libgstrtspserver-1.0-dev
+$ apt-get install libsdl2-dev libsdl2-mixer-dev
 ```
-When shipping your applications, remember to include the SDL2 and GStreamer dynamic libraries.
 
 ### Windows
-Nightly MSVC toolchain is required. Follow the `sdl2` and `gstreamer` crates' instructions on how to install dependencies.
+Nightly MSVC toolchain is required. Follow the `sdl2` crate's instructions on how to install dependencies.
 
 ## License
 Mozilla Public License version 2.0. See the LICENSE file for more information.
