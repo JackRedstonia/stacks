@@ -174,8 +174,6 @@ impl Runner {
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
-            gstreamer::init().expect("Failed to initialize GStreamer");
-
             let input_state = InputState::new(inner_size);
             let time_state = TimeState::new();
             let time_state_draw = TimeState::new();

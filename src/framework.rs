@@ -1,4 +1,3 @@
-pub mod music;
 pub mod widgets;
 
 use std::{cell::RefCell, collections::VecDeque};

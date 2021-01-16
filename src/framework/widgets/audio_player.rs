@@ -9,40 +9,27 @@ pub struct AudioPlayer {
     pub background: Paint,
     seek_preview_percentage: Option<f32>,
     size: Size,
-    music: Music,
 }
 
 impl AudioPlayer {
     pub fn new(size: LayoutSize, foreground: Paint, background: Paint) -> Self {
-        let music = Music::new("./src/resources/sound.ogg").unwrap();
         Self {
             layout_size: size,
             size: Size::new_empty(),
             foreground,
             background,
             seek_preview_percentage: None,
-            music,
         }
     }
 }
 
 impl Widget for AudioPlayer {
-    fn update(&mut self, _wrap: &mut WrapState) {
-        if let Err(Some(s)) = self.music.update() {
-            eprintln!("Music player received error: {}", s);
-        }
-    }
-
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
-            InputEvent::KeyDown(Keycode::Space) => {
-                self.music.toggle_playing();
-                true
-            }
+            InputEvent::KeyDown(Keycode::Space) => true,
             InputEvent::MouseUp(MouseButton::Left, pos) => {
                 if wrap.is_focused() {
                     let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
-                    self.music.seek_percentage(pos);
                     wrap.release_focus();
                     self.seek_preview_percentage = None;
                 }
@@ -78,7 +65,7 @@ impl Widget for AudioPlayer {
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
-        if let Some(percentage) = self.music.position_percentage() {
+        if let Some(percentage) = Some(0f32) {
             let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
             canvas.draw_rect(foreground, &self.foreground);
         }
