@@ -11,7 +11,7 @@ pub use input::{EventHandleResult, InputEvent, InputState};
 pub use runner::{Error, State, ID};
 pub use time::TimeState;
 
-pub trait Game: 'static + Send {
+pub trait Game {
     fn update(&mut self);
     fn draw(&mut self, canvas: &mut crate::skia::Canvas);
     fn set_size(&mut self, size: crate::skia::Size);

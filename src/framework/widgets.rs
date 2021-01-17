@@ -16,7 +16,7 @@ use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 use super::FrameworkState;
 
 #[allow(unused_variables)]
-pub trait Widget: 'static + Send {
+pub trait Widget {
     fn update(&mut self, wrap: &mut WrapState) {}
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
