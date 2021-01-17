@@ -5,10 +5,6 @@ use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 use std::{cell::RefCell, sync::mpsc::Receiver};
 
-use skulpin_renderer::{ash, LogicalSize, RendererBuilder};
-
-use ash::vk::Result as VkResult;
-
 use crate::skia::{Color, Matrix, Picture, PictureRecorder, Point, Rect, Size};
 
 use super::input::{EventHandleResult, InputState};
@@ -17,7 +13,10 @@ use super::Game;
 use super::{default_font_set::DefaultFontSet, FontSet};
 
 use sdl2::event::Event as Sdl2Event;
+use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
+
+use soloud::Soloud;
 
 enum Event {
     Sdl2Event(Sdl2Event),
@@ -74,6 +73,7 @@ pub struct State {
     pub time_state_draw: TimeState,
     pub font_set: Box<dyn FontSet>,
     id_keeper: u64,
+    soloud: Soloud,
 }
 
 impl State {
@@ -147,6 +147,7 @@ impl Runner {
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
+            let soloud = Soloud::default().expect("Failed to initialize audio");
             let input_state = InputState::new(size);
             let time_state = TimeState::new();
             let time_state_draw = TimeState::new();
@@ -157,6 +158,7 @@ impl Runner {
                     time_state_draw,
                     font_set: Box::new(DefaultFontSet::new()),
                     id_keeper: 0,
+                    soloud,
                 });
             });
 

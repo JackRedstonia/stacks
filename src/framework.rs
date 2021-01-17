@@ -1,3 +1,4 @@
+mod sound;
 pub mod widgets;
 
 use std::cell::RefCell;
