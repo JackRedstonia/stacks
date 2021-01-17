@@ -97,43 +97,23 @@ impl State {
     }
 
     pub fn last_update_time() -> Duration {
-        Self::STATE.with(|x| {
-            x.borrow()
-                .as_ref()
-                .expect(Self::PANIC_MESSAGE)
-                .time_state
-                .last_update_time()
-        })
-    }
-
-    pub fn elapsed() -> Duration {
-        Self::STATE.with(|x| {
-            x.borrow()
-                .as_ref()
-                .expect(Self::PANIC_MESSAGE)
-                .time_state
-                .elapsed()
-        })
+        Self::with(|x| x.time_state.last_update_time())
     }
 
     pub fn last_update_time_draw() -> Duration {
-        Self::STATE.with(|x| {
-            x.borrow()
-                .as_ref()
-                .expect(Self::PANIC_MESSAGE)
-                .time_state_draw
-                .last_update_time()
-        })
+        Self::with(|x| x.time_state_draw.last_update_time())
+    }
+
+    pub fn elapsed() -> Duration {
+        Self::with(|x| x.time_state.elapsed())
+    }
+
+    pub fn elapsed_draw() -> Duration {
+        Self::with(|x| x.time_state_draw.elapsed())
     }
 
     pub fn mouse_position() -> Point {
-        Self::STATE.with(|x| {
-            x.borrow()
-                .as_ref()
-                .expect(Self::PANIC_MESSAGE)
-                .input_state
-                .mouse_position
-        })
+        Self::with(|x| x.input_state.mouse_position)
     }
 }
 
