@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use game::{InputEvent, State};
+use game::InputEvent;
 use skia::{Canvas, Contains, Paint, Rect, Size};
 use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 
@@ -26,16 +26,9 @@ impl AudioPlayer {
 impl Widget for AudioPlayer {
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
-            InputEvent::KeyDown(Keycode::Space) => {
-                State::with(|x| {
-                    let mut y = x.wtf.lock().unwrap();
-                    *y = !*y;
-                });
-                true
-            }
+            InputEvent::KeyDown(Keycode::Space) => true,
             InputEvent::MouseUp(MouseButton::Left, pos) => {
                 if wrap.is_focused() {
-                    // let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
                     wrap.release_focus();
                     self.seek_preview_percentage = None;
                 }
