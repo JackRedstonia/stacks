@@ -16,7 +16,7 @@ use sdl2::event::Event as Sdl2Event;
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
-use soloud::Soloud;
+use soloud::{AudioExt, Handle, Soloud, SoloudError};
 
 enum Event {
     Sdl2Event(Sdl2Event),
@@ -114,6 +114,28 @@ impl State {
 
     pub fn mouse_position() -> Point {
         Self::with(|x| x.input_state.mouse_position)
+    }
+
+    pub fn play_sound<T>(sound: &T) -> Handle
+    where
+        T: AudioExt,
+    {
+        Self::with(|x| x.soloud.play(sound))
+    }
+
+    pub fn play_sound_clocked<T>(time: f64, sound: &T) -> Handle
+    where
+        T: AudioExt,
+    {
+        Self::with(|x| x.soloud.play_clocked(time, sound))
+    }
+
+    pub fn pause_sound_handle(handle: Handle) -> bool {
+        Self::with(|x| x.soloud.pause(handle))
+    }
+
+    pub fn seek_sound(handle: Handle, seconds: f64) -> Result<(), SoloudError> {
+        Self::with(|x| x.soloud.seek(handle, seconds))
     }
 }
 
