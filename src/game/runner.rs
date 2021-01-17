@@ -167,7 +167,6 @@ impl Runner {
             .expect("Failed to create game window");
 
         let window = Sdl2Window::new(&sdl_window);
-        sdl_context.mouse().show_cursor(false);
 
         let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
