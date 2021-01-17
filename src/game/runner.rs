@@ -5,7 +5,10 @@ use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 use std::{cell::RefCell, sync::mpsc::Receiver};
 
-use crate::skia::{Color, Matrix, Picture, PictureRecorder, Point, Rect, Size};
+use crate::{
+    framework::widgets::{Font, FontStyle},
+    skia::{Color, Font as SkFont, Matrix, Picture, PictureRecorder, Point, Rect, Size},
+};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
@@ -16,7 +19,7 @@ use sdl2::event::Event as Sdl2Event;
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
-use soloud::{AudioExt, Handle, Soloud, SoloudError};
+use soloud::{AudioExt, Handle, Soloud, SoloudError, SoloudFlag};
 
 enum Event {
     Sdl2Event(Sdl2Event),
@@ -81,7 +84,7 @@ impl State {
     thread_local!(static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
-    pub fn with<F, R>(f: F) -> R
+    fn with<F, R>(f: F) -> R
     where
         F: FnOnce(&Self) -> R,
     {
@@ -89,7 +92,7 @@ impl State {
     }
 
     #[inline]
-    pub fn with_mut<F, R>(f: F) -> R
+    fn with_mut<F, R>(f: F) -> R
     where
         F: FnOnce(&mut Self) -> R,
     {
@@ -116,11 +119,40 @@ impl State {
         Self::with(|x| x.input_state.mouse_position)
     }
 
+    pub fn get_font_set(font: &Font, style: &FontStyle) -> SkFont {
+        Self::with(|x| x.font_set.get(font, style))
+    }
+
+    pub fn get_default_font_set(style: &FontStyle) -> SkFont {
+        Self::with(|x| x.font_set.get_default(style))
+    }
+
     pub fn play_sound<T>(sound: &T) -> Handle
     where
         T: AudioExt,
     {
         Self::with(|x| x.soloud.play(sound))
+    }
+
+    pub fn play_sound_ex<T>(
+        sound: &T,
+        volume: Option<f32>,
+        pan: Option<f32>,
+        paused: Option<bool>,
+        bus: Option<u32>,
+    ) -> Handle
+    where
+        T: AudioExt,
+    {
+        Self::with(|x| {
+            x.soloud.play_ex(
+                sound,
+                volume.unwrap_or(1.0),
+                pan.unwrap_or(0.0),
+                paused.unwrap_or(false),
+                bus.unwrap_or(0),
+            )
+        })
     }
 
     pub fn play_sound_clocked<T>(time: f64, sound: &T) -> Handle
@@ -130,12 +162,40 @@ impl State {
         Self::with(|x| x.soloud.play_clocked(time, sound))
     }
 
-    pub fn pause_sound_handle(handle: Handle) -> bool {
-        Self::with(|x| x.soloud.pause(handle))
+    pub fn play_sound_handle(handle: Handle) {
+        Self::with_mut(|x| x.soloud.set_pause(handle, false));
     }
 
-    pub fn seek_sound(handle: Handle, seconds: f64) -> Result<(), SoloudError> {
+    pub fn pause_sound_handle(handle: Handle) {
+        Self::with_mut(|x| x.soloud.set_pause(handle, true));
+    }
+
+    pub fn set_playing_sound_handle(handle: Handle, playing: bool) {
+        Self::with_mut(|x| x.soloud.set_pause(handle, !playing))
+    }
+
+    pub fn toggle_playing_sound_handle(handle: Handle) -> bool {
+        Self::with_mut(|x| {
+            let was_paused = x.soloud.pause(handle);
+            x.soloud.set_pause(handle, !was_paused);
+            was_paused
+        })
+    }
+
+    pub fn is_playing_sound_handle(handle: Handle) -> bool {
+        // The method is called "pause" but it actually returns a boolean
+        // indicating whether the handle is paused for some reason.
+        // Lucky we get to abstract it out here so users of the library
+        // doesn't get confused.
+        !Self::with(|x| x.soloud.pause(handle))
+    }
+
+    pub fn seek_sound_handle(handle: Handle, seconds: f64) -> Result<(), SoloudError> {
         Self::with(|x| x.soloud.seek(handle, seconds))
+    }
+
+    pub fn playback_position_sound_handle(handle: Handle) -> f64 {
+        Self::with(|x| x.soloud.stream_position(handle))
     }
 }
 
@@ -169,7 +229,13 @@ impl Runner {
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
-            let soloud = Soloud::default().expect("Failed to initialize audio");
+            let soloud = Soloud::new(
+                SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
+                44_100,
+                1024,
+                2,
+            )
+            .expect("Failed to initialize SoLoud");
             let input_state = InputState::new(size);
             let time_state = TimeState::new();
             let time_state_draw = TimeState::new();
