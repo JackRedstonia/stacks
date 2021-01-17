@@ -146,34 +146,28 @@ impl Runner {
 
     pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
-    pub fn run<F, T>(
-        game: F,
-        inner_size: LogicalSize,
-        window_title: &str,
-        renderer_builder: RendererBuilder,
-    ) where
+    pub fn run<F, T>(game: F, size: LogicalSize, title: &str, renderer_builder: RendererBuilder)
+    where
         F: 'static + Send + FnOnce() -> T,
         T: Game,
     {
-        let sdl_context = sdl2::init().expect("Failed to initialize SDL2");
-        let video_subsystem = sdl_context
-            .video()
-            .expect("Failed to create SDL2 video subsystem");
+        let sdl = sdl2::init().expect("Failed to initialize SDL2");
+        let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");
 
-        let sdl_window = video_subsystem
-            .window(window_title, inner_size.width, inner_size.height)
+        let sdl_window = sdl_video
+            .window(title, size.width, size.height)
             .resizable()
             .build()
             .expect("Failed to create game window");
 
-        let window = Sdl2Window::new(&sdl_window);
+        let skulpin_window = Sdl2Window::new(&sdl_window);
 
         let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
-            let input_state = InputState::new(inner_size);
+            let input_state = InputState::new(size);
             let time_state = TimeState::new();
             let time_state_draw = TimeState::new();
             State::STATE.with(|x| {
@@ -194,12 +188,10 @@ impl Runner {
         });
 
         let mut renderer = renderer_builder
-            .build(&window)
+            .build(&skulpin_window)
             .expect("Failed to create renderer");
 
-        let mut event_pump = sdl_context
-            .event_pump()
-            .expect("Failed to create SDL2 event pump");
+        let mut event_pump = sdl.event_pump().expect("Failed to create SDL2 event pump");
 
         'events: loop {
             match feedback_rx.try_recv() {
@@ -217,7 +209,7 @@ impl Runner {
                         }
                         match pic_rx.try_recv() {
                             Ok(pic) => {
-                                if let Err(e) = renderer.draw(&window, |canvas, _| {
+                                if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
                                     canvas.clear(Self::BACKGROUND);
                                     canvas.draw_picture(pic, Some(&Matrix::default()), None);
                                 }) {

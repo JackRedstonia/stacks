@@ -15,4 +15,4 @@ skulpin-renderer-sdl2 = "0.5"
 [dependencies.sdl2]
 version = ">=0.33"
 default-features = false
-features = ["static-link", "use-pkgconfig", "mixer"]
+features = ["static-link", "use-pkgconfig"]
