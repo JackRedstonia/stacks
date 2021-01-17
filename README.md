@@ -21,9 +21,9 @@ The repository currently contains both a binary and a library. The binary crate 
 This project depends on SDL2. When all these build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output is a single binary, no dynamic libraries.
 
 ### Linux
-Any nightly Rust toolchain should work. Run the following command to install SDL2 development packages.
+Any nightly Rust toolchain should work. You will also need development packages in order to compile. For example, on Debian and derivatives, run the following command to install SDL2 development packages and its dependencies.
 ```sh
-$ apt-get install libsdl2-dev libsdl2-mixer-dev
+$ apt-get install libsdl2-dev libsdl2-mixer-dev pkg-config libdrm-dev libgbm-dev
 ```
 
 ### Windows
