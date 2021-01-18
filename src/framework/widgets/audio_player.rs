@@ -153,16 +153,21 @@ impl Widget for AudioPlayer {
         self.interpolate_fft();
         let fft = &self.interpolated_fft;
         let width = self.size.width / fft.len() as f32;
-        fft.iter().fold(0.0, |n, i| {
-            let height = (i / 10.0).powf(0.7) * self.size.height;
-            canvas.draw_rect(Rect {
-                left: n,
-                right: n + width,
-                top: (self.size.height - height),
-                bottom: self.size.height,
-            }, &self.fft_paint);
-            n + width
-        });
+        let mut path = skia::Path::new();
+        let spacing = width * 0.47;
+        let quad_spacing = width * 0.2;
+        path.move_to((0.0, self.size.height));
+        let last = fft.iter().fold((0.0, self.size.height), |(n, prev), i| {
+            let height = self.size.height - (i / 10.0).powf(0.8) * self.size.height;
+            let mid = (height + prev) / 2.0;
+            path.quad_to((n - quad_spacing, prev), (n, mid));
+            path.quad_to((n + quad_spacing, height), (n + spacing, height));
+            path.line_to((n + width - spacing, height));
+            (n + width, height)
+        }).1;
+        path.quad_to((self.size.width, last), self.size.bottom_right());
+        path.close();
+        canvas.draw_path(&path, &self.fft_paint);
         self.clear_fft();
     }
 }
