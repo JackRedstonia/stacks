@@ -175,6 +175,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -799,6 +808,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "soloud"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c95d92f6291e216e66751f59c8f1b35c6dd2507062334ef26ccd85833b94d41"
+dependencies = [
+ "bitflags",
+ "soloud-derive",
+ "soloud-sys",
+]
+
+[[package]]
+name = "soloud-derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afceb0090a5438e4ff5956df616b78ee71601beea7e755afc4ab5a10e5620a12"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "soloud-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "430cfad5a31f86f56daa0df2cc184e506fa64a6ed67de4739318c9215452ebaa"
+dependencies = [
+ "cmake",
+ "libc",
+]
+
+[[package]]
 name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -811,6 +851,7 @@ dependencies = [
  "sdl2",
  "skulpin-renderer",
  "skulpin-renderer-sdl2",
+ "soloud",
 ]
 
 [[package]]

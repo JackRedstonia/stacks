@@ -11,7 +11,7 @@ pub enum Font {
 
 impl Font {
     pub fn resolve(&self, style: &FontStyle) -> SkFont {
-        State::with(|x| x.font_set.get(self, style))
+        State::get_font_set(self, style)
     }
 }
 
