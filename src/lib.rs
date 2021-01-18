@@ -14,4 +14,5 @@ pub mod prelude {
     pub use crate::game;
     pub use crate::utils::*;
     pub use skulpin_renderer::skia_safe as skia;
+    pub use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 }

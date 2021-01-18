@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use game::InputEvent;
 use skia::{Canvas, Contains, Paint, Rect, Size};
-use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 
 pub struct AudioPlayer {
     pub layout_size: LayoutSize,
