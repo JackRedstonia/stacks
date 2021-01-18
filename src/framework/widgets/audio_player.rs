@@ -1,25 +1,35 @@
 use crate::prelude::*;
 use audio::{Sound, SoundInstance};
-use game::InputEvent;
+use game::{InputEvent, State};
 use skia::{scalar, Canvas, Contains, Paint, Rect, Size};
 use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 use soloud::{SoloudError, WavStream};
+
+const FFT_SIZE: usize = 22;
+type FftArray = [f32; FFT_SIZE];
+type FftPositionArray = [usize; FFT_SIZE];
 
 pub struct AudioPlayer {
     pub layout_size: LayoutSize,
     pub foreground: Paint,
     pub background: Paint,
+    pub fft_paint: Paint,
     seek_preview_percentage: Option<f32>,
     size: Size,
     sound: Sound<WavStream>,
     instance: SoundInstance,
+    fft: FftArray,
+    fft_count: usize,
 }
 
 impl AudioPlayer {
+    const FFT_POSITIONS: FftPositionArray = [0usize, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221, 233, 244];
+    
     pub fn new(
         size: LayoutSize,
         foreground: Paint,
         background: Paint,
+        fft: Paint,
     ) -> Result<Self, SoloudError> {
         let path = "src/resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
@@ -29,9 +39,12 @@ impl AudioPlayer {
             size: Size::new_empty(),
             foreground,
             background,
+            fft_paint: fft,
             seek_preview_percentage: None,
             sound,
             instance,
+            fft: [0.0; FFT_SIZE],
+            fft_count: 0,
         })
     }
 
@@ -46,6 +59,15 @@ impl AudioPlayer {
 }
 
 impl Widget for AudioPlayer {
+    fn update(&mut self, _wrap: &mut WrapState) {
+        let fft = State::get_fft();
+        let fft_iter = Self::FFT_POSITIONS.iter().map(|e| fft[*e]);
+        for (a, b) in self.fft.iter_mut().zip(fft_iter) {
+            *a += b;
+        }
+        self.fft_count += 1;
+    }
+
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
@@ -108,5 +130,20 @@ impl Widget for AudioPlayer {
             );
             canvas.draw_rect(p, &self.background);
         }
+        
+        let fft = &self.fft;
+        let width = self.size.width / fft.len() as f32;
+        fft.iter().fold(0.0, |n, i| {
+            let height = (*i / self.fft_count as f32) * 10.0;
+            canvas.draw_rect(Rect {
+                left: n,
+                right: n + width,
+                top: (self.size.height - height),
+                bottom: self.size.height,
+            }, &self.fft_paint);
+            n + width
+        });
+        self.fft = [0.0; FFT_SIZE];
+        self.fft_count = 0;
     }
 }
