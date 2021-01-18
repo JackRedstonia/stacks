@@ -2,7 +2,7 @@ use std::path::Path;
 
 use soloud::{AudioExt, Handle, LoadExt, SoloudError, Wav, WavStream};
 
-use crate::game::State;
+use crate::game::{AudioBus, State};
 
 pub struct Sound<T>
 where
@@ -51,28 +51,31 @@ where
         Self { source }
     }
 
-    pub fn create_instance(&self) -> SoundInstance {
-        SoundInstance::from_handle(State::play_sound_ex(
-            &self.source,
-            None,
-            None,
-            Some(true),
-            None,
-        ))
+    pub fn create_instance(&self, bus: Option<AudioBus>) -> SoundInstance {
+        let bus = bus.unwrap_or_default();
+        SoundInstance {
+            handle: State::play_sound_ex(&self.source, None, None, Some(true), bus),
+            bus,
+        }
     }
 
-    pub fn play_clocked(&self, time: f64) -> SoundInstance {
-        SoundInstance::from_handle(State::play_sound_clocked(time, &self.source))
+    pub fn play_clocked(&self, time: f64, bus: Option<AudioBus>) -> SoundInstance {
+        let bus = bus.unwrap_or_default();
+        SoundInstance {
+            handle: State::play_sound_clocked(time, &self.source),
+            bus,
+        }
     }
 }
 
 pub struct SoundInstance {
     handle: Handle,
+    bus: AudioBus,
 }
 
 impl SoundInstance {
-    pub fn from_handle(handle: Handle) -> Self {
-        Self { handle }
+    pub fn bus(&self) -> &AudioBus {
+        &self.bus
     }
 
     pub fn play(&self) {

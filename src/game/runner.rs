@@ -19,7 +19,7 @@ use sdl2::event::Event as Sdl2Event;
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
-use soloud::{AudioExt, Handle, Soloud, SoloudError, SoloudFlag};
+use soloud::{AudioExt, Bus as SoloudBus, Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag};
 
 enum Event {
     Sdl2Event(Sdl2Event),
@@ -77,6 +77,30 @@ pub struct State {
     pub font_set: Box<dyn FontSet>,
     id_keeper: u64,
     soloud: Soloud,
+    default_sound_bus: (SoloudBus, SoloudHandle),
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum AudioBus {
+    Default,
+}
+
+impl Default for AudioBus {
+    fn default() -> Self {
+        Self::Default
+    }
+}
+
+impl AudioBus {
+    pub fn get_fft(self) -> Vec<f32> {
+        State::with(|x| self.to_bus(x).calc_fft())
+    }
+
+    fn to_bus(self, state: &State) -> &SoloudBus {
+        match self {
+            Self::Default => &state.default_sound_bus.0,
+        }
+    }
 }
 
 impl State {
@@ -127,11 +151,11 @@ impl State {
         Self::with(|x| x.font_set.get_default(style))
     }
 
-    pub fn play_sound<T>(sound: &T) -> Handle
+    pub fn play_sound<T>(sound: &T, bus: Option<AudioBus>) -> SoloudHandle
     where
         T: AudioExt,
     {
-        Self::with(|x| x.soloud.play(sound))
+        Self::play_sound_ex(sound, None, None, None, bus.unwrap_or_default())
     }
 
     pub fn play_sound_ex<T>(
@@ -139,46 +163,57 @@ impl State {
         volume: Option<f32>,
         pan: Option<f32>,
         paused: Option<bool>,
-        bus: Option<Handle>,
-    ) -> Handle
+        bus: AudioBus,
+    ) -> SoloudHandle
     where
         T: AudioExt,
     {
         Self::with(|x| {
-            x.soloud.play_ex(
+            bus.to_bus(x).play_ex(
                 sound,
                 volume.unwrap_or(1.0),
                 pan.unwrap_or(0.0),
                 paused.unwrap_or(false),
-                bus.unwrap_or(unsafe {
-                    // SAFETY: cmon.
-                    // should open an issue on soloud-rs to allow Option
-                    Handle::from_raw(0)
-                }),
             )
         })
     }
 
-    pub fn play_sound_clocked<T>(time: f64, sound: &T) -> Handle
+    pub fn play_sound_clocked<T>(time: f64, sound: &T) -> SoloudHandle
     where
         T: AudioExt,
     {
         Self::with(|x| x.soloud.play_clocked(time, sound))
     }
 
-    pub fn play_sound_handle(handle: Handle) {
+    pub fn play_sound_clocked_ex<T>(
+        time: f64,
+        sound: &T,
+        volume: Option<f32>,
+        pan: Option<f32>,
+        bus: AudioBus,
+    ) -> SoloudHandle
+    where
+        T: AudioExt,
+    {
+        Self::with(|x| {
+            bus.to_bus(x)
+                .play_clocked_ex(time, sound, volume.unwrap_or(1.0), pan.unwrap_or(0.0))
+        })
+    }
+
+    pub fn play_sound_handle(handle: SoloudHandle) {
         Self::with_mut(|x| x.soloud.set_pause(handle, false));
     }
 
-    pub fn pause_sound_handle(handle: Handle) {
+    pub fn pause_sound_handle(handle: SoloudHandle) {
         Self::with_mut(|x| x.soloud.set_pause(handle, true));
     }
 
-    pub fn set_playing_sound_handle(handle: Handle, playing: bool) {
+    pub fn set_playing_sound_handle(handle: SoloudHandle, playing: bool) {
         Self::with_mut(|x| x.soloud.set_pause(handle, !playing))
     }
 
-    pub fn toggle_playing_sound_handle(handle: Handle) -> bool {
+    pub fn toggle_playing_sound_handle(handle: SoloudHandle) -> bool {
         Self::with_mut(|x| {
             let was_paused = x.soloud.pause(handle);
             x.soloud.set_pause(handle, !was_paused);
@@ -186,7 +221,7 @@ impl State {
         })
     }
 
-    pub fn is_playing_sound_handle(handle: Handle) -> bool {
+    pub fn is_playing_sound_handle(handle: SoloudHandle) -> bool {
         // The method is called "pause" but it actually returns a boolean
         // indicating whether the handle is paused for some reason.
         // Lucky we get to abstract it out here so users of the library
@@ -194,15 +229,15 @@ impl State {
         !Self::with(|x| x.soloud.pause(handle))
     }
 
-    pub fn seek_sound_handle(handle: Handle, seconds: f64) -> Result<(), SoloudError> {
+    pub fn seek_sound_handle(handle: SoloudHandle, seconds: f64) -> Result<(), SoloudError> {
         Self::with(|x| x.soloud.seek(handle, seconds))
     }
 
-    pub fn playback_position_sound_handle(handle: Handle) -> f64 {
+    pub fn playback_position_sound_handle(handle: SoloudHandle) -> f64 {
         Self::with(|x| x.soloud.stream_position(handle))
     }
 
-    pub fn get_sound_fft() -> Vec<f32> {
+    pub fn get_sound_master_fft() -> Vec<f32> {
         Self::with(|x| x.soloud.calc_fft())
     }
 }
@@ -244,6 +279,9 @@ impl Runner {
                 2,
             )
             .expect("Failed to initialize SoLoud");
+            let default_bus = SoloudBus::default();
+            default_bus.set_visualize_enable(true);
+            let default_bus_instance = soloud.play(&default_bus);
             let input_state = InputState::new(size);
             let time_state = TimeState::new();
             let time_state_draw = TimeState::new();
@@ -255,6 +293,7 @@ impl Runner {
                     font_set: Box::new(DefaultFontSet::new()),
                     id_keeper: 0,
                     soloud,
+                    default_sound_bus: (default_bus, default_bus_instance),
                 });
             });
 

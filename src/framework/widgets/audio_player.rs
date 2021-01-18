@@ -1,9 +1,12 @@
 use crate::prelude::*;
 use audio::{Sound, SoundInstance};
-use game::{InputEvent, State};
+use game::{AudioBus, InputEvent, State};
 use skia::{scalar, Canvas, Contains, Paint, Rect, Size};
 use skulpin_renderer_sdl2::sdl2::{keyboard::Keycode, mouse::MouseButton};
 use soloud::{SoloudError, WavStream};
+
+const FFT_SIZE: usize = 256;
+type FftInterpolation = [f32; FFT_SIZE];
 
 pub struct AudioPlayer {
     pub layout_size: LayoutSize,
@@ -14,14 +17,10 @@ pub struct AudioPlayer {
     size: Size,
     sound: Sound<WavStream>,
     instance: SoundInstance,
+    fft: FftInterpolation,
 }
 
 impl AudioPlayer {
-    const FFT_POSITIONS: [usize; 22] = [
-        0, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221,
-        233, 244,
-    ];
-
     pub fn new(
         size: LayoutSize,
         foreground: Paint,
@@ -30,7 +29,8 @@ impl AudioPlayer {
     ) -> Result<Self, SoloudError> {
         let path = "src/resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
-        let instance = sound.create_instance();
+        let bus = AudioBus::Default;
+        let instance = sound.create_instance(Some(bus));
         Ok(Self {
             layout_size: size,
             size: Size::new_empty(),
@@ -40,6 +40,7 @@ impl AudioPlayer {
             seek_preview_percentage: None,
             sound,
             instance,
+            fft: [0.0; FFT_SIZE],
         })
     }
 
@@ -52,17 +53,18 @@ impl AudioPlayer {
             .seek(self.sound.length() * percentage.clamp(0.0, 1.0))
     }
 
-    fn take_fft(&mut self) -> Vec<f32> {
-        let fft = State::get_sound_fft();
-        Self::FFT_POSITIONS.iter().map(|e| fft[*e]).collect()
+    fn refresh_fft(&mut self, factor: f32) {
+        assert!(factor >= 0.0 && factor <= 1.0);
+        let factor_inv = 1.0 - factor;
+        let fft = self.instance.bus().get_fft();
+        assert_eq!(fft.len(), FFT_SIZE);
+        self.fft.iter_mut().zip(fft.iter()).for_each(|(a, b)| {
+            *a = *a * factor_inv + b * factor;
+        });
     }
 }
 
 impl Widget for AudioPlayer {
-    fn update(&mut self, _wrap: &mut WrapState) {
-        self.take_fft();
-    }
-
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
@@ -130,7 +132,9 @@ impl Widget for AudioPlayer {
         }
 
         // Draw visualizations
-        let fft = self.take_fft();
+        let factor = (State::last_update_time_draw().as_secs_f32() * 16.0).min(1.0);
+        self.refresh_fft(factor);
+        let fft = &self.fft[..200];
         let width = self.size.width / fft.len() as f32;
         let mut path = skia::Path::new();
         let spacing = width * 0.48;
@@ -139,7 +143,7 @@ impl Widget for AudioPlayer {
         let last = fft
             .iter()
             .fold((0.0, self.size.height), |(n, prev), i| {
-                let height = self.size.height - (i / 10.0).powf(0.8).min(1.0) * self.size.height;
+                let height = self.size.height - (i / 20.0).powf(0.8) * self.size.height;
                 let mid = (height + prev) / 2.0;
                 path.quad_to((n - quad_spacing, prev), (n, mid));
                 path.quad_to((n + quad_spacing, height), (n + spacing, height));
