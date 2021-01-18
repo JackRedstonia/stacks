@@ -11,7 +11,11 @@ lto = "thin"
 [dependencies]
 skulpin-renderer = "0.5"
 skulpin-renderer-sdl2 = "0.5"
-soloud = "0.2"
+
+[dependencies.soloud]
+version = "0.3"
+default-features = false
+features = ["sdl2"]
 
 [dependencies.sdl2]
 version = ">=0.33"

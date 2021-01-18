@@ -139,7 +139,7 @@ impl State {
         volume: Option<f32>,
         pan: Option<f32>,
         paused: Option<bool>,
-        bus: Option<u32>,
+        bus: Option<Handle>,
     ) -> Handle
     where
         T: AudioExt,
@@ -150,7 +150,11 @@ impl State {
                 volume.unwrap_or(1.0),
                 pan.unwrap_or(0.0),
                 paused.unwrap_or(false),
-                bus.unwrap_or(0),
+                bus.unwrap_or(unsafe {
+                    // SAFETY: cmon.
+                    // should open an issue on soloud-rs to allow Option
+                    Handle::from_raw(0)
+                }),
             )
         })
     }
@@ -197,6 +201,10 @@ impl State {
     pub fn playback_position_sound_handle(handle: Handle) -> f64 {
         Self::with(|x| x.soloud.stream_position(handle))
     }
+
+    pub fn get_fft() -> Vec<f32> {
+        Self::with(|x| x.soloud.calc_fft())
+    }
 }
 
 pub struct Runner;
@@ -232,7 +240,7 @@ impl Runner {
             let soloud = Soloud::new(
                 SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
                 44_100,
-                1024,
+                256,
                 2,
             )
             .expect("Failed to initialize SoLoud");
