@@ -49,7 +49,7 @@ fn main() {
                         LayoutSize::min(500.0, 200.0).expand_width(),
                         Paint::new_color4f(0.8, 0.8, 1.0, 1.0).anti_alias(),
                         Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
-                        Paint::new_color4f(1.0, 1.0, 1.0, 0.8).anti_alias(),
+                        Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
                     )
                     .expect("Failed to create AudioPlayer")
                     .boxed(),
