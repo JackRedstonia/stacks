@@ -202,7 +202,7 @@ impl State {
         Self::with(|x| x.soloud.stream_position(handle))
     }
 
-    pub fn get_fft() -> Vec<f32> {
+    pub fn get_sound_fft() -> Vec<f32> {
         Self::with(|x| x.soloud.calc_fft())
     }
 }
@@ -240,7 +240,7 @@ impl Runner {
             let soloud = Soloud::new(
                 SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
                 44_100,
-                256,
+                4096,
                 2,
             )
             .expect("Failed to initialize SoLoud");
