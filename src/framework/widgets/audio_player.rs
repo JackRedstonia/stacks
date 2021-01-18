@@ -24,8 +24,11 @@ pub struct AudioPlayer {
 }
 
 impl AudioPlayer {
-    const FFT_POSITIONS: FftPositionArray = [1, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221, 233, 244];
-    
+    const FFT_POSITIONS: FftPositionArray = [
+        0, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221,
+        233, 244,
+    ];
+
     pub fn new(
         size: LayoutSize,
         foreground: Paint,
@@ -70,10 +73,13 @@ impl AudioPlayer {
 
     fn interpolate_fft(&mut self) {
         let count = self.fft_count as f32;
-        self.interpolated_fft.iter_mut().zip(self.fft.iter().map(|f| f / count)).for_each(|(a, b)| {
-            let factor = 0.3;
-            *a = b * factor + (*a * (1.0 - factor));
-        });
+        self.interpolated_fft
+            .iter_mut()
+            .zip(self.fft.iter().map(|f| f / count))
+            .for_each(|(a, b)| {
+                let factor = 0.3;
+                *a = b * factor + (*a * (1.0 - factor));
+            });
     }
 
     fn clear_fft(&mut self) {
@@ -135,7 +141,10 @@ impl Widget for AudioPlayer {
     }
 
     fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
+        // Draw background
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
+
+        // Draw progress bar
         let percentage = (self.instance.position() / self.sound.length()) as f32;
         let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
         canvas.draw_rect(foreground, &self.foreground);
@@ -149,22 +158,26 @@ impl Widget for AudioPlayer {
             );
             canvas.draw_rect(p, &self.background);
         }
-        
+
+        // Draw visualizations
         self.interpolate_fft();
         let fft = &self.interpolated_fft;
         let width = self.size.width / fft.len() as f32;
         let mut path = skia::Path::new();
-        let spacing = width * 0.47;
-        let quad_spacing = width * 0.2;
+        let spacing = width * 0.48;
+        let quad_spacing = width * 0.18;
         path.move_to((0.0, self.size.height));
-        let last = fft.iter().fold((0.0, self.size.height), |(n, prev), i| {
-            let height = self.size.height - (i / 10.0).powf(0.8) * self.size.height;
-            let mid = (height + prev) / 2.0;
-            path.quad_to((n - quad_spacing, prev), (n, mid));
-            path.quad_to((n + quad_spacing, height), (n + spacing, height));
-            path.line_to((n + width - spacing, height));
-            (n + width, height)
-        }).1;
+        let last = fft
+            .iter()
+            .fold((0.0, self.size.height), |(n, prev), i| {
+                let height = self.size.height - (i / 10.0).powf(0.8) * self.size.height;
+                let mid = (height + prev) / 2.0;
+                path.quad_to((n - quad_spacing, prev), (n, mid));
+                path.quad_to((n + quad_spacing, height), (n + spacing, height));
+                path.line_to((n + width - spacing, height));
+                (n + width, height)
+            })
+            .1;
         path.quad_to((self.size.width, last), self.size.bottom_right());
         path.close();
         canvas.draw_path(&path, &self.fft_paint);
