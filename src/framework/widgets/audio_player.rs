@@ -20,10 +20,11 @@ pub struct AudioPlayer {
     instance: SoundInstance,
     fft: FftArray,
     fft_count: usize,
+    interpolated_fft: FftArray,
 }
 
 impl AudioPlayer {
-    const FFT_POSITIONS: FftPositionArray = [0usize, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221, 233, 244];
+    const FFT_POSITIONS: FftPositionArray = [1, 12, 23, 35, 47, 58, 70, 81, 93, 105, 116, 128, 140, 151, 163, 175, 186, 198, 210, 221, 233, 244];
     
     pub fn new(
         size: LayoutSize,
@@ -45,6 +46,7 @@ impl AudioPlayer {
             instance,
             fft: [0.0; FFT_SIZE],
             fft_count: 0,
+            interpolated_fft: [0.0; FFT_SIZE],
         })
     }
 
@@ -56,16 +58,33 @@ impl AudioPlayer {
         self.instance
             .seek(self.sound.length() * percentage.clamp(0.0, 1.0))
     }
-}
 
-impl Widget for AudioPlayer {
-    fn update(&mut self, _wrap: &mut WrapState) {
+    fn take_fft(&mut self) {
         let fft = State::get_fft();
         let fft_iter = Self::FFT_POSITIONS.iter().map(|e| fft[*e]);
         for (a, b) in self.fft.iter_mut().zip(fft_iter) {
             *a += b;
         }
         self.fft_count += 1;
+    }
+
+    fn interpolate_fft(&mut self) {
+        let count = self.fft_count as f32;
+        self.interpolated_fft.iter_mut().zip(self.fft.iter().map(|f| f / count)).for_each(|(a, b)| {
+            let factor = 0.3;
+            *a = b * factor + (*a * (1.0 - factor));
+        });
+    }
+
+    fn clear_fft(&mut self) {
+        self.fft = [0.0; FFT_SIZE];
+        self.fft_count = 0;
+    }
+}
+
+impl Widget for AudioPlayer {
+    fn update(&mut self, _wrap: &mut WrapState) {
+        self.take_fft();
     }
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
@@ -131,10 +150,11 @@ impl Widget for AudioPlayer {
             canvas.draw_rect(p, &self.background);
         }
         
-        let fft = &self.fft;
+        self.interpolate_fft();
+        let fft = &self.interpolated_fft;
         let width = self.size.width / fft.len() as f32;
         fft.iter().fold(0.0, |n, i| {
-            let height = (*i / self.fft_count as f32) * 10.0;
+            let height = (i / 10.0).powf(0.7) * self.size.height;
             canvas.draw_rect(Rect {
                 left: n,
                 right: n + width,
@@ -143,7 +163,6 @@ impl Widget for AudioPlayer {
             }, &self.fft_paint);
             n + width
         });
-        self.fft = [0.0; FFT_SIZE];
-        self.fft_count = 0;
+        self.clear_fft();
     }
 }
