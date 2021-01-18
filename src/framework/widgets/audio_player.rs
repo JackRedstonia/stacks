@@ -77,7 +77,7 @@ impl AudioPlayer {
             .iter_mut()
             .zip(self.fft.iter().map(|f| f / count))
             .for_each(|(a, b)| {
-                let factor = 0.3;
+                let factor = 0.7;
                 *a = b * factor + (*a * (1.0 - factor));
             });
     }
