@@ -99,6 +99,9 @@ impl SoundInstance {
     }
 
     pub fn seek(&self, seconds: f64) -> Result<(), SoloudError> {
+        if seconds > self.position() + 2.0 {
+            State::seek_sound_handle(self.handle, 0.0)?;
+        }
         State::seek_sound_handle(self.handle, seconds)
     }
 
