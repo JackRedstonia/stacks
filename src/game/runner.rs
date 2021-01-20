@@ -243,6 +243,14 @@ impl State {
     pub fn get_sound_master_fft() -> Vec<f32> {
         Self::with(|x| x.soloud.calc_fft())
     }
+
+    pub fn set_sound_handle_speed(handle: SoloudHandle, speed: f32) -> Result<(), SoloudError> {
+        Self::with_mut(|x| x.soloud.set_relative_play_speed(handle, speed))
+    }
+
+    pub fn get_sound_handle_speed(handle: SoloudHandle) -> f32 {
+        Self::with_mut(|x| x.soloud.relative_play_speed(handle))
+    }
 }
 
 pub struct Runner;

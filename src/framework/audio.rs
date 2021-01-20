@@ -108,4 +108,12 @@ impl SoundInstance {
     pub fn position(&self) -> f64 {
         State::playback_position_sound_handle(self.handle)
     }
+
+    pub fn set_speed(&self, speed: f32) -> Result<(), SoloudError> {
+        State::set_sound_handle_speed(self.handle, speed)
+    }
+
+    pub fn speed(&self) -> f32 {
+        State::get_sound_handle_speed(self.handle)
+    }
 }
