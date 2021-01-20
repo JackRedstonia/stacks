@@ -83,9 +83,7 @@ impl<T: Widget> Widget for VContainer<T> {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
-        let mut height = 0.0f32;
         let mut height_min = 0.0f32;
-        let mut width = 0.0f32;
         let mut width_min = 0.0f32;
 
         self.sizes_changed = false;
@@ -95,16 +93,13 @@ impl<T: Widget> Widget for VContainer<T> {
             let (size, s, c) = i.size();
             self.sizes_changed |= s;
             children_changed |= c;
-            height += size.height.size;
             height_min += size.height.min;
-            width = width.max(size.width.size);
             width_min = width_min.max(size.width.min);
         }
 
         (
             LayoutSize {
                 width: LayoutDimension {
-                    size: height,
                     min: self
                         .size
                         .height
@@ -113,7 +108,6 @@ impl<T: Widget> Widget for VContainer<T> {
                     expand: self.size.width.expand,
                 },
                 height: LayoutDimension {
-                    size: width,
                     min: self
                         .size
                         .width

@@ -315,32 +315,29 @@ impl LayoutSize {
 
     pub fn map(&self, matrix: Matrix) -> Self {
         let min = Self::map_size(self.width.min, self.height.min, matrix);
-        let size = Self::map_size(self.width.min, self.height.min, matrix);
         let expand_width = self
             .width
             .expand
-            .map(|x| matrix.map_vector(Vector::new(x, 0.0)).x);
+            .map(|x| matrix.map_vector(Vector::new(x, 0.0)).x.abs());
         let expand_height = self
             .height
             .expand
-            .map(|y| matrix.map_vector(Vector::new(0.0, y)).y);
-        Self {
+            .map(|y| matrix.map_vector(Vector::new(0.0, y)).y.abs());
+        let mapped = Self {
             width: LayoutDimension {
                 min: min.width.abs(),
-                size: size.width.abs(),
                 expand: expand_width,
             },
             height: LayoutDimension {
                 min: min.height.abs(),
-                size: size.height.abs(),
                 expand: expand_height,
             },
-        }
+        };
+        mapped
     }
 
     fn map_size(width: scalar, height: scalar, matrix: Matrix) -> Size {
-        let r = matrix.map_rect(Rect::from_wh(width, height)).0;
-        Size::new(r.right.abs(), r.bottom.abs())
+        matrix.map_rect(Rect::from_wh(width, height)).0.size()
     }
 }
 
@@ -350,11 +347,6 @@ pub struct LayoutDimension {
     /// May not always be respected by containers, for example when they run out
     /// of space.
     pub min: scalar,
-
-    /// The normal number of logical pixels in this dimension.
-    /// Normally ignored by containers and other UI-building widgets,
-    /// and is only respected when this is not part of an UI.
-    pub size: scalar,
 
     /// The expansion factor in this dimension.
     /// A Some(x) expresses this widget in this dimension should take up as
@@ -367,16 +359,11 @@ pub struct LayoutDimension {
 impl LayoutDimension {
     pub const ZERO: Self = Self {
         min: 0.0,
-        size: 0.0,
         expand: None,
     };
 
     pub fn min(min: scalar) -> Self {
-        Self {
-            min,
-            size: 0.0,
-            expand: None,
-        }
+        Self { min, expand: None }
     }
 
     pub fn with_expand(mut self, expand: scalar) -> Self {

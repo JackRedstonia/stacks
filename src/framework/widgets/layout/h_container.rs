@@ -83,9 +83,7 @@ impl<T: Widget> Widget for HContainer<T> {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
-        let mut width = 0.0f32;
         let mut width_min = 0.0f32;
-        let mut height = 0.0f32;
         let mut height_min = 0.0f32;
 
         self.sizes_changed = false;
@@ -95,16 +93,13 @@ impl<T: Widget> Widget for HContainer<T> {
             let (size, s, c) = i.size();
             self.sizes_changed |= s;
             children_changed |= c;
-            width += size.width.size;
             width_min += size.width.min;
-            height = height.max(size.height.size);
             height_min = height_min.max(size.height.min);
         }
 
         (
             LayoutSize {
                 width: LayoutDimension {
-                    size: width,
                     min: self
                         .size
                         .width
@@ -113,7 +108,6 @@ impl<T: Widget> Widget for HContainer<T> {
                     expand: self.size.width.expand,
                 },
                 height: LayoutDimension {
-                    size: height,
                     min: self
                         .size
                         .height
