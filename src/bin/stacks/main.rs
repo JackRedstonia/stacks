@@ -31,10 +31,10 @@ fn main() {
                     .boxed(),
                     Transform::new(
                         Rect::new(
-                            LayoutSize::min(50.0, 100.0),
-                            Paint::new_color4f(0.0, 0.0, 1.0, 1.0).anti_alias(),
+                            LayoutSize::min(100.0, 50.0),
+                            Paint::new_color4f(0.0, 0.0, 1.0, 0.5).anti_alias(),
                         ),
-                        Matrix::translate((20.0, 20.0)),
+                        Matrix::scale((1.5, 1.7)),
                     )
                     .boxed(),
                     Throbber::new(
