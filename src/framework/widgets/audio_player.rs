@@ -17,6 +17,7 @@ pub struct AudioPlayer {
     sound: Sound<WavStream>,
     instance: SoundInstance,
     fft: FftInterpolation,
+    play_lock: bool,
 }
 
 impl AudioPlayer {
@@ -40,6 +41,7 @@ impl AudioPlayer {
             sound,
             instance,
             fft: [0.0; FFT_SIZE],
+            play_lock: false,
         })
     }
 
@@ -81,7 +83,14 @@ impl Widget for AudioPlayer {
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
-                self.instance.toggle_playing();
+                if !self.play_lock {
+                    self.play_lock = true;
+                    self.instance.toggle_playing();
+                }
+                true
+            }
+            InputEvent::KeyUp(Keycode::Space) => {
+                self.play_lock = false;
                 true
             }
             InputEvent::MouseUp(MouseButton::Left, pos) => {
