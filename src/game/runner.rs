@@ -283,7 +283,7 @@ impl Runner {
         let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
-            let soloud = Soloud::new(
+            let mut soloud = Soloud::new(
                 SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
                 SoloudBackend::Auto,
                 44_100,
@@ -291,6 +291,7 @@ impl Runner {
                 2,
             )
             .expect("Failed to initialize SoLoud");
+            soloud.set_global_volume(2.0);
             let default_bus = SoloudBus::default();
             default_bus.set_visualize_enable(true);
             let default_bus_instance = soloud.play(&default_bus);
