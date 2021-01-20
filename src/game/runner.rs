@@ -287,7 +287,7 @@ impl Runner {
                 SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
                 SoloudBackend::Auto,
                 44_100,
-                256,
+                860,
                 2,
             )
             .expect("Failed to initialize SoLoud");
