@@ -147,7 +147,7 @@ impl Widget for AudioPlayer {
         // Draw visualizations
         let factor = (State::last_update_time_draw().as_secs_f32() * 16.0).min(1.0);
         self.refresh_fft(factor);
-        let fft = &self.fft[..200];
+        let fft = &self.fft[..180];
         let width = self.size.width / fft.len() as f32;
         let mut path = skia::Path::new();
         let spacing = width * 0.48;
