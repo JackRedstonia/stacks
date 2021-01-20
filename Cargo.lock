@@ -809,9 +809,9 @@ dependencies = [
 
 [[package]]
 name = "soloud"
-version = "0.3.0"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c95d92f6291e216e66751f59c8f1b35c6dd2507062334ef26ccd85833b94d41"
+checksum = "948458ebbfa387eb9b68d97c5bd24c470fb8e909d3f191771a834c15175b60fe"
 dependencies = [
  "bitflags",
  "soloud-derive",
@@ -820,9 +820,9 @@ dependencies = [
 
 [[package]]
 name = "soloud-derive"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afceb0090a5438e4ff5956df616b78ee71601beea7e755afc4ab5a10e5620a12"
+checksum = "3eb61b758000010b810da0c7efbbbdefbab78a8fa351d57465962b4040e4b6d6"
 dependencies = [
  "quote",
  "syn",
@@ -830,9 +830,9 @@ dependencies = [
 
 [[package]]
 name = "soloud-sys"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "430cfad5a31f86f56daa0df2cc184e506fa64a6ed67de4739318c9215452ebaa"
+checksum = "2c812a1a74464e33de5cf8e6740b93de6cff1989c60d8b406c1b950f3b3945ae"
 dependencies = [
  "cmake",
  "libc",

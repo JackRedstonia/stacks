@@ -19,7 +19,7 @@ use sdl2::event::Event as Sdl2Event;
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
-use soloud::{AudioExt, Bus as SoloudBus, Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag};
+use soloud::{AudioExt, Bus as SoloudBus, Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag, Backend as SoloudBackend};
 
 enum Event {
     Sdl2Event(Sdl2Event),
@@ -274,8 +274,9 @@ impl Runner {
         spawn(move || {
             let soloud = Soloud::new(
                 SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
+                SoloudBackend::Auto,
                 44_100,
-                4096,
+                256,
                 2,
             )
             .expect("Failed to initialize SoLoud");
