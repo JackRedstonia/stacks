@@ -19,7 +19,10 @@ use sdl2::event::Event as Sdl2Event;
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
-use soloud::{AudioExt, Bus as SoloudBus, Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag, Backend as SoloudBackend};
+use soloud::{
+    AudioExt, Backend as SoloudBackend, Bus as SoloudBus, Handle as SoloudHandle, Soloud,
+    SoloudError, SoloudFlag,
+};
 
 enum Event {
     Sdl2Event(Sdl2Event),
