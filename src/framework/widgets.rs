@@ -306,6 +306,10 @@ impl LayoutSize {
         self
     }
 
+    pub fn get_min(&self) -> Size {
+        Size::new(self.width.min, self.height.min)
+    }
+
     pub fn layout_one(&self, size: Size) -> Size {
         Size::new(
             self.width.layout_one(size.width),

@@ -4,7 +4,7 @@ use game::Builder;
 use skia::{Matrix, Paint};
 use stacks::framework::{
     widgets::{
-        layout::{ContainerSize, VContainer},
+        layout::{ContainerSize, SizeFillContainer, VContainer},
         shapes::{Rect, Throbber},
         AudioPlayer, Transform,
     },
@@ -17,7 +17,7 @@ fn main() {
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .run(|| {
-            let root = VContainer::new(
+            let root = SizeFillContainer::new(VContainer::new(
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
@@ -54,8 +54,10 @@ fn main() {
                     .expect("Failed to create AudioPlayer")
                     .boxed(),
                 ],
-                ContainerSize::ZERO.expand_height().expand_width(),
-            );
+                ContainerSize::min(1366.0, 768.0)
+                    .expand_width()
+                    .expand_height(),
+            ));
             Framework::new(root)
         })
 }
