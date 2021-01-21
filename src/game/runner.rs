@@ -15,7 +15,7 @@ use super::time::TimeState;
 use super::Game;
 use super::{default_font_set::DefaultFontSet, FontSet};
 
-use sdl2::event::Event as Sdl2Event;
+use sdl2::{event::Event as Sdl2Event, video::FullscreenType};
 use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
@@ -31,17 +31,20 @@ enum Event {
 
 enum FeedbackEvent {
     Exit,
+    SetFullscreen(bool),
 }
 
 #[derive(Debug)]
 pub enum Error {
     RendererError(VkResult),
+    FullscreenError(String),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
             Error::RendererError(e) => e.fmt(f),
+            Error::FullscreenError(s) => write!(f, "{}", s),
         }
     }
 }
@@ -50,6 +53,7 @@ impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
             Error::RendererError(e) => Some(e),
+            Error::FullscreenError(_) => None,
         }
     }
 }
@@ -77,8 +81,14 @@ pub struct State {
     pub input_state: InputState,
     pub time_state: TimeState,
     pub time_state_draw: TimeState,
+
     pub font_set: Box<dyn FontSet>,
+
+    was_fullscreen: bool,
+    is_fullscreen: bool,
+
     id_keeper: u64,
+
     soloud: Soloud,
     default_sound_bus: (SoloudBus, SoloudHandle),
 }
@@ -142,8 +152,23 @@ impl State {
         Self::with(|x| x.time_state_draw.elapsed())
     }
 
+    pub fn is_fullscreen() -> bool {
+        Self::with(|x| x.is_fullscreen)
+    }
+
+    pub fn set_fullscreen(fullscreen: bool) {
+        Self::with_mut(|x| x.is_fullscreen = fullscreen);
+    }
+
+    pub fn toggle_fullscreen() -> bool {
+        Self::with_mut(|x| {
+            x.is_fullscreen = !x.is_fullscreen;
+            x.is_fullscreen
+        })
+    }
+
     pub fn mouse_position() -> Point {
-        Self::with(|x| x.input_state.mouse_position)
+        Self::with(|x| x.input_state.mouse_position())
     }
 
     pub fn get_font_set(font: &Font, style: &FontStyle) -> SkFont {
@@ -270,13 +295,11 @@ impl Runner {
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
         let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");
 
-        let sdl_window = sdl_video
+        let mut sdl_window = sdl_video
             .window(title, size.width, size.height)
             .resizable()
             .build()
             .expect("Failed to create game window");
-
-        let skulpin_window = Sdl2Window::new(&sdl_window);
 
         let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
@@ -304,6 +327,8 @@ impl Runner {
                     time_state,
                     time_state_draw,
                     font_set: Box::new(DefaultFontSet::new()),
+                    was_fullscreen: false,
+                    is_fullscreen: false,
                     id_keeper: 0,
                     soloud,
                     default_sound_bus: (default_bus, default_bus_instance),
@@ -318,7 +343,7 @@ impl Runner {
         });
 
         let mut renderer = renderer_builder
-            .build(&skulpin_window)
+            .build(&Sdl2Window::new(&sdl_window))
             .expect("Failed to create renderer");
 
         let mut event_pump = sdl.event_pump().expect("Failed to create SDL2 event pump");
@@ -328,6 +353,16 @@ impl Runner {
                 Ok(event) => match event {
                     FeedbackEvent::Exit => {
                         break 'events;
+                    }
+                    FeedbackEvent::SetFullscreen(f) => {
+                        if let Err(e) = sdl_window.set_fullscreen(if f {
+                            FullscreenType::Desktop
+                        } else {
+                            FullscreenType::Off
+                        }) {
+                            let _ = event_tx.send(Event::Crash(Error::FullscreenError(e)));
+                            break 'events;
+                        }
                     }
                 },
                 Err(e) => match e {
@@ -339,6 +374,7 @@ impl Runner {
                         }
                         match pic_rx.try_recv() {
                             Ok(pic) => {
+                                let skulpin_window = Sdl2Window::new(&sdl_window);
                                 if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
                                     canvas.clear(Self::BACKGROUND);
                                     canvas.draw_picture(pic, Some(&Matrix::default()), None);
@@ -390,6 +426,18 @@ impl Runner {
             if frame_time > target_frame_time {
                 last_frame = Instant::now() - (frame_time - target_frame_time);
                 is_redraw = true;
+                if let Some(s) = State::with_mut(|x| {
+                    if x.is_fullscreen != x.was_fullscreen {
+                        x.was_fullscreen = x.is_fullscreen;
+                        Some(x.is_fullscreen)
+                    } else {
+                        None
+                    }
+                }) {
+                    feedback_tx
+                        .send(FeedbackEvent::SetFullscreen(s))
+                        .expect("Failed to send set fullscreen event to main thread");
+                }
                 let mut rec = PictureRecorder::new();
                 let bounds = Rect::from_size(State::with(|x| {
                     let w = x.input_state.window_size;

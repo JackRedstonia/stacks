@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::skia;
 use skia::{Matrix, Point, Size};
 use skulpin_renderer::LogicalSize;
@@ -61,9 +63,9 @@ impl InputEvent {
 
 pub struct InputState {
     pub window_size: Size,
-    pub keys: [bool; Self::KEYBOARD_BUTTON_COUNT],
-    pub mouse_position: Point,
-    pub mouse_buttons: [bool; Self::MOUSE_BUTTON_COUNT],
+    keys: HashSet<Keycode>,
+    mouse_position: Point,
+    mouse_buttons: HashSet<MouseButton>,
 }
 
 pub enum EventHandleResult {
@@ -79,9 +81,9 @@ impl InputState {
     pub fn new(window_size: LogicalSize) -> Self {
         Self {
             window_size: Size::new(window_size.width as _, window_size.height as _),
-            keys: [false; Self::KEYBOARD_BUTTON_COUNT],
+            keys: HashSet::new(),
             mouse_position: Point::default(),
-            mouse_buttons: [false; Self::MOUSE_BUTTON_COUNT],
+            mouse_buttons: HashSet::new(),
         }
     }
 
@@ -101,38 +103,30 @@ impl InputState {
             Sdl2Event::KeyDown {
                 keycode: Some(k), ..
             } => {
-                if let Some(kc) = Self::keyboard_key_to_index(*k) {
-                    self.keys[kc] = true;
-                    return Some(EventHandleResult::Input(InputEvent::KeyDown(*k)));
-                }
+                self.keys.insert(*k);
+                return Some(EventHandleResult::Input(InputEvent::KeyDown(*k)));
             }
             Sdl2Event::KeyUp {
                 keycode: Some(k), ..
             } => {
-                if let Some(kc) = Self::keyboard_key_to_index(*k) {
-                    self.keys[kc] = false;
-                    return Some(EventHandleResult::Input(InputEvent::KeyUp(*k)));
-                }
+                self.keys.remove(k);
+                return Some(EventHandleResult::Input(InputEvent::KeyUp(*k)));
             }
             Sdl2Event::MouseButtonDown {
                 mouse_btn, x, y, ..
             } => {
-                if let Some(kc) = Self::mouse_button_to_index(*mouse_btn) {
-                    self.mouse_buttons[kc] = true;
-                    let p = Point::new(*x as _, *y as _);
-                    return Some(EventHandleResult::Input(InputEvent::MouseDown(
-                        *mouse_btn, p,
-                    )));
-                }
+                self.mouse_buttons.insert(*mouse_btn);
+                let p = Point::new(*x as _, *y as _);
+                return Some(EventHandleResult::Input(InputEvent::MouseDown(
+                    *mouse_btn, p,
+                )));
             }
             Sdl2Event::MouseButtonUp {
                 mouse_btn, x, y, ..
             } => {
-                if let Some(kc) = Self::mouse_button_to_index(*mouse_btn) {
-                    self.mouse_buttons[kc] = false;
-                    let p = Point::new(*x as _, *y as _);
-                    return Some(EventHandleResult::Input(InputEvent::MouseUp(*mouse_btn, p)));
-                }
+                self.mouse_buttons.remove(mouse_btn);
+                let p = Point::new(*x as _, *y as _);
+                return Some(EventHandleResult::Input(InputEvent::MouseUp(*mouse_btn, p)));
             }
             Sdl2Event::MouseMotion { x, y, .. } => {
                 let p = Point::new(*x as _, *y as _);
@@ -147,45 +141,17 @@ impl InputState {
         None
     }
 
+    pub fn mouse_position(&self) -> Point {
+        self.mouse_position
+    }
+
     /// Returns whether the given key is down
-    pub fn is_key_down(&self, key: Keycode) -> bool {
-        Self::keyboard_key_to_index(key)
-            .map(|k| self.keys[k])
-            .unwrap_or(false)
+    pub fn is_key_down(&self, key: &Keycode) -> bool {
+        self.keys.contains(&key)
     }
 
     /// Returns whether the given button is down
     pub fn is_mouse_down(&self, button: MouseButton) -> bool {
-        Self::mouse_button_to_index(button)
-            .map(|k| self.mouse_buttons[k])
-            .unwrap_or(false)
-    }
-
-    /// Convert the mouse button enum into a numerical index
-    fn mouse_button_to_index(button: MouseButton) -> Option<usize> {
-        let index = match button {
-            MouseButton::Left => 0,
-            MouseButton::Right => 1,
-            MouseButton::Middle => 2,
-            MouseButton::X1 => 3,
-            MouseButton::X2 => 4,
-            _ => return None,
-        };
-
-        if index >= Self::MOUSE_BUTTON_COUNT {
-            None
-        } else {
-            Some(index)
-        }
-    }
-
-    /// Convert the key code into a numerical index
-    fn keyboard_key_to_index(key: Keycode) -> Option<usize> {
-        let index = key as usize;
-        if index >= Self::KEYBOARD_BUTTON_COUNT {
-            None
-        } else {
-            Some(index)
-        }
+        self.mouse_buttons.contains(&button)
     }
 }

@@ -4,7 +4,7 @@ use game::Builder;
 use skia::{Matrix, Paint};
 use stacks::framework::{
     widgets::{
-        layout::{ContainerSize, SizeFillContainer, VContainer},
+        layout::{ContainerSize, FullscreenContainer, SizeFillContainer, VContainer},
         shapes::{Rect, Throbber},
         AudioPlayer, Transform,
     },
@@ -17,7 +17,7 @@ fn main() {
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .run(|| {
-            let root = SizeFillContainer::new(VContainer::new(
+            let root = FullscreenContainer::new(SizeFillContainer::new(VContainer::new(
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
@@ -57,7 +57,7 @@ fn main() {
                 ContainerSize::min(1366.0, 768.0)
                     .expand_width()
                     .expand_height(),
-            ));
+            )));
             Framework::new(root)
         })
 }
