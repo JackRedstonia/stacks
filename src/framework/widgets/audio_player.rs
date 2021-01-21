@@ -27,7 +27,7 @@ impl AudioPlayer {
         background: Paint,
         fft: Paint,
     ) -> Result<Self, SoloudError> {
-        let path = "src/resources/sound.ogg";
+        let path = "resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
         let bus = AudioBus::Default;
         let instance = sound.create_instance(Some(bus));
