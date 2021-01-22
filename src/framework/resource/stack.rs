@@ -4,7 +4,7 @@ use uany::{UnsafeAny, UnsafeAnyExt};
 use unsafe_any as uany;
 
 
-struct ResourceStack<A: ?Sized = dyn UnsafeAny>
+pub struct ResourceStack<A: ?Sized = dyn UnsafeAny>
 where A: UnsafeAnyExt {
     stack: Vec<(TypeId, Box<A>)>,
 }
