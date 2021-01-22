@@ -38,6 +38,10 @@ impl<A: UnsafeAnyExt + ?Sized> ResourceStack<A> {
             self.stack.pop();
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
 }
 
 pub unsafe trait Implements<A: ?Sized + UnsafeAnyExt> {
