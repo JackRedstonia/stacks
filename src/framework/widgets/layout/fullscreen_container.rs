@@ -19,6 +19,10 @@ impl<T: Widget> FullscreenContainer<T> {
 }
 
 impl<T: Widget> Widget for FullscreenContainer<T> {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.inner.load(stack);
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }
