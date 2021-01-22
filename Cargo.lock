@@ -838,9 +838,9 @@ dependencies = [
 
 [[package]]
 name = "soloud"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "948458ebbfa387eb9b68d97c5bd24c470fb8e909d3f191771a834c15175b60fe"
+checksum = "79c3fc66798582cf9c8207845503f2ef870086ba5c642ce804403fba3656fa10"
 dependencies = [
  "bitflags",
  "soloud-derive",
@@ -859,9 +859,9 @@ dependencies = [
 
 [[package]]
 name = "soloud-sys"
-version = "0.3.2"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c812a1a74464e33de5cf8e6740b93de6cff1989c60d8b406c1b950f3b3945ae"
+checksum = "0135be030d2fce31a145199faab43a0788b4c12a59926817b0f101cee796ec89"
 dependencies = [
  "cmake",
  "libc",
@@ -881,6 +881,7 @@ dependencies = [
  "skulpin-renderer",
  "skulpin-renderer-sdl2",
  "soloud",
+ "unsafe-any",
 ]
 
 [[package]]
@@ -1060,6 +1061,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "traitobject"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
+
+[[package]]
 name = "unicode-bidi"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1094,6 +1101,15 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
+
+[[package]]
+name = "unsafe-any"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f30360d7979f5e9c6e6cea48af192ea8fab4afb3cf72597154b8f08935bc9c7f"
+dependencies = [
+ "traitobject",
+]
 
 [[package]]
 name = "untrusted"
