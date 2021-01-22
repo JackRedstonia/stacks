@@ -20,12 +20,6 @@ pub struct Framework<T: Widget> {
 
 impl<T: Widget> Framework<T> {
     pub fn new(root: impl Into<Wrap<T>>) -> Self {
-        let state = FrameworkState {
-            current_focused_id: None,
-            just_grabbed_focus: false,
-            load_requested: false,
-        };
-        FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(state));
         Self {
             root: root.into(),
             layout_size: LayoutSize::ZERO,
@@ -100,6 +94,7 @@ impl<T: Widget> Game for Framework<T> {
     }
 }
 
+#[derive(Default)]
 pub struct FrameworkState {
     current_focused_id: Option<ID>,
     just_grabbed_focus: bool,
@@ -108,8 +103,12 @@ pub struct FrameworkState {
 
 impl FrameworkState {
     const PANIC_MESSAGE: &'static str =
-        "Attempt to get framework state while framework is uninitialised";
+        "Attempt to get framework state while framework is uninitialized";
     thread_local!(static STATE: RefCell<Option<FrameworkState>> = RefCell::new(None));
+
+    pub fn initialize() {
+        FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(Default::default()));
+    }
 
     pub fn request_load() {
         Self::with_mut(|x| x.load_requested = true);
