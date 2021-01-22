@@ -60,6 +60,12 @@ impl<T: Widget> HContainer<T> {
 }
 
 impl<T: Widget> Widget for HContainer<T> {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+        for i in &mut self.inner {
+            i.inner.load(stack);
+        }
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         for i in &mut self.inner {
             i.inner.update();

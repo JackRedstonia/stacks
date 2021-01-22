@@ -21,6 +21,10 @@ impl<T: Widget> SizeFillContainer<T> {
 }
 
 impl<T: Widget> Widget for SizeFillContainer<T> {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.inner.load(stack);
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }

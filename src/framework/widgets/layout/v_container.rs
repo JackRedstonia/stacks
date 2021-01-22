@@ -60,6 +60,12 @@ impl<T: Widget> VContainer<T> {
 }
 
 impl<T: Widget> Widget for VContainer<T> {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+        for i in &mut self.inner {
+            i.inner.load(stack);
+        }
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         for i in &mut self.inner {
             i.inner.update();
