@@ -2,8 +2,8 @@
     users. Used for state management, resource management, audio, and other
     things.
 
-    Contains only one `unsafe` block, and the rest of safety backed by RefCell.
-    Is memory safe and cannot be exploited to get two or more mutable
+    Contains only two `unsafe` blocks, and the rest of safety backed by
+    RefCell. Is memory safe and cannot be exploited to get two or more mutable
     references to the resource as far as testing done by the author can tell.
  */
 
