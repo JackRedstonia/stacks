@@ -7,24 +7,21 @@
     references to the resource as far as testing done by the author can tell.
  */
 
+mod stack;
+
 use std::{cell::RefMut, intrinsics::transmute, ops::{Deref, DerefMut}, rc::{Rc, Weak}};
 use std::cell::{RefCell, Ref};
-use std::any::Any;
-
-/// A trait bound that all resources must satisfy.
-/// This will come in useful later for widget-based resource distribution.
-pub trait ResourceTypeBound = Any;
 
 /// The struct owning the resource.
 ///
 /// This by itself serves no meaning to the user of the API, except for
 /// ownership, where this struct should be alive for as long as the resource is
 /// to be used. Else, the users of the resource would simply get `None`s.
-pub struct ResourceHoster<T: ResourceTypeBound> {
+pub struct ResourceHoster<T> {
     resource: Rc<RefCell<T>>,
 }
 
-impl<T: ResourceTypeBound> ResourceHoster<T> {
+impl<T> ResourceHoster<T> {
     /// Creates the resource.
     pub fn new(resource: T) -> Self {
         Self {
@@ -45,11 +42,11 @@ impl<T: ResourceTypeBound> ResourceHoster<T> {
 /// Functionally, it's no more than a `Weak<RefCell<T>>` where `T` is the
 /// resource, but the types its methods return is rather useful.
 #[derive(Clone)]
-pub struct ResourceUser<T: ResourceTypeBound> {
+pub struct ResourceUser<T> {
     resource: Weak<RefCell<T>>,
 }
 
-impl<T: Any> ResourceUser<T> {
+impl<T> ResourceUser<T> {
     /// Tries accessing the resource.
     ///
     /// Returns a `None` if the resource owner has been dropped.
@@ -99,7 +96,7 @@ impl<T: Any> ResourceUser<T> {
 /// lock on the `RefCell` when dropped.
 ///
 /// Implements `Deref` as this is a smart pointer of some sort.
-pub struct ResourceUsage<'a, T: ResourceTypeBound> {
+pub struct ResourceUsage<'a, T> {
     // SAFETY: This field is to never be accessed.
     // There is simply no reason to do so, as this field is merely here to be
     // dropped when the usage drops.
@@ -107,7 +104,7 @@ pub struct ResourceUsage<'a, T: ResourceTypeBound> {
     val: Ref<'a, T>,
 }
 
-impl<'a, T: ResourceTypeBound> Deref for ResourceUsage<'a, T> {
+impl<'a, T> Deref for ResourceUsage<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -122,7 +119,7 @@ impl<'a, T: ResourceTypeBound> Deref for ResourceUsage<'a, T> {
 /// lock on the `RefCell` when dropped.
 ///
 /// Implements `Deref` and `DerefMut` as this is a smart pointer of some sort.
-pub struct ResourceUsageMut<'a, T: ResourceTypeBound> {
+pub struct ResourceUsageMut<'a, T> {
     // SAFETY: This field is to never be accessed.
     // There is simply no reason to do so, as this field is merely here to be
     // dropped when the usage drops.
@@ -130,7 +127,7 @@ pub struct ResourceUsageMut<'a, T: ResourceTypeBound> {
     val: RefMut<'a, T>,
 }
 
-impl<'a, T: ResourceTypeBound> Deref for ResourceUsageMut<'a, T> {
+impl<'a, T> Deref for ResourceUsageMut<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -138,7 +135,7 @@ impl<'a, T: ResourceTypeBound> Deref for ResourceUsageMut<'a, T> {
     }
 }
 
-impl<'a, T: ResourceTypeBound> DerefMut for ResourceUsageMut<'a, T> {
+impl<'a, T> DerefMut for ResourceUsageMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.val.deref_mut()
     }
