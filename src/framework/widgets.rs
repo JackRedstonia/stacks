@@ -13,10 +13,12 @@ pub use transform::Transform;
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
-use super::FrameworkState;
+use super::{FrameworkState, resource::ResourceStack};
 
 #[allow(unused_variables)]
 pub trait Widget {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {}
+
     fn update(&mut self, wrap: &mut WrapState) {}
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
@@ -34,17 +36,21 @@ pub trait Widget {
     fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
-
+    
     // fn get<'a>(
-    //     &'a mut self,
-    //     wrap: &mut WrapState,
-    //     id: ID,
-    // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
-    //     None
-    // }
-}
-
+        //     &'a mut self,
+        //     wrap: &mut WrapState,
+        //     id: ID,
+        // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
+            //     None
+            // }
+        }
+        
 impl Widget for Box<dyn Widget> {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.as_mut().load(wrap, stack);
+    }
+            
     fn update(&mut self, wrap: &mut WrapState) {
         self.as_mut().update(wrap);
     }
@@ -89,6 +95,10 @@ impl<T: Widget> Wrap<T> {
             inner,
             state: WrapState::new(),
         }
+    }
+
+    pub fn load(&mut self, stack: &mut ResourceStack) {
+        self.state.load(&mut self.inner, stack);
     }
 
     pub fn update(&mut self) {
@@ -159,6 +169,10 @@ impl WrapState {
 
     pub fn is_hovered(&self) -> bool {
         self.is_hovered
+    }
+
+    pub fn load<T: Widget + ?Sized>(&mut self, widget: &mut T, stack: &mut ResourceStack) {
+        widget.load(self, stack);
     }
 
     pub fn update<T: Widget + ?Sized>(&mut self, widget: &mut T) {

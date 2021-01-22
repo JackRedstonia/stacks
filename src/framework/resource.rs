@@ -2,12 +2,14 @@
     users. Used for state management, resource management, audio, and other
     things.
 
-    Contains only two `unsafe` blocks, and the rest of safety backed by
+    Contains only three `unsafe` blocks, and the rest of safety backed by
     RefCell. Is memory safe and cannot be exploited to get two or more mutable
     references to the resource as far as testing done by the author can tell.
  */
 
 mod stack;
+
+pub use stack::ResourceStack;
 
 use std::{cell::RefMut, intrinsics::transmute, ops::{Deref, DerefMut}, rc::{Rc, Weak}};
 use std::cell::{RefCell, Ref};
