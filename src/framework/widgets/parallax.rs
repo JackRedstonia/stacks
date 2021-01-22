@@ -14,6 +14,7 @@ pub struct Parallax<T: Widget> {
 
 impl<T: Widget> Parallax<T> {
     pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+        FrameworkState::request_load();
         Self {
             inner: inner.into(),
             size: Size::new_empty(),

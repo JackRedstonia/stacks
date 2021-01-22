@@ -12,6 +12,7 @@ pub mod prelude {
         audio,
         resource::{ResourceHoster, ResourceStack, ResourceUser},
         widgets::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, Wrappable},
+        FrameworkState,
     };
     pub use crate::game;
     pub use crate::utils::*;
