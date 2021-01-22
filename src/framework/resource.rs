@@ -1,18 +1,23 @@
 /*! Utility for resource management where there is one "owner" and multiple
-    users. Used for state management, resource management, audio, and other
-    things.
+   users. Used for state management, resource management, audio, and other
+   things.
 
-    Contains only three `unsafe` blocks, and the rest of safety backed by
-    RefCell. Is memory safe and cannot be exploited to get two or more mutable
-    references to the resource as far as testing done by the author can tell.
- */
+   Contains only three `unsafe` blocks, and the rest of safety backed by
+   RefCell. Is memory safe and cannot be exploited to get two or more mutable
+   references to the resource as far as testing done by the author can tell.
+*/
 
 mod stack;
 
 pub use stack::ResourceStack;
 
-use std::{cell::RefMut, intrinsics::transmute, ops::{Deref, DerefMut}, rc::{Rc, Weak}};
-use std::cell::{RefCell, Ref};
+use std::cell::{Ref, RefCell};
+use std::{
+    cell::RefMut,
+    intrinsics::transmute,
+    ops::{Deref, DerefMut},
+    rc::{Rc, Weak},
+};
 
 /// The struct owning the resource.
 ///
@@ -27,7 +32,7 @@ impl<T> ResourceHoster<T> {
     /// Creates the resource.
     pub fn new(resource: T) -> Self {
         Self {
-            resource: Rc::new(RefCell::new(resource))
+            resource: Rc::new(RefCell::new(resource)),
         }
     }
 
@@ -63,10 +68,7 @@ impl<T> ResourceUser<T> {
         // struct merely plays the role of being alive until the reference to
         // it dies.
         let val = unsafe { transmute(rc.borrow()) };
-        Some(ResourceUsage {
-            _rc: rc,
-            val,
-        })
+        Some(ResourceUsage { _rc: rc, val })
     }
 
     /// Tries mutably accessing the resource.
@@ -84,10 +86,7 @@ impl<T> ResourceUser<T> {
         // struct merely plays the role of being alive until the reference to
         // it dies.
         let val = unsafe { transmute(rc.borrow_mut()) };
-        Some(ResourceUsageMut {
-            _rc: rc,
-            val,
-        })
+        Some(ResourceUsageMut { _rc: rc, val })
     }
 }
 

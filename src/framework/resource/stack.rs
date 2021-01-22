@@ -1,19 +1,18 @@
-use std::any::{TypeId, Any};
+use std::any::{Any, TypeId};
 
 use uany::{UnsafeAny, UnsafeAnyExt};
 use unsafe_any as uany;
 
-
 pub struct ResourceStack<A: ?Sized = dyn UnsafeAny>
-where A: UnsafeAnyExt {
+where
+    A: UnsafeAnyExt,
+{
     stack: Vec<(TypeId, Box<A>)>,
 }
 
 impl ResourceStack {
     pub fn new() -> Self {
-        Self {
-            stack: vec![],
-        }
+        Self { stack: vec![] }
     }
 }
 
@@ -24,11 +23,11 @@ impl<A: UnsafeAnyExt + ?Sized> ResourceStack<A> {
 
     pub fn get<T: Any + Implements<A>>(&self) -> Option<&T> {
         let target = TypeId::of::<T>();
-        self.stack.iter().rev().find(|(id, _)| target == *id).map(|e| {
-            unsafe {
-                e.1.downcast_ref_unchecked::<T>()
-            }
-        })
+        self.stack
+            .iter()
+            .rev()
+            .find(|(id, _)| target == *id)
+            .map(|e| unsafe { e.1.downcast_ref_unchecked::<T>() })
     }
 
     pub fn pop<T: Any + Implements<A>>(&mut self) {
@@ -49,5 +48,7 @@ pub unsafe trait Implements<A: ?Sized + UnsafeAnyExt> {
 }
 
 unsafe impl<T: UnsafeAny> Implements<dyn UnsafeAny> for T {
-    fn into_object(self) -> Box<dyn UnsafeAny> { Box::new(self) }
+    fn into_object(self) -> Box<dyn UnsafeAny> {
+        Box::new(self)
+    }
 }
