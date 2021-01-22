@@ -30,6 +30,14 @@ impl<A: UnsafeAnyExt + ?Sized> ResourceStack<A> {
             }
         })
     }
+
+    pub fn pop<T: Any + Implements<A>>(&mut self) {
+        let target = TypeId::of::<T>();
+        if let Some((id, _)) = self.stack.iter().rev().next() {
+            assert_eq!(*id, target);
+            self.stack.pop();
+        }
+    }
 }
 
 pub unsafe trait Implements<A: ?Sized + UnsafeAnyExt> {
