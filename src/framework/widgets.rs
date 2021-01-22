@@ -13,7 +13,7 @@ pub use transform::Transform;
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
-use super::{FrameworkState, resource::ResourceStack};
+use super::{resource::ResourceStack, FrameworkState};
 
 #[allow(unused_variables)]
 pub trait Widget {
@@ -36,21 +36,21 @@ pub trait Widget {
     fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
 
     fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
-    
+
     // fn get<'a>(
-        //     &'a mut self,
-        //     wrap: &mut WrapState,
-        //     id: ID,
-        // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
-            //     None
-            // }
-        }
-        
+    //     &'a mut self,
+    //     wrap: &mut WrapState,
+    //     id: ID,
+    // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
+    //     None
+    // }
+}
+
 impl Widget for Box<dyn Widget> {
     fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
         self.as_mut().load(wrap, stack);
     }
-            
+
     fn update(&mut self, wrap: &mut WrapState) {
         self.as_mut().update(wrap);
     }

@@ -1,6 +1,6 @@
 pub mod audio;
-pub mod widgets;
 pub mod resource;
+pub mod widgets;
 
 use std::cell::RefCell;
 
@@ -14,7 +14,7 @@ pub struct Framework<T: Widget> {
     root: Wrap<T>,
     layout_size: LayoutSize,
     size: Size,
-    
+
     recycled_resource_stack: ResourceStack,
 }
 
