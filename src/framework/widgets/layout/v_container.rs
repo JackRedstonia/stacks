@@ -16,6 +16,7 @@ impl<T: Widget> VContainer<T> {
         W: Into<Wrap<T>>,
         I: IntoIterator<Item = W>,
     {
+        FrameworkState::request_load();
         Self {
             inner: inner
                 .into_iter()

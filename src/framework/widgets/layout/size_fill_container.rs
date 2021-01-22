@@ -11,6 +11,7 @@ pub struct SizeFillContainer<T: Widget> {
 
 impl<T: Widget> SizeFillContainer<T> {
     pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+        FrameworkState::request_load();
         Self {
             inner: inner.into(),
             child_layout_size: LayoutSize::ZERO,

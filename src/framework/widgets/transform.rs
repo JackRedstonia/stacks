@@ -9,6 +9,7 @@ pub struct Transform<T: Widget> {
 
 impl<T: Widget> Transform<T> {
     pub fn new(inner: impl Into<Wrap<T>>, matrix: Matrix) -> Self {
+        FrameworkState::request_load();
         Self {
             inner: inner.into(),
             matrix,
