@@ -17,6 +17,7 @@ fn main() {
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .run(|| {
+            FrameworkState::initialize();
             let root = FullscreenContainer::new(SizeFillContainer::new(VContainer::new(
                 vec![
                     Rect::new(

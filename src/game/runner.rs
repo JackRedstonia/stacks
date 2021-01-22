@@ -117,7 +117,7 @@ impl AudioBus {
 }
 
 impl State {
-    const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialised";
+    const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialized";
     thread_local!(static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
