@@ -44,6 +44,7 @@ impl<T: ResourceTypeBound> ResourceHoster<T> {
 ///
 /// Functionally, it's no more than a `Weak<RefCell<T>>` where `T` is the
 /// resource, but the types its methods return is rather useful.
+#[derive(Clone)]
 pub struct ResourceUser<T: ResourceTypeBound> {
     resource: Weak<RefCell<T>>,
 }
