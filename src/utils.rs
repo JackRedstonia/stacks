@@ -98,8 +98,8 @@ where
 }
 
 impl PaintUtils for Paint {
-    fn new_color4f_colorspaced(r: f32, g: f32, b: f32, a: f32, s: Option<&ColorSpace>) -> Self {
-        Self::new(Color4f::new(r, g, b, a), s)
+    fn new_color4f_colorspaced(r: f32, g: f32, b: f32, a: f32, space: Option<&ColorSpace>) -> Self {
+        Self::new(Color4f::new(r, g, b, a), space)
     }
 
     fn with_anti_alias(mut self, anti_alias: bool) -> Self {

@@ -1,8 +1,8 @@
 use std::any::{Any, TypeId};
 
-use uany::{UnsafeAny, UnsafeAnyExt};
-use unsafe_any as uany;
+use unsafe_any::{UnsafeAny, UnsafeAnyExt};
 
+#[derive(Default)]
 pub struct ResourceStack<A: ?Sized = dyn UnsafeAny>
 where
     A: UnsafeAnyExt,

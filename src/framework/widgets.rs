@@ -187,7 +187,7 @@ impl WrapState {
                     widget.input(self, event);
                     self.is_hovered = false;
                 }
-                return b;
+                b
             }
             InputEvent::Focused(id, inner) => {
                 if self.id == *id {
@@ -201,7 +201,7 @@ impl WrapState {
                 if matches!(event, InputEvent::MouseMove(_)) {
                     self.is_hovered = b;
                 }
-                return b;
+                b
             }
         }
     }
@@ -341,7 +341,7 @@ impl LayoutSize {
             .height
             .expand
             .map(|y| matrix.map_vector(Vector::new(0.0, y)).y.abs());
-        let mapped = Self {
+        Self {
             width: LayoutDimension {
                 min: min.width.abs(),
                 expand: expand_width,
@@ -350,8 +350,7 @@ impl LayoutSize {
                 min: min.height.abs(),
                 expand: expand_height,
             },
-        };
-        mapped
+        }
     }
 
     fn map_size(width: scalar, height: scalar, matrix: Matrix) -> Size {
