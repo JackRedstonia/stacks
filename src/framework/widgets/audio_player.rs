@@ -55,7 +55,7 @@ impl AudioPlayer {
     }
 
     fn refresh_fft(&mut self, factor: f32) {
-        assert!(factor >= 0.0 && factor <= 1.0);
+        assert!((0.0..=1.0).contains(&factor));
         let factor_inv = 1.0 - factor;
         let fft = self.instance.bus().get_fft();
         assert_eq!(fft.len(), FFT_SIZE);
