@@ -1,5 +1,6 @@
 #![feature(duration_zero)]
 #![feature(duration_constants)]
+#![feature(trait_alias)]
 
 pub mod framework;
 pub mod game;
