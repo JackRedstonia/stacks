@@ -18,12 +18,12 @@ Audio is in a usable state, based on the SoLoud audio library.
 The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
 
 ## Compiling
-This project depends on SDL2. When all these build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output is a single binary, no dynamic libraries.
+This project depends on SDL2. When build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output should be shipped with the SDL2 dynamic library file.
 
 ### Linux
-Any nightly Rust toolchain should work. You will also need development packages in order to compile. For example, on Debian and derivatives, run the following command to install SDL2 development packages and its dependencies.
+Any nightly Rust toolchain should work. You will also need development packages in order to compile. For example, on Debian and derivatives, run the following command to install SDL2 development packages.
 ```sh
-$ apt-get install libsdl2-dev libsdl2-mixer-dev pkg-config libdrm-dev libgbm-dev
+$ apt-get install libsdl2-dev
 ```
 
 ### Windows
