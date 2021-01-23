@@ -14,9 +14,7 @@ skulpin-renderer-sdl2 = "0.5"
 unsafe-any = "*"
 
 [dependencies.soloud]
-version = "0.3.3"
-default-features = false
-features = ["alsa"]
+git = "https://gitlab.com/JackRedstonia/soloud-rs"
 
 [dependencies.sdl2]
 version = ">=0.33"
