@@ -21,13 +21,13 @@ The repository currently contains both a binary and a library. The binary crate 
 This project depends on SDL2. When build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output should be shipped with the SDL2 dynamic library file.
 
 ### Linux
-Any nightly Rust toolchain should work. You will also need development packages in order to compile. For example, on Debian and derivatives, run the following command to install SDL2 development packages.
+Any Rust toolchain should work. You will also need development packages in order to compile. For example, on Debian and derivatives, run the following command to install SDL2 development packages.
 ```sh
 $ apt-get install libsdl2-dev
 ```
 
 ### Windows
-Nightly MSVC toolchain is required. Follow the `sdl2` crate's instructions on how to install dependencies.
+A MSVC toolchain is required (solely to build `skia-bindings`). Follow the `sdl2` crate's instructions on how to install development dependencies.
 
 ## License
 Mozilla Public License version 2.0. See the LICENSE file for more information.
