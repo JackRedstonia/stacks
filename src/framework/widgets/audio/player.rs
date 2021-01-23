@@ -44,12 +44,12 @@ impl AudioPlayer {
     }
 
     fn pos_percentage_from_x(&self, x: scalar) -> f64 {
-        (x as f64 / self.size.width as f64).clamp(0.0, 1.0)
+        (x as f64 / self.size.width as f64).clamp_zero_one()
     }
 
     fn seek_percentage(&self, percentage: f64) -> Result<(), SoloudError> {
         if let Some(instance) = &self.instance {
-            instance.seek(self.sound.length() * percentage.clamp(0.0, 1.0))?;
+            instance.seek(self.sound.length() * percentage.clamp_zero_one())?;
         }
         Ok(())
     }
@@ -123,14 +123,14 @@ impl Widget for AudioPlayer {
                 let c = Rect::from_size(self.size).contains(*pos);
                 if c {
                     wrap.grab_focus();
-                    let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
+                    let pos = (pos.x / self.size.width).clamp_zero_one();
                     self.seek_preview_percentage = Some(pos);
                 }
                 c
             }
             InputEvent::MouseMove(pos) => {
                 if wrap.is_focused() || wrap.is_hovered() {
-                    let pos = (pos.x / self.size.width).clamp(0.0, 1.0);
+                    let pos = (pos.x / self.size.width).clamp_zero_one();
                     self.seek_preview_percentage = Some(pos);
                 }
                 Rect::from_size(self.size).contains(*pos)
