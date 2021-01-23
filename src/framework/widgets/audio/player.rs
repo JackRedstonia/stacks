@@ -1,4 +1,4 @@
-use super::audio::{AudioBus, AudioResource, Sound, SoundInstance};
+use super::{AudioBus, AudioResource, Sound, SoundInstance};
 use crate::prelude::*;
 use game::{InputEvent, State};
 use skia::{scalar, Canvas, Contains, Paint, Rect, Size};
