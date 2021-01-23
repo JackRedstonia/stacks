@@ -82,7 +82,11 @@ impl<T> ResourceUser<T> {
         // reference dies and everything inside gets dropped.
         let val: Ref<'_, T> = unsafe { transmute(rc.borrow()) };
         let usage = unsafe { transmute(val.deref()) };
-        Some(ResourceUsage { _rc: rc, _val: val, usage })
+        Some(ResourceUsage {
+            _rc: rc,
+            _val: val,
+            usage,
+        })
     }
 
     /// Tries mutably accessing the resource.
@@ -100,7 +104,11 @@ impl<T> ResourceUser<T> {
         // reference dies and everything inside gets dropped.
         let mut val: RefMut<'_, T> = unsafe { transmute(rc.borrow_mut()) };
         let usage = unsafe { transmute(val.deref_mut()) };
-        Some(ResourceUsageMut { _rc: rc, _val: val, usage })
+        Some(ResourceUsageMut {
+            _rc: rc,
+            _val: val,
+            usage,
+        })
     }
 }
 
