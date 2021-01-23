@@ -15,8 +15,3 @@ unsafe-any = "*"
 
 [dependencies.soloud]
 git = "https://gitlab.com/JackRedstonia/soloud-rs"
-
-[dependencies.sdl2]
-version = ">=0.33"
-default-features = false
-features = ["static-link", "use-pkgconfig"]
