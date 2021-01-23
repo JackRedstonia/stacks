@@ -158,6 +158,8 @@ impl Runner {
 
     pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
+    pub const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
+
     pub fn run<F, T>(game: F, size: LogicalSize, title: &str, renderer_builder: RendererBuilder)
     where
         F: 'static + Send + FnOnce() -> T,
@@ -241,7 +243,7 @@ impl Runner {
                                 }
                             }
                             Err(e) => match e {
-                                TryRecvError::Empty => sleep(Duration::MILLISECOND),
+                                TryRecvError::Empty => sleep(Self::MAIN_THREAD_SLEEP_DURATION),
                                 TryRecvError::Disconnected => break 'events,
                             },
                         }
@@ -258,8 +260,8 @@ impl Runner {
         pic_tx: SyncSender<Picture>,
         feedback_tx: SyncSender<FeedbackEvent>,
     ) {
-        let target_update_time = Duration::MILLISECOND; // 1000 fps
-        let target_frame_time = Duration::MILLISECOND * 8; // 120 fps
+        let target_update_time = Duration::from_millis(1); // 1000 fps
+        let target_frame_time = Duration::from_millis(8); // 120 fps
         let mut last_frame = Instant::now();
 
         loop {

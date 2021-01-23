@@ -13,8 +13,8 @@ impl TimeState {
         Self {
             start: now,
             last_update: now,
-            elapsed: Duration::ZERO,
-            last_update_time: Duration::ZERO,
+            elapsed: Default::default(),
+            last_update_time: Default::default(),
         }
     }
 

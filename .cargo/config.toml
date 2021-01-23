@@ -1,10 +1,9 @@
 [target.x86_64-unknown-linux-gnu]
 linker = "/usr/bin/clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld", "-Zshare-generics=y", "-Clinker-plugin-lto"]
+rustflags = ["-Clink-arg=-fuse-ld=lld", "-Clinker-plugin-lto"]
 
 [target.x86_64-apple-darwin]
-rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/zld", "-Zshare-generics=y", "-Zrun-dsymutil=no"]
+rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/zld"]
 
 [target.x86_64-pc-windows-msvc]
 linker = "rust-lld.exe"
-rustflags = ["-Zshare-generics=y"]
