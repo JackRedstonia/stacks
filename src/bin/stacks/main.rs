@@ -4,6 +4,7 @@ use game::Builder;
 use skia::{Matrix, Paint};
 use stacks::framework::{
     widgets::{
+        audio::Audio,
         layout::{ContainerSize, FullscreenContainer, SizeFillContainer, VContainer},
         shapes::{Rect, Throbber},
         AudioPlayer, Transform,
@@ -17,7 +18,8 @@ fn main() {
         .app_name(CString::new("Stacks").unwrap())
         .window_title("Stacks")
         .run(|| {
-            let root = FullscreenContainer::new(SizeFillContainer::new(VContainer::new(
+            FrameworkState::initialize();
+            let root = VContainer::new(
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
@@ -57,7 +59,9 @@ fn main() {
                 ContainerSize::min(1366.0, 768.0)
                     .expand_width()
                     .expand_height(),
-            )));
+            );
+            let root = FullscreenContainer::new(SizeFillContainer::new(root));
+            let root = Audio::new(root).expect("Failed to open audio");
             Framework::new(root)
         })
 }

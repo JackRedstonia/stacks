@@ -14,6 +14,7 @@ pub struct Parallax<T: Widget> {
 
 impl<T: Widget> Parallax<T> {
     pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+        FrameworkState::request_load();
         Self {
             inner: inner.into(),
             size: Size::new_empty(),
@@ -43,6 +44,10 @@ impl<T: Widget> Parallax<T> {
 }
 
 impl<T: Widget> Widget for Parallax<T> {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.inner.load(stack);
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }

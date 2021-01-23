@@ -10,6 +10,7 @@ pub struct FullscreenContainer<T: Widget> {
 
 impl<T: Widget> FullscreenContainer<T> {
     pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+        FrameworkState::request_load();
         Self {
             inner: inner.into(),
             key: Keycode::F11,
@@ -19,6 +20,10 @@ impl<T: Widget> FullscreenContainer<T> {
 }
 
 impl<T: Widget> Widget for FullscreenContainer<T> {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.inner.load(stack);
+    }
+
     fn update(&mut self, _wrap: &mut WrapState) {
         self.inner.update();
     }

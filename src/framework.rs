@@ -1,10 +1,11 @@
-pub mod audio;
+pub mod resource;
 pub mod widgets;
 
 use std::cell::RefCell;
 
 use crate::prelude::*;
 use game::{Error, Game, InputEvent, State, ID};
+use resource::ResourceStack;
 use skia::{Canvas, Size};
 use widgets::{LayoutSize, Widget, Wrap};
 
@@ -12,19 +13,17 @@ pub struct Framework<T: Widget> {
     root: Wrap<T>,
     layout_size: LayoutSize,
     size: Size,
+
+    recycled_resource_stack: ResourceStack,
 }
 
 impl<T: Widget> Framework<T> {
     pub fn new(root: impl Into<Wrap<T>>) -> Self {
-        let state = FrameworkState {
-            current_focused_id: None,
-            just_grabbed_focus: false,
-        };
-        FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(state));
         Self {
             root: root.into(),
             layout_size: LayoutSize::ZERO,
             size: Size::new_empty(),
+            recycled_resource_stack: ResourceStack::new(),
         }
     }
 
@@ -42,11 +41,19 @@ impl<T: Widget> Framework<T> {
             self.root.input(&event);
         }
     }
+
+    fn maybe_load(&mut self) {
+        if FrameworkState::consume_load_request() {
+            self.root.load(&mut self.recycled_resource_stack);
+            assert!(self.recycled_resource_stack.is_empty());
+        }
+    }
 }
 
 impl<T: Widget> Game for Framework<T> {
     fn update(&mut self) {
         self.root.update();
+        self.maybe_load();
     }
 
     fn draw(&mut self, canvas: &mut Canvas) {
@@ -62,6 +69,7 @@ impl<T: Widget> Game for Framework<T> {
 
         // Do the actual drawing
         self.root.draw(canvas);
+        self.maybe_load();
     }
 
     fn set_size(&mut self, window_size: Size) {
@@ -70,10 +78,12 @@ impl<T: Widget> Game for Framework<T> {
             self.layout_size.height.min.max(window_size.height),
         );
         self.root.set_size(self.size);
+        self.maybe_load();
     }
 
     fn input(&mut self, event: InputEvent) {
         self.focus_aware_input(event);
+        self.maybe_load();
     }
 
     fn close(&mut self) {}
@@ -83,15 +93,33 @@ impl<T: Widget> Game for Framework<T> {
     }
 }
 
+#[derive(Default)]
 pub struct FrameworkState {
     current_focused_id: Option<ID>,
     just_grabbed_focus: bool,
+    load_requested: bool,
 }
 
 impl FrameworkState {
     const PANIC_MESSAGE: &'static str =
-        "Attempt to get framework state while framework is uninitialised";
+        "Attempt to get framework state while framework is uninitialized";
     thread_local!(static STATE: RefCell<Option<FrameworkState>> = RefCell::new(None));
+
+    pub fn initialize() {
+        FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(Default::default()));
+    }
+
+    pub fn request_load() {
+        Self::with_mut(|x| x.load_requested = true);
+    }
+
+    fn consume_load_request() -> bool {
+        Self::with_mut(|x| {
+            let b = x.load_requested;
+            x.load_requested = false;
+            b
+        })
+    }
 
     pub fn current_focus() -> Option<ID> {
         Self::with(|x| x.current_focused_id)

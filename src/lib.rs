@@ -9,8 +9,9 @@ pub use skulpin_renderer::skia_safe as skia;
 
 pub mod prelude {
     pub use crate::framework::{
-        audio,
+        resource::{ResourceHoster, ResourceStack, ResourceUsage, ResourceUsageMut, ResourceUser},
         widgets::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, Wrappable},
+        FrameworkState,
     };
     pub use crate::game;
     pub use crate::utils::*;

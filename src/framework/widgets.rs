@@ -1,3 +1,4 @@
+pub mod audio;
 mod audio_player;
 pub mod layout;
 mod parallax;
@@ -13,10 +14,12 @@ pub use transform::Transform;
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
-use super::FrameworkState;
+use super::{resource::ResourceStack, FrameworkState};
 
 #[allow(unused_variables)]
 pub trait Widget {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {}
+
     fn update(&mut self, wrap: &mut WrapState) {}
 
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
@@ -45,6 +48,10 @@ pub trait Widget {
 }
 
 impl Widget for Box<dyn Widget> {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+        self.as_mut().load(wrap, stack);
+    }
+
     fn update(&mut self, wrap: &mut WrapState) {
         self.as_mut().update(wrap);
     }
@@ -89,6 +96,10 @@ impl<T: Widget> Wrap<T> {
             inner,
             state: WrapState::new(),
         }
+    }
+
+    pub fn load(&mut self, stack: &mut ResourceStack) {
+        self.state.load(&mut self.inner, stack);
     }
 
     pub fn update(&mut self) {
@@ -161,6 +172,10 @@ impl WrapState {
         self.is_hovered
     }
 
+    pub fn load<T: Widget + ?Sized>(&mut self, widget: &mut T, stack: &mut ResourceStack) {
+        widget.load(self, stack);
+    }
+
     pub fn update<T: Widget + ?Sized>(&mut self, widget: &mut T) {
         widget.update(self);
     }
@@ -173,7 +188,7 @@ impl WrapState {
                     widget.input(self, event);
                     self.is_hovered = false;
                 }
-                return b;
+                b
             }
             InputEvent::Focused(id, inner) => {
                 if self.id == *id {
@@ -187,7 +202,7 @@ impl WrapState {
                 if matches!(event, InputEvent::MouseMove(_)) {
                     self.is_hovered = b;
                 }
-                return b;
+                b
             }
         }
     }
@@ -327,7 +342,7 @@ impl LayoutSize {
             .height
             .expand
             .map(|y| matrix.map_vector(Vector::new(0.0, y)).y.abs());
-        let mapped = Self {
+        Self {
             width: LayoutDimension {
                 min: min.width.abs(),
                 expand: expand_width,
@@ -336,8 +351,7 @@ impl LayoutSize {
                 min: min.height.abs(),
                 expand: expand_height,
             },
-        };
-        mapped
+        }
     }
 
     fn map_size(width: scalar, height: scalar, matrix: Matrix) -> Size {
