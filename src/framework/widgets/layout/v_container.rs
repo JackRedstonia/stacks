@@ -102,17 +102,17 @@ impl<T: Widget> Widget for VContainer<T> {
                 width: LayoutDimension {
                     min: self
                         .size
-                        .height
+                        .width
                         .min
-                        .map_or(width_min, |min| min.max(height_min)),
+                        .map_or(width_min, |min| min.max(width_min)),
                     expand: self.size.width.expand,
                 },
                 height: LayoutDimension {
                     min: self
                         .size
-                        .width
+                        .height
                         .min
-                        .map_or(height_min, |min| min.max(width_min)),
+                        .map_or(height_min, |min| min.max(height_min)),
                     expand: self.size.height.expand,
                 },
             },
