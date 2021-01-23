@@ -12,7 +12,6 @@ pub struct AudioPlayer {
     pub foreground: Paint,
     pub background: Paint,
     pub fft_paint: Paint,
-    audio_resource: ResourceUser<AudioResource>,
     sound: Sound<WavStream>,
     instance: Option<SoundInstance>,
     seek_preview_percentage: Option<f32>,
@@ -36,7 +35,6 @@ impl AudioPlayer {
             foreground,
             background,
             fft_paint: fft,
-            audio_resource: ResourceUser::new_none(),
             seek_preview_percentage: None,
             sound,
             instance: None,
@@ -58,12 +56,12 @@ impl AudioPlayer {
 
     fn refresh_fft(&mut self, factor: f32) {
         assert!((0.0..=1.0).contains(&factor));
-        let factor_inv = 1.0 - factor;
         if let Some(instance) = &self.instance {
-            if let Some(resource) = self.audio_resource.try_access() {
+            if let Some(bus) = instance.bus() {
+                let factor_inv = 1.0 - factor;
                 // TODO: this is rather unprofessional as it exposes the
                 // implementation's API. perhaps fix it... or not?
-                let fft = instance.bus().to_bus(&resource).calc_fft();
+                let fft = bus.calc_fft();
                 assert_eq!(fft.len(), FFT_SIZE);
                 self.fft.iter_mut().zip(fft.iter()).for_each(|(a, b)| {
                     *a = *a * factor_inv + b * factor;
@@ -89,10 +87,9 @@ impl AudioPlayer {
 
 impl Widget for AudioPlayer {
     fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
-        if let Some(audio) = stack.get::<ResourceUser<AudioResource>>() {
-            self.audio_resource = audio.clone();
+        if let Some(resource) = stack.get::<ResourceUser<AudioResource>>() {
             let bus = AudioBus::Default;
-            let instance = self.sound.create_instance(&self.audio_resource, Some(bus));
+            let instance = self.sound.create_instance(resource, Some(bus));
             self.instance = Some(instance);
         }
     }
