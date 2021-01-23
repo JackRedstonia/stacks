@@ -30,7 +30,6 @@ impl AudioPlayer {
     ) -> Result<Self, SoloudError> {
         let path = "resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
-        let bus = AudioBus::Default;
         Ok(Self {
             layout_size: size,
             size: Size::new_empty(),
@@ -89,7 +88,7 @@ impl AudioPlayer {
 }
 
 impl Widget for AudioPlayer {
-    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
         if let Some(audio) = stack.get::<ResourceUser<AudioResource>>() {
             self.audio_resource = audio.clone();
             let bus = AudioBus::Default;
