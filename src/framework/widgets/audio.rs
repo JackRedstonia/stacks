@@ -286,8 +286,10 @@ pub struct SoundInstance {
 }
 
 impl SoundInstance {
-    pub fn bus(&self) -> &AudioBus {
-        &self.bus
+    pub fn bus(&self) -> Option<ResourceUsage<SoloudBus>> {
+        self.resource_user
+            .try_access()
+            .map(|e| e.map(|e| self.bus.to_bus(&*e)))
     }
 
     pub fn play(&self) {
