@@ -9,7 +9,7 @@ pub use skulpin_renderer::skia_safe as skia;
 
 pub mod prelude {
     pub use crate::framework::{
-        resource::{ResourceHoster, ResourceStack, ResourceUser},
+        resource::{ResourceHoster, ResourceStack, ResourceUsage, ResourceUsageMut, ResourceUser},
         widgets::{LayoutDimension, LayoutSize, Widget, Wrap, WrapState, Wrappable},
         FrameworkState,
     };
