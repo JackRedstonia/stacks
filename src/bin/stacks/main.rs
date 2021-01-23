@@ -6,7 +6,7 @@ use stacks::framework::{
     widgets::{
         layout::{ContainerSize, FullscreenContainer, SizeFillContainer, VContainer},
         shapes::{Rect, Throbber},
-        AudioPlayer, Transform,
+        Audio, AudioPlayer, Transform,
     },
     Framework,
 };
@@ -18,7 +18,7 @@ fn main() {
         .window_title("Stacks")
         .run(|| {
             FrameworkState::initialize();
-            let root = FullscreenContainer::new(SizeFillContainer::new(VContainer::new(
+            let root = VContainer::new(
                 vec![
                     Rect::new(
                         LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
@@ -58,7 +58,9 @@ fn main() {
                 ContainerSize::min(1366.0, 768.0)
                     .expand_width()
                     .expand_height(),
-            )));
+            );
+            let root = FullscreenContainer::new(SizeFillContainer::new(root));
+            let root = Audio::new(root).expect("Failed to open audio");
             Framework::new(root)
         })
 }

@@ -48,12 +48,26 @@ impl<T> ResourceHoster<T> {
 ///
 /// Functionally, it's no more than a `Weak<RefCell<T>>` where `T` is the
 /// resource, but the types its methods return is rather useful.
-#[derive(Clone)]
 pub struct ResourceUser<T> {
     resource: Weak<RefCell<T>>,
 }
 
+impl<T> Clone for ResourceUser<T> {
+    fn clone(&self) -> Self {
+        Self {
+            resource: self.resource.clone(),
+        }
+    }
+}
+
 impl<T> ResourceUser<T> {
+    /// Creates a "null" resource user.
+    pub fn new_none() -> Self {
+        Self {
+            resource: Weak::new(),
+        }
+    }
+
     /// Tries accessing the resource.
     ///
     /// Returns a `None` if the resource owner has been dropped.

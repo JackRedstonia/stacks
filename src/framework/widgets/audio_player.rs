@@ -1,6 +1,6 @@
+use super::audio::{AudioBus, AudioResource, Sound, SoundInstance};
 use crate::prelude::*;
-use audio::{Sound, SoundInstance};
-use game::{AudioBus, InputEvent, State};
+use game::{InputEvent, State};
 use skia::{scalar, Canvas, Contains, Paint, Rect, Size};
 use soloud::{SoloudError, WavStream};
 
@@ -12,10 +12,11 @@ pub struct AudioPlayer {
     pub foreground: Paint,
     pub background: Paint,
     pub fft_paint: Paint,
+    audio_resource: ResourceUser<AudioResource>,
+    sound: Sound<WavStream>,
+    instance: Option<SoundInstance>,
     seek_preview_percentage: Option<f32>,
     size: Size,
-    sound: Sound<WavStream>,
-    instance: SoundInstance,
     fft: FftInterpolation,
     play_lock: bool,
 }
@@ -30,16 +31,16 @@ impl AudioPlayer {
         let path = "resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
         let bus = AudioBus::Default;
-        let instance = sound.create_instance(Some(bus));
         Ok(Self {
             layout_size: size,
             size: Size::new_empty(),
             foreground,
             background,
             fft_paint: fft,
+            audio_resource: ResourceUser::new_none(),
             seek_preview_percentage: None,
             sound,
-            instance,
+            instance: None,
             fft: [0.0; FFT_SIZE],
             play_lock: false,
         })
@@ -50,18 +51,26 @@ impl AudioPlayer {
     }
 
     fn seek_percentage(&self, percentage: f64) -> Result<(), SoloudError> {
-        self.instance
-            .seek(self.sound.length() * percentage.clamp(0.0, 1.0))
+        if let Some(instance) = &self.instance {
+            instance.seek(self.sound.length() * percentage.clamp(0.0, 1.0))?;
+        }
+        Ok(())
     }
 
     fn refresh_fft(&mut self, factor: f32) {
         assert!((0.0..=1.0).contains(&factor));
         let factor_inv = 1.0 - factor;
-        let fft = self.instance.bus().get_fft();
-        assert_eq!(fft.len(), FFT_SIZE);
-        self.fft.iter_mut().zip(fft.iter()).for_each(|(a, b)| {
-            *a = *a * factor_inv + b * factor;
-        });
+        if let Some(instance) = &self.instance {
+            if let Some(resource) = self.audio_resource.try_access() {
+                // TODO: this is rather unprofessional as it exposes the
+                // implementation's API. perhaps fix it... or not?
+                let fft = instance.bus().to_bus(&resource).calc_fft();
+                assert_eq!(fft.len(), FFT_SIZE);
+                self.fft.iter_mut().zip(fft.iter()).for_each(|(a, b)| {
+                    *a = *a * factor_inv + b * factor;
+                });
+            }
+        }
     }
 
     fn curve_fft_height(height: f32) -> f32 {
@@ -80,14 +89,26 @@ impl AudioPlayer {
 }
 
 impl Widget for AudioPlayer {
+    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+        if let Some(audio) = stack.get::<ResourceUser<AudioResource>>() {
+            self.audio_resource = audio.clone();
+            let bus = AudioBus::Default;
+            let instance = self.sound.create_instance(&self.audio_resource, Some(bus));
+            self.instance = Some(instance);
+        }
+    }
+
     fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
-                if !self.play_lock {
-                    self.play_lock = true;
-                    self.instance.toggle_playing();
+                if let Some(instance) = &self.instance {
+                    if !self.play_lock {
+                        self.play_lock = true;
+                        instance.toggle_playing();
+                    }
+                    return true;
                 }
-                true
+                false
             }
             InputEvent::KeyUp(Keycode::Space) => {
                 self.play_lock = false;
@@ -139,18 +160,20 @@ impl Widget for AudioPlayer {
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
 
         // Draw progress bar
-        let percentage = (self.instance.position() / self.sound.length()) as f32;
-        let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
-        canvas.draw_rect(foreground, &self.foreground);
-        if let Some(preview) = self.seek_preview_percentage {
-            let center = self.size.width * preview;
-            let p = Rect::new(
-                (center - 2.0).max(0.0),
-                0.0,
-                (center + 2.0).min(self.size.width),
-                self.size.height,
-            );
-            canvas.draw_rect(p, &self.background);
+        if let Some(instance) = &self.instance {
+            let percentage = (instance.position() / self.sound.length()) as f32;
+            let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
+            canvas.draw_rect(foreground, &self.foreground);
+            if let Some(preview) = self.seek_preview_percentage {
+                let center = self.size.width * preview;
+                let p = Rect::new(
+                    (center - 2.0).max(0.0),
+                    0.0,
+                    (center + 2.0).min(self.size.width),
+                    self.size.height,
+                );
+                canvas.draw_rect(p, &self.background);
+            }
         }
 
         // Draw visualizations
