@@ -328,10 +328,6 @@ impl SoundInstance {
         self.resource_user
             .try_access_mut()
             .map(|e| {
-                let position = e.playback_position_sound_handle(self.handle);
-                if seconds > position + 2.0 {
-                    e.seek_sound_handle(self.handle, 0.0)?;
-                }
                 e.seek_sound_handle(self.handle, seconds)
             })
             .unwrap_or(Ok(()))
