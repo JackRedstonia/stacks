@@ -1,4 +1,4 @@
-mod audio;
+pub mod audio;
 mod audio_player;
 pub mod layout;
 mod parallax;
@@ -6,7 +6,6 @@ pub mod shapes;
 mod text;
 mod transform;
 
-pub use audio::{Audio, AudioResource};
 pub use audio_player::AudioPlayer;
 pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};

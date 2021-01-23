@@ -6,7 +6,7 @@ use stacks::framework::{
     widgets::{
         layout::{ContainerSize, FullscreenContainer, SizeFillContainer, VContainer},
         shapes::{Rect, Throbber},
-        Audio, AudioPlayer, Transform,
+        audio::Audio, AudioPlayer, Transform,
     },
     Framework,
 };
