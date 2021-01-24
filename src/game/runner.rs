@@ -161,7 +161,12 @@ impl Runner {
 
     pub const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
 
-    pub fn run<F, T, E>(game: F, size: LogicalSize, title: &str, renderer_builder: RendererBuilder) -> Result<(), E>
+    pub fn run<F, T, E>(
+        game: F,
+        size: LogicalSize,
+        title: &str,
+        renderer_builder: RendererBuilder,
+    ) -> Result<(), E>
     where
         F: 'static + Send + FnOnce() -> Result<T, E>,
         T: Game,
@@ -199,7 +204,9 @@ impl Runner {
             let mut game = match game() {
                 Ok(g) => g,
                 Err(e) => {
-                    feedback_tx.send(FeedbackEvent::GameError(e)).expect("Failed to send GameError to main thread");
+                    feedback_tx
+                        .send(FeedbackEvent::GameError(e))
+                        .expect("Failed to send GameError to main thread");
                     return;
                 }
             };
