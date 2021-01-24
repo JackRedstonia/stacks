@@ -15,7 +15,7 @@ For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode wo
 
 Audio is in a usable state, based on the SoLoud audio library.
 
-The repository currently contains both a binary and a library. The binary crate is the example code for now. To run it, execute `cargo run --release`.
+The repository currently contains a library and one example. To run the example, execute `cargo run --examples stack_demo --release`.
 
 ## Compiling
 This project depends on SDL2. When build dependencies are in place, compiling is simply `cargo build --release`, and the compiled output should be shipped with the SDL2 dynamic library file.
