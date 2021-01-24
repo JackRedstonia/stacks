@@ -52,10 +52,11 @@ impl<'a> Builder<'a> {
     }
 
     /// Start the app.
-    pub fn run<F, T>(self, game: F)
+    pub fn run<F, T, E>(self, game: F) -> Result<(), E>
     where
-        F: 'static + Send + FnOnce() -> T,
+        F: 'static + Send + FnOnce() -> Result<T, E>,
         T: Game,
+        E: Send + 'static,
     {
         Runner::run(
             game,

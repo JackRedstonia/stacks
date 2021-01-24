@@ -55,7 +55,8 @@ fn main() {
                 .expand_height(),
         );
         let root = FullscreenContainer::new(SizeFillContainer::new(root));
-        Audio::new(root).expect("Failed to open audio")
+        let root = Audio::new(root)?;
+        Ok(root)
     })
     .expect("Failed to run game");
 }

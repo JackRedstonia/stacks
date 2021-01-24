@@ -4,11 +4,35 @@ mod sound;
 pub use player::AudioPlayer;
 pub use sound::{Sound, SoundInstance};
 
+use std::error::Error as StdError;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+
 use crate::prelude::*;
 use soloud::{
     AudioExt, Backend as SoloudBackend, Bus as SoloudBus, Handle as SoloudHandle, Soloud,
     SoloudError, SoloudFlag,
 };
+
+#[derive(Debug)]
+pub enum AudioError {
+    Soloud(SoloudError),
+}
+
+impl Display for AudioError {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        match self {
+            Self::Soloud(err) => err.fmt(f),
+        }
+    }
+}
+
+impl StdError for AudioError {}
+
+impl From<SoloudError> for AudioError {
+    fn from(err: SoloudError) -> Self {
+        Self::Soloud(err)
+    }
+}
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum AudioBus {
@@ -35,7 +59,7 @@ pub struct AudioResource {
 }
 
 impl AudioResource {
-    pub fn new() -> Result<ResourceHoster<Self>, SoloudError> {
+    pub fn new() -> Result<ResourceHoster<Self>, AudioError> {
         let mut soloud = Soloud::new(
             SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
             SoloudBackend::Auto,
@@ -162,7 +186,7 @@ pub struct Audio<T: Widget> {
 }
 
 impl<T: Widget> Audio<T> {
-    pub fn new(inner: impl Into<Wrap<T>>) -> Result<Self, SoloudError> {
+    pub fn new(inner: impl Into<Wrap<T>>) -> Result<Self, AudioError> {
         FrameworkState::request_load();
         Ok(Self {
             resource: AudioResource::new()?,

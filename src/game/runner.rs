@@ -24,7 +24,8 @@ enum Event {
     Crash(Error),
 }
 
-enum FeedbackEvent {
+enum FeedbackEvent<T> {
+    GameError(T),
     Exit,
     SetFullscreen(bool),
 }
@@ -160,10 +161,11 @@ impl Runner {
 
     pub const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
 
-    pub fn run<F, T>(game: F, size: LogicalSize, title: &str, renderer_builder: RendererBuilder)
+    pub fn run<F, T, E>(game: F, size: LogicalSize, title: &str, renderer_builder: RendererBuilder) -> Result<(), E>
     where
-        F: 'static + Send + FnOnce() -> T,
+        F: 'static + Send + FnOnce() -> Result<T, E>,
         T: Game,
+        E: Send + 'static,
     {
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
         let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");
@@ -194,7 +196,13 @@ impl Runner {
                 });
             });
 
-            let mut game = game();
+            let mut game = match game() {
+                Ok(g) => g,
+                Err(e) => {
+                    feedback_tx.send(FeedbackEvent::GameError(e)).expect("Failed to send GameError to main thread");
+                    return;
+                }
+            };
             game.set_size(
                 State::STATE.with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
             );
@@ -210,6 +218,9 @@ impl Runner {
         'events: loop {
             match feedback_rx.try_recv() {
                 Ok(event) => match event {
+                    FeedbackEvent::GameError(err) => {
+                        return Err(err);
+                    }
                     FeedbackEvent::Exit => {
                         break 'events;
                     }
@@ -252,13 +263,15 @@ impl Runner {
                 },
             }
         }
+
+        Ok(())
     }
 
-    fn game_thread(
+    fn game_thread<E>(
         mut game: impl Game,
         event_rx: Receiver<Event>,
         pic_tx: SyncSender<Picture>,
-        feedback_tx: SyncSender<FeedbackEvent>,
+        feedback_tx: SyncSender<FeedbackEvent<E>>,
     ) {
         let target_update_time = Duration::from_millis(1); // 1000 fps
         let target_frame_time = Duration::from_millis(8); // 120 fps
@@ -331,10 +344,10 @@ impl Runner {
         }
     }
 
-    fn handle_event(
+    fn handle_event<E>(
         game: &mut impl Game,
         event: Event,
-        feedback_tx: &SyncSender<FeedbackEvent>,
+        feedback_tx: &SyncSender<FeedbackEvent<E>>,
     ) -> bool {
         match event {
             Event::Sdl2Event(event) => {

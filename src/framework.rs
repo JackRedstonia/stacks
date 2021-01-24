@@ -4,11 +4,26 @@ pub mod widgets;
 use std::cell::RefCell;
 use std::ffi::{CString, NulError};
 
+use std::fmt::Debug;
+use std::error::Error as StdError;
+
 use crate::prelude::*;
 use game::{Builder, Error, Game, InputEvent, State, ID};
 use resource::ResourceStack;
 use skia::{Canvas, Size};
 use widgets::{LayoutSize, Widget, Wrap};
+
+#[derive(Debug)]
+pub enum FrameworkError {
+    CStringError(NulError),
+    WidgetCreationError(Box<dyn StdError + Send + 'static>),
+}
+
+impl<T: StdError + Send + 'static> From<T> for FrameworkError {
+    fn from(err: T) -> Self {
+        Self::WidgetCreationError(Box::new(err))
+    }
+}
 
 pub struct Framework<T: Widget> {
     root: Wrap<T>,
@@ -19,19 +34,19 @@ pub struct Framework<T: Widget> {
 }
 
 impl<T: Widget> Framework<T> {
-    pub fn run<F, W>(name: &str, root: F) -> Result<(), NulError>
+    pub fn run<F, W>(name: &str, root: F) -> Result<(), FrameworkError>
     where
-        F: 'static + Send + FnOnce() -> W,
+        F: 'static + Send + FnOnce() -> Result<W, FrameworkError>,
         W: Into<Wrap<T>>,
     {
         Builder::new()
-            .app_name(CString::new(name)?)
+            .app_name(CString::new(name).map_err(|e| FrameworkError::CStringError(e))?)
             .window_title(name)
             .run(|| {
                 FrameworkState::initialize();
-                Self::new(root())
-            });
-        Ok(())
+                let root = root()?;
+                Ok(Self::new(root))
+            })
     }
 
     pub fn new(root: impl Into<Wrap<T>>) -> Self {
