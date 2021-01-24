@@ -43,7 +43,7 @@ impl AudioResource {
             860,
             2,
         )?;
-        soloud.set_global_volume(2.0);
+        soloud.set_post_clip_scaler(2.0);
         let default_bus = SoloudBus::default();
         default_bus.set_visualize_enable(true);
         let default_bus_instance = soloud.play(&default_bus);
