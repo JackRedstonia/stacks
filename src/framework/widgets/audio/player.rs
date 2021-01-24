@@ -90,9 +90,16 @@ impl AudioPlayer {
 impl Widget for AudioPlayer {
     fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
         if let Some(resource) = stack.get::<ResourceUser<AudioResource>>() {
-            let bus = AudioBus::Default;
-            let instance = self.sound.create_instance(resource, Some(bus));
-            self.instance = Some(instance);
+            if !self
+                .instance
+                .as_ref()
+                .map(|e| e.resource() == resource)
+                .unwrap_or(false)
+            {
+                let bus = AudioBus::Default;
+                let instance = self.sound.create_instance(resource, Some(bus));
+                self.instance = Some(instance);
+            }
         }
     }
 
