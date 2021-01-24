@@ -4,8 +4,8 @@ pub mod widgets;
 use std::cell::RefCell;
 use std::ffi::{CString, NulError};
 
-use std::fmt::Debug;
 use std::error::Error as StdError;
+use std::fmt::Debug;
 
 use crate::prelude::*;
 use game::{Builder, Error, Game, InputEvent, State, ID};
