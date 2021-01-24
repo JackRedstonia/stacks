@@ -40,7 +40,7 @@ impl<T: Widget> Widget for CenterContainer<T> {
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
         let (child_size, changed) = self.inner.size();
         self.child_layout_size = child_size;
-        (child_size.expand_width().expand_height(), changed)        
+        (child_size.expand_width().expand_height(), changed)
     }
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
