@@ -399,7 +399,7 @@ impl LayoutDimension {
 
     pub fn layout_one(&self, space: scalar) -> scalar {
         if self.expand.is_some() {
-            space
+            space.max(self.min)
         } else {
             self.min
         }
