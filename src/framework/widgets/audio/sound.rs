@@ -91,6 +91,26 @@ where
             bus,
         }
     }
+
+    pub fn play_clocked_ex(
+        &self,
+        resource: &ResourceUser<AudioResource>,
+        time: f64,
+        volume: Option<f32>,
+        pan: Option<f32>,
+        bus: Option<AudioBus>,
+    ) -> SoundInstance {
+        let bus = bus.unwrap_or_default();
+        let resource = resource.clone();
+        let rsc = resource.try_access().expect("Failed to access audio resource");
+        let handle = rsc.play_clocked_ex(time, &self.source, volume, pan, bus);
+        drop(rsc);
+        SoundInstance {
+            resource,
+            handle,
+            bus,
+        }
+    }
 }
 
 pub struct SoundInstance {
