@@ -102,7 +102,9 @@ where
     ) -> SoundInstance {
         let bus = bus.unwrap_or_default();
         let resource = resource.clone();
-        let rsc = resource.try_access().expect("Failed to access audio resource");
+        let rsc = resource
+            .try_access()
+            .expect("Failed to access audio resource");
         let handle = rsc.play_clocked_ex(time, &self.source, volume, pan, bus);
         drop(rsc);
         SoundInstance {
