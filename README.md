@@ -8,7 +8,7 @@ A few noteworthy features:
 - Separate threads for game logic and rendering
 - No sweeping garbage collector
 - Absolute memory safety
-- Short compile times (3-5 seconds on a modern Linux machine)
+- Short compile times (3-5 seconds on a modern Linux machine, using LLD linker)
 
 ## Current state
 For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` introduces a very noticeable delay and a fix is unplanned.
