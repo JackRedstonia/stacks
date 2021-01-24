@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use super::{AudioBus, AudioResource, Sound, SoundInstance};
 use crate::prelude::*;
 use game::{InputEvent, State};
@@ -21,13 +23,13 @@ pub struct AudioPlayer {
 }
 
 impl AudioPlayer {
-    pub fn new(
+    pub fn new<P: AsRef<Path>>(
+        path: P,
         size: LayoutSize,
         foreground: Paint,
         background: Paint,
         fft: Paint,
     ) -> Result<Self, SoloudError> {
-        let path = "resources/sound.ogg";
         let sound = Sound::new_wav_stream_from_path(path)?;
         Ok(Self {
             layout_size: size,
