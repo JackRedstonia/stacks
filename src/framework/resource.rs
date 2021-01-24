@@ -19,20 +19,30 @@ use std::{
     rc::{Rc, Weak},
 };
 
+use crate::game::ID;
+
 /// The struct owning the resource.
 ///
 /// This by itself serves no meaning to the user of the API, except for
 /// ownership, where this struct should be alive for as long as the resource is
 /// to be used. Else, the users of the resource would simply get `None`s.
 pub struct ResourceHoster<T> {
-    resource: Rc<RefCell<T>>,
+    resource: Rc<RefCell<ResourceWrapper<T>>>,
+}
+
+struct ResourceWrapper<T> {
+    resource: T,
+    id: ID,
 }
 
 impl<T> ResourceHoster<T> {
     /// Creates the resource.
     pub fn new(resource: T) -> Self {
         Self {
-            resource: Rc::new(RefCell::new(resource)),
+            resource: Rc::new(RefCell::new(ResourceWrapper {
+                resource,
+                id: ID::next(),
+            })),
         }
     }
 
@@ -49,7 +59,15 @@ impl<T> ResourceHoster<T> {
 /// Functionally, it's no more than a `Weak<RefCell<T>>` where `T` is the
 /// resource, but the types its methods return is rather useful.
 pub struct ResourceUser<T> {
-    resource: Weak<RefCell<T>>,
+    resource: Weak<RefCell<ResourceWrapper<T>>>,
+}
+
+impl<T> PartialEq for ResourceUser<T> {
+    fn eq(&self, other: &Self) -> bool {
+        let id = self.resource.upgrade().map(|e| e.borrow().id);
+        let other_id = other.resource.upgrade().map(|e| e.borrow().id);
+        id.is_some() && other_id.is_some() && id == other_id
+    }
 }
 
 impl<T> Clone for ResourceUser<T> {
@@ -80,8 +98,8 @@ impl<T> ResourceUser<T> {
         // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
         // is fine. The struct merely plays the role of being alive until the
         // reference dies and everything inside gets dropped.
-        let val: Ref<'_, T> = unsafe { transmute(rc.borrow()) };
-        let usage = unsafe { transmute(val.deref()) };
+        let val: Ref<'_, ResourceWrapper<T>> = unsafe { transmute(rc.borrow()) };
+        let usage = unsafe { transmute(&val.deref().resource) };
         Some(ResourceUsage {
             _rc: rc,
             _val: val,
@@ -102,8 +120,8 @@ impl<T> ResourceUser<T> {
         // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
         // is fine. The struct merely plays the role of being alive until the
         // reference dies and everything inside gets dropped.
-        let mut val: RefMut<'_, T> = unsafe { transmute(rc.borrow_mut()) };
-        let usage = unsafe { transmute(val.deref_mut()) };
+        let mut val: RefMut<'_, ResourceWrapper<T>> = unsafe { transmute(rc.borrow_mut()) };
+        let usage = unsafe { transmute(&mut val.deref_mut().resource) };
         Some(ResourceUsageMut {
             _rc: rc,
             _val: val,
@@ -124,8 +142,8 @@ pub struct ResourceUsage<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
-    _rc: Rc<RefCell<T>>,
-    _val: Ref<'a, T>,
+    _rc: Rc<RefCell<ResourceWrapper<T>>>,
+    _val: Ref<'a, ResourceWrapper<T>>,
 }
 
 impl<'a, T> ResourceUsage<'a, T> {
@@ -167,8 +185,8 @@ pub struct ResourceUsageMut<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
-    _rc: Rc<RefCell<T>>,
-    _val: RefMut<'a, T>,
+    _rc: Rc<RefCell<ResourceWrapper<T>>>,
+    _val: RefMut<'a, ResourceWrapper<T>>,
 }
 
 impl<'a, T> Deref for ResourceUsageMut<'a, T> {

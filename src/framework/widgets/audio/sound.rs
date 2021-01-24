@@ -100,6 +100,10 @@ pub struct SoundInstance {
 }
 
 impl SoundInstance {
+    pub fn resource(&self) -> &ResourceUser<AudioResource> {
+        &self.resource
+    }
+
     pub fn bus(&self) -> Option<ResourceUsage<SoloudBus>> {
         self.resource
             .try_access()
