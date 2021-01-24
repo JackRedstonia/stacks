@@ -40,9 +40,12 @@ impl<T: Widget> Widget for MarginContainer<T> {
     }
 
     fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
-        let (child_size, changed) = self.inner.size();
+        let (mut child_size, changed) = self.inner.size();
         self.child_layout_size = child_size;
-        (LayoutSize::ZERO.expand_width().expand_height(), changed)
+        let margin_size = self.margin.size();
+        child_size.width.min += margin_size.width;
+        child_size.height.min += margin_size.height;
+        (child_size, changed)
     }
 
     fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
