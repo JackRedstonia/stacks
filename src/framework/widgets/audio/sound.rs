@@ -204,4 +204,17 @@ impl SoundInstance {
             .map(|e| e.volume(self.handle))
             .unwrap_or(1.0)
     }
+    
+    pub fn set_pan(&self, pan: f32) {
+        if let Some(mut resource) = self.resource.try_access_mut() {
+            resource.set_pan(self.handle, pan);
+        }
+    }
+
+    pub fn pan(&self) -> f32 {
+        self.resource
+            .try_access()
+            .map(|e| e.pan(self.handle))
+            .unwrap_or(0.0)
+    }
 }

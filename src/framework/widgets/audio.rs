@@ -178,6 +178,14 @@ impl AudioResource {
     pub fn volume(&self, handle: SoloudHandle) -> f32 {
         self.soloud.volume(handle)
     }
+
+    pub fn set_pan(&mut self, handle: SoloudHandle, pan: f32) {
+        self.soloud.set_pan(handle, pan);
+    }
+
+    pub fn pan(&self, handle: SoloudHandle) -> f32 {
+        self.soloud.pan(handle)
+    }
 }
 
 pub struct Audio<T: Widget> {
