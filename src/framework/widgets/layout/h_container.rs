@@ -139,14 +139,4 @@ impl<T: Widget> Widget for HContainer<T> {
             canvas.restore();
         }
     }
-
-    // fn get(&mut self, _wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-    //     for i in &mut self.inner {
-    //         let x = i.inner.get(id);
-    //         if x.is_some() {
-    //             return x;
-    //         }
-    //     }
-    //     None
-    // }
 }

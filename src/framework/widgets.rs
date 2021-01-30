@@ -38,14 +38,6 @@ pub trait Widget {
     fn set_size(&mut self, wrap: &mut WidgetState, size: Size) {}
 
     fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {}
-
-    // fn get<'a>(
-    //     &'a mut self,
-    //     wrap: &mut WrapState,
-    //     id: ID,
-    // ) -> Option<(&'a mut dyn Widget, &mut WrapState)> {
-    //     None
-    // }
 }
 
 impl Widget for Box<dyn Widget> {
@@ -80,10 +72,6 @@ impl Widget for Box<dyn Widget> {
     fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {
         self.as_mut().draw(wrap, canvas);
     }
-
-    // fn get(&mut self, wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-    //     self.as_mut().get(wrap, id)
-    // }
 }
 
 pub struct Wrap<T: Widget> {
@@ -138,10 +126,6 @@ impl<T: Widget> Wrap<T> {
         let inner = &mut s.inner;
         state.draw(inner, canvas);
     }
-
-    // pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-    //     self.state.get(&mut self.inner, id)
-    // }
 }
 
 impl<T: Widget> From<T> for Wrap<T> {
@@ -257,30 +241,6 @@ impl WidgetState {
         }
         widget.draw(self, canvas);
     }
-
-    // pub fn get<'a, T: Widget>(
-    //     &'a mut self,
-    //     widget: &'a mut T,
-    //     id: ID,
-    // ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
-    //     if self.id == id {
-    //         Some((widget, self))
-    //     } else {
-    //         widget.get(self, id)
-    //     }
-    // }
-
-    // pub fn get_dyn<'a>(
-    //     &'a mut self,
-    //     widget: &'a mut dyn Widget,
-    //     id: ID,
-    // ) -> Option<(&'a mut dyn Widget, &'a mut WrapState)> {
-    //     if self.id == id {
-    //         Some((widget, self))
-    //     } else {
-    //         widget.get(self, id)
-    //     }
-    // }
 
     pub fn grab_focus(&self) {
         FrameworkState::grab_focus(self.id);

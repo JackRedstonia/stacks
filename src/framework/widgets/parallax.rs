@@ -73,8 +73,4 @@ impl<T: Widget> Widget for Parallax<T> {
         self.inner.draw(canvas);
         canvas.restore();
     }
-
-    // fn get(&mut self, _wrap: &mut WrapState, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
-    //     self.inner.get(id)
-    // }
 }
