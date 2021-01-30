@@ -11,13 +11,10 @@ mod stack;
 
 pub use stack::ResourceStack;
 
-use std::cell::{Ref, RefCell};
-use std::{
-    cell::RefMut,
-    intrinsics::transmute,
-    ops::{Deref, DerefMut},
-    rc::{Rc, Weak},
-};
+use std::cell::{Ref, RefCell, RefMut};
+use std::intrinsics::transmute;
+use std::ops::{Deref, DerefMut};
+use std::rc::{Rc, Weak};
 
 use crate::game::ID;
 
@@ -142,14 +139,16 @@ pub struct ResourceUsage<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
-    _rc: Rc<RefCell<ResourceWrapper<T>>>,
+    // Also, notice that the `_rc` field comes AFTER the `_val` field.
+    // This is EXTREMELY important, as we always want the `Ref` to drop first.
     _val: Ref<'a, ResourceWrapper<T>>,
+    _rc: Rc<RefCell<ResourceWrapper<T>>>,
 }
 
 impl<'a, T> ResourceUsage<'a, T> {
     pub fn map<C, F>(self, f: F) -> ResourceUsage<'a, C>
     where
-        F: FnOnce(&T) -> &C,
+        F: FnOnce(&'a T) -> &'a C,
     {
         let usage = f(self.usage);
         // SAFETY: transmutation here is okay, as these fields are never to be
@@ -185,8 +184,30 @@ pub struct ResourceUsageMut<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
-    _rc: Rc<RefCell<ResourceWrapper<T>>>,
+    // Also, notice that the `_rc` field comes AFTER the `_val` field.
+    // This is EXTREMELY important, as we always want the `RefMut` to drop
+    // first.
     _val: RefMut<'a, ResourceWrapper<T>>,
+    _rc: Rc<RefCell<ResourceWrapper<T>>>,
+}
+
+impl<'a, T> ResourceUsageMut<'a, T> {
+    pub fn map<C, F>(self, f: F) -> ResourceUsage<'a, C>
+    where
+        F: FnOnce(&'a mut T) -> &'a mut C,
+    {
+        let usage = f(self.usage);
+        // SAFETY: transmutation here is okay, as these fields are never to be
+        // accessed, and the fields themselves do not contain any owning data
+        // to T or C.
+        unsafe {
+            ResourceUsage {
+                usage,
+                _rc: transmute(self._rc),
+                _val: transmute(self._val),
+            }
+        }
+    }
 }
 
 impl<'a, T> Deref for ResourceUsageMut<'a, T> {
