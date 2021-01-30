@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::InputEvent;
-use skia::{Matrix, Size};
 
 pub struct SizeFillContainer<T: Widget> {
     size: Size,

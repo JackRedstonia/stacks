@@ -1,14 +1,12 @@
 use crate::prelude::*;
-use game::InputEvent;
-use skia::{Canvas, Contains, Paint, Rect as SkRect, Size};
 
-pub struct Rect {
+pub struct Rectangle {
     pub layout_size: LayoutSize,
     size: Size,
     pub paint: Paint,
 }
 
-impl Rect {
+impl Rectangle {
     pub fn new(size: LayoutSize, paint: Paint) -> Self {
         Self {
             layout_size: size,
@@ -18,11 +16,11 @@ impl Rect {
     }
 }
 
-impl Widget for Rect {
+impl Widget for Rectangle {
     fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
         event
             .position()
-            .map_or(false, |p| SkRect::from_size(self.size).contains(p))
+            .map_or(false, |p| Rect::from_size(self.size).contains(p))
     }
 
     fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
@@ -34,6 +32,6 @@ impl Widget for Rect {
     }
 
     fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
-        canvas.draw_rect(SkRect::from_size(self.size), &self.paint);
+        canvas.draw_rect(Rect::from_size(self.size), &self.paint);
     }
 }

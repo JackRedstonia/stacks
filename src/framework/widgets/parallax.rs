@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::{InputEvent, State};
-use skia::{Canvas, Matrix, Point, Size};
 
 /// Container that moves its contents to the mouse cursor.
 ///
@@ -9,7 +7,7 @@ use skia::{Canvas, Matrix, Point, Size};
 pub struct Parallax<T: Widget> {
     pub inner: Wrap<T>,
     size: Size,
-    interpolated_mouse_position: Point,
+    interpolated_mouse_position: Vector,
 }
 
 impl<T: Widget> Parallax<T> {

@@ -7,8 +7,8 @@ use std::ffi::{CString, NulError};
 use std::error::Error as StdError;
 use std::fmt::Debug;
 
+use crate::game::{Builder, Error, Game, InputEvent, State, ID};
 use crate::prelude::*;
-use game::{Builder, Error, Game, InputEvent, State, ID};
 use resource::ResourceStack;
 use skia::{Canvas, Size};
 use widgets::{LayoutSize, Widget, Wrap};
@@ -40,7 +40,7 @@ impl<T: Widget> Framework<T> {
         W: Into<Wrap<T>>,
     {
         Builder::new()
-            .app_name(CString::new(name).map_err(|e| FrameworkError::CStringError(e))?)
+            .app_name(CString::new(name).map_err(FrameworkError::CStringError)?)
             .window_title(name)
             .run(|| {
                 FrameworkState::initialize();

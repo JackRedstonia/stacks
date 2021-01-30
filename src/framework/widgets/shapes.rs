@@ -1,5 +1,5 @@
 mod rect;
 mod throbber;
 
-pub use rect::Rect;
+pub use rect::Rectangle;
 pub use throbber::Throbber;

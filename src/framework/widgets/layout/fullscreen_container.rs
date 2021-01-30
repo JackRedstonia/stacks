@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::{InputEvent, State};
-use skia::Size;
 
 pub struct FullscreenContainer<T: Widget> {
     inner: Wrap<T>,

@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::InputEvent;
-use skia::{Canvas, Matrix, Size};
 
 use super::container::{ContainerSize, ContainerWidget};
 

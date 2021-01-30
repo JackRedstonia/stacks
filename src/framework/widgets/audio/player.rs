@@ -2,8 +2,6 @@ use std::path::Path;
 
 use super::{AudioBus, AudioResource, Sound, SoundInstance};
 use crate::prelude::*;
-use game::{InputEvent, State};
-use skia::{scalar, Canvas, Contains, Paint, Rect, Size};
 use soloud::{SoloudError, WavStream};
 
 const FFT_SIZE: usize = 256;

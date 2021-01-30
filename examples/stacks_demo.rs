@@ -3,7 +3,7 @@ use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
         layout::{ContainerSize, FullscreenContainer, SizeFillContainer, VContainer},
-        shapes::{Rect, Throbber},
+        shapes::{Rectangle, Throbber},
         Transform,
     },
     Framework,
@@ -14,18 +14,18 @@ fn main() {
     Framework::run("Stacks", || {
         let root = VContainer::new(
             vec![
-                Rect::new(
+                Rectangle::new(
                     LayoutSize::min(200.0, 100.0).expand_width().expand_height(),
                     Paint::new_color4f(0.2, 0.8, 0.0, 0.3),
                 )
                 .boxed(),
-                Rect::new(
+                Rectangle::new(
                     LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
                     Paint::new_color4f(0.7, 0.1, 0.2, 0.3).anti_alias(),
                 )
                 .boxed(),
                 Transform::new(
-                    Rect::new(
+                    Rectangle::new(
                         LayoutSize::min(100.0, 50.0),
                         Paint::new_color4f(0.0, 0.0, 1.0, 0.5).anti_alias(),
                     ),

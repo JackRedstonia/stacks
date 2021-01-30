@@ -214,7 +214,7 @@ impl<T: Widget> Widget for Audio<T> {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WidgetState, event: &game::InputEvent) -> bool {
+    fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
         self.inner.input(event)
     }
 

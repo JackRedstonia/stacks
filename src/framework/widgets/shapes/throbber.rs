@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::{InputEvent, State};
-use skia::{scalar, Canvas, Contains, Paint, Rect, Size, Vector};
 
 pub struct Throbber {
     pub radius: LayoutDimension,

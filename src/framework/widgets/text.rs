@@ -1,8 +1,5 @@
 use crate::prelude::*;
-use game::{InputEvent, State};
-use skia::{
-    shaper::TextBlobBuilderRunHandler, Canvas, Font as SkFont, Paint, Shaper, Size, TextBlob,
-};
+use skia::{shaper::TextBlobBuilderRunHandler, Canvas, Font as SkFont, Shaper, TextBlob};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {

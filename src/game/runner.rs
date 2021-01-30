@@ -21,7 +21,7 @@ use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
 enum Event {
     CanvasReady,
-    Sdl2Event(Sdl2Event),
+    Sdl2(Sdl2Event),
     Crash(Error),
 }
 
@@ -253,7 +253,7 @@ impl Runner {
                 Err(e) => match e {
                     TryRecvError::Empty => {
                         for event in event_pump.poll_iter() {
-                            if event_tx.send(Event::Sdl2Event(event)).is_err() {
+                            if event_tx.send(Event::Sdl2(event)).is_err() {
                                 break 'events;
                             }
                         }
@@ -372,7 +372,7 @@ impl Runner {
             Event::CanvasReady => {
                 State::with_mut(|x| x.canvas_ready = true);
             }
-            Event::Sdl2Event(event) => {
+            Event::Sdl2(event) => {
                 if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
                     match r {
                         EventHandleResult::Input(event) => game.input(event),

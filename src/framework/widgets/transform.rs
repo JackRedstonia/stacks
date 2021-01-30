@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use game::InputEvent;
-use skia::{Canvas, Matrix, Rect, Size};
 
 pub struct Transform<T: Widget> {
     pub inner: Wrap<T>,
