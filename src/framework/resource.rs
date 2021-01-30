@@ -92,9 +92,9 @@ impl<T> ResourceUser<T> {
     /// Panics if the resource is currently being mutably borrowed.
     pub fn try_access(&self) -> Option<ResourceUsage<T>> {
         let rc = self.resource.upgrade()?;
-        // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
-        // is fine. The struct merely plays the role of being alive until the
-        // reference dies and everything inside gets dropped.
+        // SAFETY: Transmutation of `Ref` here is okay, as we are clinging onto
+        // the corresponding `Rc`, which means the data `Ref` is pointing to is
+        // valid for as long as we require it to.
         unsafe {
             let val: Ref<'_, ResourceWrapper<T>> = transmute(rc.borrow());
             let usage = transmute(&val.deref().resource);
@@ -104,7 +104,7 @@ impl<T> ResourceUser<T> {
             };
             Some(ResourceUsage {
                 usage,
-                _ref: r,
+                holder: r,
             })
         }
     }
@@ -119,9 +119,9 @@ impl<T> ResourceUser<T> {
     /// not.
     pub fn try_access_mut(&self) -> Option<ResourceUsageMut<T>> {
         let rc = self.resource.upgrade()?;
-        // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
-        // is fine. The struct merely plays the role of being alive until the
-        // reference dies and everything inside gets dropped.
+        // SAFETY: Transmutation of `RefMut` here is okay, as we are clinging
+        // onto the corresponding `Rc`, which means the data `Ref` is pointing
+        // to is valid for as long as we require it to.
         unsafe {
             let mut val: RefMut<'_, ResourceWrapper<T>> = transmute(rc.borrow_mut());
             let usage = transmute(&mut val.deref_mut().resource);
@@ -131,7 +131,7 @@ impl<T> ResourceUser<T> {
             };
             Some(ResourceUsageMut {
                 usage,
-                _ref: r,
+                holder: r,
             })
         }
     }
@@ -150,14 +150,11 @@ impl<T> ResourceUser<T> {
 /// Implements `Deref` as this is a smart pointer of some sort.
 pub struct ResourceUsage<'a, R, T = R> {
     usage: &'a T,
-    _ref: ResourceRefHolder<'a, R>,
+    holder: ResourceRefHolder<'a, R>,
 }
 
 struct ResourceRefHolder<'a, T> {
-    // SAFETY: These two fields are to never be accessed.
-    // There is simply no reason to do so, as these fields are merely here to
-    // be dropped when the usage drops.
-    // Also, notice that the `_rc` field comes AFTER the `_val` field.
+    // SAFETY: Notice that the `_rc` field comes AFTER the `_val` field.
     // This is EXTREMELY important, as we always want the `Ref` to drop first.
     _val: Ref<'a, ResourceWrapper<T>>,
     _rc: Rc<RefCell<ResourceWrapper<T>>>,
@@ -172,7 +169,7 @@ impl<'a, R, T> ResourceUsage<'a, R, T> {
     {
         ResourceUsage {
             usage: f(self.usage),
-            _ref: self._ref,
+            holder: self.holder,
         }
     }
 }
@@ -198,14 +195,11 @@ impl<'a, R, T> Deref for ResourceUsage<'a, R, T> {
 /// Implements `Deref` and `DerefMut` as this is a smart pointer of some sort.
 pub struct ResourceUsageMut<'a, R, T = R> {
     usage: &'a mut T,
-    _ref: ResourceRefMutHolder<'a, R>,
+    holder: ResourceRefMutHolder<'a, R>,
 }
 
 struct ResourceRefMutHolder<'a, T> {
-    // SAFETY: These two fields are to never be accessed.
-    // There is simply no reason to do so, as these fields are merely here to
-    // be dropped when the usage drops.
-    // Also, notice that the `_rc` field comes AFTER the `_val` field.
+    // SAFETY: Notice that the `_rc` field comes AFTER the `_val` field.
     // This is EXTREMELY important, as we always want the `RefMut` to drop
     // first.
     _val: RefMut<'a, ResourceWrapper<T>>,
@@ -221,7 +215,7 @@ impl<'a, R, T> ResourceUsageMut<'a, R, T> {
     {
         ResourceUsageMut {
             usage: f(self.usage),
-            _ref: self._ref,
+            holder: self.holder,
         }
     }
 }
