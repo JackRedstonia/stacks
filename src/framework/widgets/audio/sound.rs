@@ -126,7 +126,7 @@ impl SoundInstance {
         &self.resource
     }
 
-    pub fn bus(&self) -> Option<ResourceUsage<SoloudBus>> {
+    pub fn bus(&self) -> Option<ResourceUsage<AudioResource, SoloudBus>> {
         self.resource
             .try_access()
             .map(|e| e.map(|e| self.bus.to_bus(&*e)))

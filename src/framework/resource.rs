@@ -95,13 +95,18 @@ impl<T> ResourceUser<T> {
         // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
         // is fine. The struct merely plays the role of being alive until the
         // reference dies and everything inside gets dropped.
-        let val: Ref<'_, ResourceWrapper<T>> = unsafe { transmute(rc.borrow()) };
-        let usage = unsafe { transmute(&val.deref().resource) };
-        Some(ResourceUsage {
-            _rc: rc,
-            _val: val,
-            usage,
-        })
+        unsafe {
+            let val: Ref<'_, ResourceWrapper<T>> = transmute(rc.borrow());
+            let usage = transmute(&val.deref().resource);
+            let r = ResourceRefHolder {
+                _val: val,
+                _rc: rc,
+            };
+            Some(ResourceUsage {
+                usage,
+                _ref: r,
+            })
+        }
     }
 
     /// Tries mutably accessing the resource.
@@ -117,25 +122,38 @@ impl<T> ResourceUser<T> {
         // SAFETY: the `_rc` and `_val` fields are to never be accessed, so this
         // is fine. The struct merely plays the role of being alive until the
         // reference dies and everything inside gets dropped.
-        let mut val: RefMut<'_, ResourceWrapper<T>> = unsafe { transmute(rc.borrow_mut()) };
-        let usage = unsafe { transmute(&mut val.deref_mut().resource) };
-        Some(ResourceUsageMut {
-            _rc: rc,
-            _val: val,
-            usage,
-        })
+        unsafe {
+            let mut val: RefMut<'_, ResourceWrapper<T>> = transmute(rc.borrow_mut());
+            let usage = transmute(&mut val.deref_mut().resource);
+            let r = ResourceRefMutHolder {
+                _val: val,
+                _rc: rc,
+            };
+            Some(ResourceUsageMut {
+                usage,
+                _ref: r,
+            })
+        }
     }
 }
 
 /// Resource usage, returned by `ResourceUser::try_access`.
+///
+/// The `R` type parameter is the type of the struct the resource user is
+/// pointing to, while the `T` type parameter is the type borrowed from `R`.
+/// `T` defaults to `R`.
 ///
 /// Functionally is the same as `Ref`, but also holds a strong reference to the
 /// resource for obvious lifetime reasons. As such, it releases the runtime
 /// lock on the `RefCell` when dropped.
 ///
 /// Implements `Deref` as this is a smart pointer of some sort.
-pub struct ResourceUsage<'a, T> {
+pub struct ResourceUsage<'a, R, T = R> {
     usage: &'a T,
+    _ref: ResourceRefHolder<'a, R>,
+}
+
+struct ResourceRefHolder<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
@@ -145,26 +163,21 @@ pub struct ResourceUsage<'a, T> {
     _rc: Rc<RefCell<ResourceWrapper<T>>>,
 }
 
-impl<'a, T> ResourceUsage<'a, T> {
-    pub fn map<C, F>(self, f: F) -> ResourceUsage<'a, C>
+impl<'a, R, T> ResourceUsage<'a, R, T> {
+    /// Maps a `ResourceUsage<R, T>` to a `ResourceUsage<R, U>` by calling `f`
+    /// on `&T`. Useful for resource users, which returns `Option`s.
+    pub fn map<U, F>(self, f: F) -> ResourceUsage<'a, R, U>
     where
-        F: FnOnce(&'a T) -> &'a C,
+        F: FnOnce(&'a T) -> &'a U,
     {
-        let usage = f(self.usage);
-        // SAFETY: transmutation here is okay, as these fields are never to be
-        // accessed, and the fields themselves do not contain any owning data
-        // to T or C.
-        unsafe {
-            ResourceUsage {
-                usage,
-                _rc: transmute(self._rc),
-                _val: transmute(self._val),
-            }
+        ResourceUsage {
+            usage: f(self.usage),
+            _ref: self._ref,
         }
     }
 }
 
-impl<'a, T> Deref for ResourceUsage<'a, T> {
+impl<'a, R, T> Deref for ResourceUsage<'a, R, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -174,13 +187,21 @@ impl<'a, T> Deref for ResourceUsage<'a, T> {
 
 /// Mutable resource usage, returned by `ResourceUser::try_access_mut`.
 ///
+/// The `R` type parameter is the type of the struct the resource user is
+/// pointing to, while the `T` type parameter is the type borrowed from `R`.
+/// `T` defaults to `R`.
+///
 /// Functionally is the same as `RefMut`, but also holds a strong reference to
 /// the resource for obvious lifetime reasons. As such, it releases the runtime
 /// lock on the `RefCell` when dropped.
 ///
 /// Implements `Deref` and `DerefMut` as this is a smart pointer of some sort.
-pub struct ResourceUsageMut<'a, T> {
+pub struct ResourceUsageMut<'a, R, T = R> {
     usage: &'a mut T,
+    _ref: ResourceRefMutHolder<'a, R>,
+}
+
+struct ResourceRefMutHolder<'a, T> {
     // SAFETY: These two fields are to never be accessed.
     // There is simply no reason to do so, as these fields are merely here to
     // be dropped when the usage drops.
@@ -191,26 +212,21 @@ pub struct ResourceUsageMut<'a, T> {
     _rc: Rc<RefCell<ResourceWrapper<T>>>,
 }
 
-impl<'a, T> ResourceUsageMut<'a, T> {
-    pub fn map<C, F>(self, f: F) -> ResourceUsage<'a, C>
+impl<'a, R, T> ResourceUsageMut<'a, R, T> {
+    /// Maps a `ResourceUsage<R, T>` to a `ResourceUsage<R, U>` by calling `f`
+    /// on `&mut T`. Useful for resource users, which returns `Option`s.
+    pub fn map<U, F>(self, f: F) -> ResourceUsageMut<'a, R, U>
     where
-        F: FnOnce(&'a mut T) -> &'a mut C,
+        F: FnOnce(&'a mut T) -> &'a mut U,
     {
-        let usage = f(self.usage);
-        // SAFETY: transmutation here is okay, as these fields are never to be
-        // accessed, and the fields themselves do not contain any owning data
-        // to T or C.
-        unsafe {
-            ResourceUsage {
-                usage,
-                _rc: transmute(self._rc),
-                _val: transmute(self._val),
-            }
+        ResourceUsageMut {
+            usage: f(self.usage),
+            _ref: self._ref,
         }
     }
 }
 
-impl<'a, T> Deref for ResourceUsageMut<'a, T> {
+impl<'a, R, T> Deref for ResourceUsageMut<'a, R, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -218,7 +234,7 @@ impl<'a, T> Deref for ResourceUsageMut<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for ResourceUsageMut<'a, T> {
+impl<'a, R, T> DerefMut for ResourceUsageMut<'a, R, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.usage
     }
