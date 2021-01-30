@@ -88,7 +88,7 @@ impl AudioPlayer {
 }
 
 impl Widget for AudioPlayer {
-    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(resource) = stack.get::<ResourceUser<AudioResource>>() {
             if !self
                 .instance
@@ -103,7 +103,7 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
                 if let Some(instance) = &self.instance {
@@ -148,19 +148,19 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn hover_lost(&mut self, _wrap: &mut WrapState) {
+    fn hover_lost(&mut self, _wrap: &mut WidgetState) {
         self.seek_preview_percentage = None;
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
+    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
         (self.layout_size, false)
     }
 
-    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
         self.size = size;
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
+    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
         // Draw background
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
 

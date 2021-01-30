@@ -61,19 +61,19 @@ impl<T: Widget> VContainer<T> {
 }
 
 impl<T: Widget> Widget for VContainer<T> {
-    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
         for i in &mut self.inner {
             i.inner.load(stack);
         }
     }
 
-    fn update(&mut self, _wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WidgetState) {
         for i in &mut self.inner {
             i.inner.update();
         }
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &InputEvent) -> bool {
+    fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
         let c = event.consumable();
         let mut any = false;
         for i in self.inner.iter_mut().rev() {
@@ -89,7 +89,7 @@ impl<T: Widget> Widget for VContainer<T> {
         any
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
+    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
         let mut height_min = 0.0f32;
         let mut width_min = 0.0f32;
 
@@ -127,11 +127,11 @@ impl<T: Widget> Widget for VContainer<T> {
         )
     }
 
-    fn set_size(&mut self, _wrap: &mut WrapState, size: Size) {
+    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
         self.layout(size);
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut Canvas) {
+    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
         for i in &mut self.inner {
             let m = Matrix::translate(i.position);
             canvas.save();

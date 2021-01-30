@@ -9,6 +9,9 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
 
@@ -16,25 +19,25 @@ use super::{resource::ResourceStack, FrameworkState};
 
 #[allow(unused_variables)]
 pub trait Widget {
-    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {}
+    fn load(&mut self, wrap: &mut WidgetState, stack: &mut ResourceStack) {}
 
-    fn update(&mut self, wrap: &mut WrapState) {}
+    fn update(&mut self, wrap: &mut WidgetState) {}
 
-    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
         false
     }
 
-    fn hover(&mut self, wrap: &mut WrapState) {}
+    fn hover(&mut self, wrap: &mut WidgetState) {}
 
-    fn hover_lost(&mut self, wrap: &mut WrapState) {}
+    fn hover_lost(&mut self, wrap: &mut WidgetState) {}
 
-    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
+    fn size(&mut self, wrap: &mut WidgetState) -> (LayoutSize, bool) {
         (LayoutSize::ZERO, false)
     }
 
-    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {}
+    fn set_size(&mut self, wrap: &mut WidgetState, size: Size) {}
 
-    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {}
+    fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {}
 
     // fn get<'a>(
     //     &'a mut self,
@@ -46,35 +49,35 @@ pub trait Widget {
 }
 
 impl Widget for Box<dyn Widget> {
-    fn load(&mut self, wrap: &mut WrapState, stack: &mut ResourceStack) {
+    fn load(&mut self, wrap: &mut WidgetState, stack: &mut ResourceStack) {
         self.as_mut().load(wrap, stack);
     }
 
-    fn update(&mut self, wrap: &mut WrapState) {
+    fn update(&mut self, wrap: &mut WidgetState) {
         self.as_mut().update(wrap);
     }
 
-    fn input(&mut self, wrap: &mut WrapState, event: &InputEvent) -> bool {
+    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
         self.as_mut().input(wrap, event)
     }
 
-    fn hover(&mut self, wrap: &mut WrapState) {
+    fn hover(&mut self, wrap: &mut WidgetState) {
         self.as_mut().hover(wrap);
     }
 
-    fn hover_lost(&mut self, wrap: &mut WrapState) {
+    fn hover_lost(&mut self, wrap: &mut WidgetState) {
         self.as_mut().hover_lost(wrap);
     }
 
-    fn size(&mut self, wrap: &mut WrapState) -> (LayoutSize, bool) {
+    fn size(&mut self, wrap: &mut WidgetState) -> (LayoutSize, bool) {
         self.as_mut().size(wrap)
     }
 
-    fn set_size(&mut self, wrap: &mut WrapState, size: Size) {
+    fn set_size(&mut self, wrap: &mut WidgetState, size: Size) {
         self.as_mut().set_size(wrap, size);
     }
 
-    fn draw(&mut self, wrap: &mut WrapState, canvas: &mut Canvas) {
+    fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {
         self.as_mut().draw(wrap, canvas);
     }
 
@@ -84,40 +87,56 @@ impl Widget for Box<dyn Widget> {
 }
 
 pub struct Wrap<T: Widget> {
-    pub inner: T,
-    pub state: WrapState,
+    inner: Rc<RefCell<WrapInner<T>>>,
 }
 
 impl<T: Widget> Wrap<T> {
     pub fn new(inner: T) -> Self {
         Self {
-            inner,
-            state: WrapState::new(),
+            inner: Rc::new(RefCell::new(WrapInner::new(inner))),
         }
     }
 
     pub fn load(&mut self, stack: &mut ResourceStack) {
-        self.state.load(&mut self.inner, stack);
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.load(inner, stack);
     }
 
     pub fn update(&mut self) {
-        self.state.update(&mut self.inner);
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.update(inner);
     }
 
     pub fn input(&mut self, event: &InputEvent) -> bool {
-        self.state.input(&mut self.inner, event)
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.input(inner, event)
     }
 
     pub fn size(&mut self) -> (LayoutSize, bool) {
-        self.state.size(&mut self.inner)
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.size(inner)
     }
 
     pub fn set_size(&mut self, size: Size) {
-        self.state.set_size(&mut self.inner, size);
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.set_size(inner, size);
     }
 
     pub fn draw(&mut self, canvas: &mut Canvas) {
-        self.state.draw(&mut self.inner, canvas);
+        let s = &mut *self.inner.borrow_mut();
+        let state = &mut s.state;
+        let inner = &mut s.inner;
+        state.draw(inner, canvas);
     }
 
     // pub fn get(&mut self, id: ID) -> Option<(&mut dyn Widget, &mut WrapState)> {
@@ -146,14 +165,28 @@ impl<T: 'static + Widget> Wrappable<T> for T {
     }
 }
 
+struct WrapInner<T: Widget> {
+    inner: T,
+    state: WidgetState,
+}
+
+impl<T: Widget> WrapInner<T> {
+    fn new(inner: T) -> Self {
+        Self {
+            inner,
+            state: WidgetState::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
-pub struct WrapState {
+pub struct WidgetState {
     id: ID,
     is_hovered: bool,
     was_hovered: bool,
 }
 
-impl WrapState {
+impl WidgetState {
     pub fn new() -> Self {
         Self {
             id: ID::next(),
@@ -264,7 +297,7 @@ impl WrapState {
     }
 }
 
-impl Default for WrapState {
+impl Default for WidgetState {
     fn default() -> Self {
         Self::new()
     }

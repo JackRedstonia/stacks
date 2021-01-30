@@ -204,29 +204,29 @@ impl<T: Widget> Audio<T> {
 }
 
 impl<T: Widget> Widget for Audio<T> {
-    fn load(&mut self, _wrap: &mut WrapState, stack: &mut ResourceStack) {
+    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
         self.inner.load(stack);
         stack.pop::<ResourceUser<AudioResource>>();
     }
 
-    fn update(&mut self, _wrap: &mut WrapState) {
+    fn update(&mut self, _wrap: &mut WidgetState) {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WrapState, event: &game::InputEvent) -> bool {
+    fn input(&mut self, _wrap: &mut WidgetState, event: &game::InputEvent) -> bool {
         self.inner.input(event)
     }
 
-    fn size(&mut self, _wrap: &mut WrapState) -> (LayoutSize, bool) {
+    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
         self.inner.size()
     }
 
-    fn set_size(&mut self, _wrap: &mut WrapState, size: skia::Size) {
+    fn set_size(&mut self, _wrap: &mut WidgetState, size: skia::Size) {
         self.inner.set_size(size);
     }
 
-    fn draw(&mut self, _wrap: &mut WrapState, canvas: &mut skia::Canvas) {
+    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut skia::Canvas) {
         self.inner.draw(canvas);
     }
 }
