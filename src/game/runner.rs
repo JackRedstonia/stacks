@@ -20,6 +20,7 @@ use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
 enum Event {
+    CanvasReady,
     Sdl2Event(Sdl2Event),
     Crash(Error),
 }
@@ -79,6 +80,8 @@ pub struct State {
     pub time_state_draw: TimeState,
 
     pub font_set: Box<dyn FontSet>,
+
+    canvas_ready: bool,
 
     was_fullscreen: bool,
     is_fullscreen: bool,
@@ -195,6 +198,7 @@ impl Runner {
                     time_state,
                     time_state_draw,
                     font_set: Box::new(DefaultFontSet::new()),
+                    canvas_ready: false,
                     was_fullscreen: false,
                     is_fullscreen: false,
                     id_keeper: 0,
@@ -221,6 +225,8 @@ impl Runner {
             .expect("Failed to create renderer");
 
         let mut event_pump = sdl.event_pump().expect("Failed to create SDL2 event pump");
+
+        event_tx.send(Event::CanvasReady).expect("Failed to send canvas ready event to game thread");
 
         'events: loop {
             match feedback_rx.try_recv() {
@@ -317,23 +323,25 @@ impl Runner {
                         .send(FeedbackEvent::SetFullscreen(s))
                         .expect("Failed to send set fullscreen event to main thread");
                 }
-                let mut rec = PictureRecorder::new();
-                let bounds = Rect::from_size(State::with(|x| {
-                    let w = x.input_state.window_size;
-                    (w.width, w.height)
-                }));
-                let canvas = rec.begin_recording(bounds, None);
-                game.draw(canvas);
-                if let Err(why) = pic_tx.try_send(
-                    rec.finish_recording_as_picture(None)
-                        .expect("Failed to finish recording picture while rendering"),
-                ) {
-                    match why {
-                        // Skip any unsent frames, just in case the renderer
-                        // fails to catch up, and to prevent lockups.
-                        TrySendError::Full(_) => {}
-                        TrySendError::Disconnected(_) => {
-                            panic!("Failed to send canvas to draw thread (disconnected channel)")
+                if State::with(|x| x.canvas_ready) {
+                    let mut rec = PictureRecorder::new();
+                    let bounds = Rect::from_size(State::with(|x| {
+                        let w = x.input_state.window_size;
+                        (w.width, w.height)
+                    }));
+                    let canvas = rec.begin_recording(bounds, None);
+                    game.draw(canvas);
+                    if let Err(why) = pic_tx.try_send(
+                        rec.finish_recording_as_picture(None)
+                            .expect("Failed to finish recording picture while rendering"),
+                    ) {
+                        match why {
+                            // Skip any unsent frames, just in case the renderer
+                            // fails to catch up, and to prevent lockups.
+                            TrySendError::Full(_) => {}
+                            TrySendError::Disconnected(_) => {
+                                panic!("Failed to send canvas to draw thread (disconnected channel)")
+                            }
                         }
                     }
                 }
@@ -357,6 +365,9 @@ impl Runner {
         feedback_tx: &SyncSender<FeedbackEvent<E>>,
     ) -> bool {
         match event {
+            Event::CanvasReady => {
+                State::with_mut(|x| x.canvas_ready = true);
+            },
             Event::Sdl2Event(event) => {
                 if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
                     match r {
