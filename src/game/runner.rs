@@ -226,7 +226,9 @@ impl Runner {
 
         let mut event_pump = sdl.event_pump().expect("Failed to create SDL2 event pump");
 
-        event_tx.send(Event::CanvasReady).expect("Failed to send canvas ready event to game thread");
+        event_tx
+            .send(Event::CanvasReady)
+            .expect("Failed to send canvas ready event to game thread");
 
         'events: loop {
             match feedback_rx.try_recv() {
@@ -340,7 +342,9 @@ impl Runner {
                             // fails to catch up, and to prevent lockups.
                             TrySendError::Full(_) => {}
                             TrySendError::Disconnected(_) => {
-                                panic!("Failed to send canvas to draw thread (disconnected channel)")
+                                panic!(
+                                    "Failed to send canvas to draw thread (disconnected channel)"
+                                )
                             }
                         }
                     }
@@ -367,7 +371,7 @@ impl Runner {
         match event {
             Event::CanvasReady => {
                 State::with_mut(|x| x.canvas_ready = true);
-            },
+            }
             Event::Sdl2Event(event) => {
                 if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
                     match r {

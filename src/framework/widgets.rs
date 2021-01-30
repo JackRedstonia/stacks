@@ -9,8 +9,8 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
