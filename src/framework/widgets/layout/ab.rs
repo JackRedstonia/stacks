@@ -10,26 +10,32 @@ pub trait TimeReport: Widget {
 pub struct AB<T: TimeReport, U: Widget> {
     a: Option<(Wrap<T>, scalar)>,
     b: Wrap<U>,
+    fade_time: Duration,
     running: Option<(Duration, Duration)>,
     just_switched: bool,
+    size: Size,
+    schedule_set_size: bool,
 }
 
 impl<T: TimeReport, U: Widget> AB<T, U> {
-    pub fn new(a: impl Into<Wrap<T>>, b: impl Into<Wrap<U>>) -> Self {
+    pub fn new(a: impl Into<Wrap<T>>, b: impl Into<Wrap<U>>, fade_time: Duration) -> Self {
         Self {
             a: Some((a.into(), 0.0)),
             b: b.into(),
+            fade_time,
             running: None,
             just_switched: false,
+            size: Size::default(),
+            schedule_set_size: false,
         }
     }
 
     pub fn is_running(&self) -> bool {
-        self.a.is_some() && self.running.is_none()
+        self.a.is_none() || self.running.is_some()
     }
 
     pub fn run(&mut self, duration: Duration) {
-        if self.is_running() {
+        if self.a.is_some() && self.running.is_none() {
             self.running = Some((duration, State::elapsed_draw()));
         }
     }
@@ -37,12 +43,24 @@ impl<T: TimeReport, U: Widget> AB<T, U> {
     fn tick_forward(&mut self) -> bool {
         if let Some((du, start)) = &self.running {
             let f = self.a.as_mut().unwrap();
-            let now = State::elapsed_draw();
-            let delta = (now - *start).as_secs_f32() / du.as_secs_f32();
+            let delta = (State::elapsed_draw() - *start).as_secs_f32();
+            let du = du.as_secs_f32();
+            let fade_time = self.fade_time.as_secs_f32();
+            let delta_scaled = delta / du;
 
-            f.0.inner().time(delta);
+            f.0.inner().time(delta_scaled.min(1.0));
+            if delta_scaled >= 1.0 {
+                if f.1 == 0.0 {
+                    self.schedule_set_size = true;
+                }
+                f.1 = ((delta - du) / fade_time).min(1.0);
+            }
 
-            let fin = delta >= 1.0;
+            let fin = delta > du + fade_time;
+            if fin && self.a.is_some() {
+                self.a = None;
+                self.running = None;
+            }
             return fin;
         }
         false
@@ -88,6 +106,7 @@ impl<T: TimeReport, U: Widget> Widget for AB<T, U> {
     }
 
     fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+        self.size = size;
         if let Some((a, _)) = &mut self.a {
             a.set_size(size);
         } else {
@@ -96,7 +115,12 @@ impl<T: TimeReport, U: Widget> Widget for AB<T, U> {
     }
 
     fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
-        self.just_switched |= self.tick_forward();
+        let t = self.tick_forward();
+        self.just_switched |= t;
+        if self.schedule_set_size {
+            self.schedule_set_size = false;
+            self.b.set_size(self.size);
+        }
         match &mut self.a {
             Some((a, f)) => {
                 a.draw(canvas);
