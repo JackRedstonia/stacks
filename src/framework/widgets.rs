@@ -164,17 +164,17 @@ impl<T: Widget> From<T> for Wrap<T> {
     }
 }
 
-pub trait Wrappable<T: Widget> {
+pub trait Wrappable<'a, T: Widget> {
     fn wrap(self) -> Wrap<T>;
-    fn boxed(self) -> Box<dyn Widget>;
+    fn boxed(self) -> Box<dyn Widget + 'a>;
 }
 
-impl<T: 'static + Widget> Wrappable<T> for T {
+impl<'a, T: 'a + Widget> Wrappable<'a, T> for T {
     fn wrap(self) -> Wrap<T> {
         Wrap::new(self)
     }
 
-    fn boxed(self) -> Box<dyn Widget> {
+    fn boxed(self) -> Box<dyn Widget + 'a> {
         Box::new(self)
     }
 }
