@@ -9,8 +9,9 @@ pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
+use std::ops::{Deref, DerefMut};
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
@@ -74,6 +75,25 @@ impl Widget for Box<dyn Widget> {
     }
 }
 
+pub struct WidgetBorrow<'a, T: Widget> {
+    widget: &'a mut T,
+    _ref: RefMut<'a, WrapInner<T>>,
+}
+
+impl<'a, T: Widget> Deref for WidgetBorrow<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.widget
+    }
+}
+
+impl<'a, T: Widget> DerefMut for WidgetBorrow<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.widget
+    }
+}
+
 pub struct Wrap<T: Widget> {
     inner: Rc<RefCell<WrapInner<T>>>,
 }
@@ -82,6 +102,16 @@ impl<T: Widget> Wrap<T> {
     pub fn new(inner: T) -> Self {
         Self {
             inner: Rc::new(RefCell::new(WrapInner::new(inner))),
+        }
+    }
+
+    pub fn inner(&mut self) -> WidgetBorrow<'_, T> {
+        let mut r = self.inner.borrow_mut();
+        // This is obviously fine, as `_ref` is never to be accessed.
+        let b = unsafe { std::mem::transmute(&mut r.inner) };
+        WidgetBorrow {
+            widget: b,
+            _ref: r,
         }
     }
 
