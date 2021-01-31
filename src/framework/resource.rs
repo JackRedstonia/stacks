@@ -98,14 +98,8 @@ impl<T> ResourceUser<T> {
         unsafe {
             let val: Ref<'_, ResourceWrapper<T>> = transmute(rc.borrow());
             let usage = transmute(&val.deref().resource);
-            let r = ResourceRefHolder {
-                _val: val,
-                _rc: rc,
-            };
-            Some(ResourceUsage {
-                usage,
-                holder: r,
-            })
+            let r = ResourceRefHolder { _val: val, _rc: rc };
+            Some(ResourceUsage { usage, holder: r })
         }
     }
 
@@ -125,14 +119,8 @@ impl<T> ResourceUser<T> {
         unsafe {
             let mut val: RefMut<'_, ResourceWrapper<T>> = transmute(rc.borrow_mut());
             let usage = transmute(&mut val.deref_mut().resource);
-            let r = ResourceRefMutHolder {
-                _val: val,
-                _rc: rc,
-            };
-            Some(ResourceUsageMut {
-                usage,
-                holder: r,
-            })
+            let r = ResourceRefMutHolder { _val: val, _rc: rc };
+            Some(ResourceUsageMut { usage, holder: r })
         }
     }
 }
