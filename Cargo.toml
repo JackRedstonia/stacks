@@ -7,7 +7,7 @@ build = "build.rs"
 repository = "https://gitlab.com/JackRedstonia/stacks"
 exclude = ["./examples"]
 readme = "../README.md"
-license = "MPL2.0"
+license = "MIT"
 
 [profile.release]
 lto = "thin"
