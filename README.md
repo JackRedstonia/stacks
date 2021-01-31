@@ -1,4 +1,5 @@
-# Stacks
+<p align="center"><img src="https://gitlab.com/JackRedstonia/stacks/-/raw/master/stacks.svg"></p>
+
 A work-in-progress 2D game framework purely written in the Rust programming language.
 
 It adopts a model similar to osu!framework and Flutter, where widgets parent other widgets to build user interfaces. It also uses layout rules inspired from Godot.
