@@ -24,8 +24,12 @@ impl<T: TimeReport, U: Widget> AB<T, U> {
         }
     }
 
+    pub fn is_running(&self) -> bool {
+        self.a.is_some() && self.running.is_none()
+    }
+
     pub fn run(&mut self, duration: Duration) {
-        if self.a.is_some() {
+        if self.is_running() {
             self.running = Some((duration, State::elapsed_draw()));
         }
     }
