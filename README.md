@@ -1,4 +1,4 @@
-<div align="center"><img src="https://gitlab.com/JackRedstonia/stacks/-/raw/master/stacks.svg"></div>
+<img src="https://gitlab.com/JackRedstonia/stacks/-/raw/master/stacks.svg">
 
 A work-in-progress 2D game framework purely written in the Rust programming language.
 
