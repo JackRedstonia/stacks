@@ -188,45 +188,60 @@ impl AudioResource {
     }
 }
 
-pub struct Audio<T: Widget> {
+pub struct Audio {
     resource: ResourceHoster<AudioResource>,
-    inner: Wrap<T>,
 }
 
-impl<T: Widget> Audio<T> {
-    pub fn new(inner: impl Into<Wrap<T>>) -> Result<Self, AudioError> {
+impl Audio {
+    pub fn new() -> Result<Wrap<Self>, AudioError> {
         FrameworkState::request_load();
         Ok(Self {
             resource: AudioResource::new()?,
-            inner: inner.into(),
-        })
+        }
+        .into())
     }
 }
 
-impl<T: Widget> Widget for Audio<T> {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
+impl Widget for Audio {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
-        self.inner.load(stack);
+        for c in state.children() {
+            c.load(stack);
+        }
         stack.pop::<ResourceUser<AudioResource>>();
     }
 
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.inner.update();
+    fn update(&mut self, state: &mut WidgetState) {
+        for c in state.children() {
+            c.update();
+        }
     }
 
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        self.inner.input(event)
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        state
+            .children()
+            .next()
+            .map(|e| e.input(event))
+            .unwrap_or(false)
     }
 
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        self.inner.size()
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        state
+            .children()
+            .next()
+            .map(|e| e.size())
+            .unwrap_or_default()
     }
 
-    fn set_size(&mut self, _state: &mut WidgetState, size: skia::Size) {
-        self.inner.set_size(size);
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+        if let Some(child) = state.children().next() {
+            child.set_size(size);
+        }
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
-        self.inner.draw(canvas);
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+        if let Some(child) = state.children().next() {
+            child.draw(canvas);
+        }
     }
 }

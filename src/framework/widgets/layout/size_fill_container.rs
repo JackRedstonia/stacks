@@ -9,7 +9,7 @@ pub struct SizeFillContainer<T: Widget> {
 }
 
 impl<T: Widget> SizeFillContainer<T> {
-    pub fn new(inner: impl Into<Wrap<T>>, target_size: Size) -> Self {
+    pub fn new(inner: Wrap<T>, target_size: Size) -> Wrap<Self> {
         FrameworkState::request_load();
         Self {
             size: Size::default(),
@@ -18,6 +18,7 @@ impl<T: Widget> SizeFillContainer<T> {
             matrix: Matrix::default(),
             inner: inner.into(),
         }
+        .into()
     }
 }
 
@@ -45,7 +46,8 @@ impl<T: Widget> Widget for SizeFillContainer<T> {
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
-        let scale = (size.width / self.target_size.width).min(size.height / self.target_size.height);
+        let scale =
+            (size.width / self.target_size.width).min(size.height / self.target_size.height);
         self.matrix = Matrix::scale((scale, scale));
         let child_max_size = size / scale;
         self.inner

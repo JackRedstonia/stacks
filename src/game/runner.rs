@@ -61,7 +61,7 @@ impl From<VkResult> for Error {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct ID(u64);
 
 impl ID {
@@ -71,6 +71,12 @@ impl ID {
             x.id_keeper += 1;
             id
         }))
+    }
+}
+
+impl std::hash::Hash for ID {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u64(self.0);
     }
 }
 

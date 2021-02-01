@@ -1,8 +1,5 @@
 use super::super::{LayoutDimension, LayoutSize, Widget, Wrap};
-use crate::{
-    game::InputEvent,
-    skia::{scalar, Point, Size, Vector},
-};
+use crate::skia::{scalar, Size, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ContainerSize {
@@ -107,39 +104,27 @@ impl From<LayoutDimension> for ContainerDimension {
     }
 }
 
-pub struct ContainerWidget<T: Widget> {
-    pub inner: Wrap<T>,
+pub struct ContainerState {
     pub layout_size: LayoutSize,
     pub position: Vector,
     size: Size,
     changed: bool,
     children_changed: bool,
-    mouse_position: Point,
 }
 
-impl<T: Widget> ContainerWidget<T> {
-    pub fn new(inner: Wrap<T>) -> Self {
+impl ContainerState {
+    pub fn new() -> Self {
         Self {
-            inner,
             layout_size: LayoutSize::ZERO,
             position: (0.0, 0.0).into(),
             size: Size::new_empty(),
             changed: true,
             children_changed: true,
-            mouse_position: (0.0, 0.0).into(),
         }
     }
 
-    pub fn input(&mut self, event: &InputEvent) -> bool {
-        let b = self.inner.input(event);
-        if let InputEvent::MouseMove(pos) = event {
-            self.mouse_position = *pos;
-        }
-        b
-    }
-
-    pub fn size(&mut self) -> (LayoutSize, bool, bool) {
-        let (s, c) = self.inner.size();
+    pub fn size(&mut self, widget: &mut Wrap<dyn Widget>) -> (LayoutSize, bool, bool) {
+        let (s, c) = widget.size();
         self.changed = self.layout_size != s;
         self.layout_size = s;
         self.children_changed = c;
@@ -147,10 +132,10 @@ impl<T: Widget> ContainerWidget<T> {
         (s, self.changed, c)
     }
 
-    pub fn maybe_set_size(&mut self, size: Size) {
+    pub fn maybe_set_size(&mut self, widget: &mut Wrap<dyn Widget>, size: Size) {
         if self.changed || self.children_changed || size != self.size {
             self.size = size;
-            self.inner.set_size(size);
+            widget.set_size(size);
         }
     }
 }

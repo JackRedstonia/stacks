@@ -18,7 +18,7 @@ pub struct AB<T: TimeReport, U: Widget> {
 }
 
 impl<T: TimeReport, U: Widget> AB<T, U> {
-    pub fn new(a: impl Into<Wrap<T>>, b: impl Into<Wrap<U>>, fade_time: Duration) -> Self {
+    pub fn new(a: Wrap<T>, b: Wrap<U>, fade_time: Duration) -> Self {
         Self {
             a: Some((a.into(), 0.0)),
             b: b.into(),

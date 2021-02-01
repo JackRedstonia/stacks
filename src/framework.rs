@@ -34,10 +34,9 @@ pub struct Framework<T: Widget> {
 }
 
 impl<T: Widget> Framework<T> {
-    pub fn run<F, W>(name: &str, root: F) -> Result<(), FrameworkError>
+    pub fn run<F>(name: &str, root: F) -> Result<(), FrameworkError>
     where
-        F: 'static + Send + FnOnce() -> Result<W, FrameworkError>,
-        W: Into<Wrap<T>>,
+        F: 'static + Send + FnOnce() -> Result<Wrap<T>, FrameworkError>,
     {
         Builder::new()
             .app_name(CString::new(name).map_err(FrameworkError::CStringError)?)
@@ -49,7 +48,7 @@ impl<T: Widget> Framework<T> {
             })
     }
 
-    pub fn new(root: impl Into<Wrap<T>>) -> Self {
+    pub fn new(root: Wrap<T>) -> Self {
         Self {
             root: root.into(),
             layout_size: LayoutSize::ZERO,

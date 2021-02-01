@@ -27,7 +27,7 @@ impl AudioPlayer {
         foreground: Paint,
         background: Paint,
         fft: Paint,
-    ) -> Result<Self, SoloudError> {
+    ) -> Result<Wrap<Self>, SoloudError> {
         let sound = Sound::new_wav_stream_from_path(path)?;
         Ok(Self {
             layout_size: size,
@@ -40,7 +40,8 @@ impl AudioPlayer {
             instance: None,
             fft: [0.0; FFT_SIZE],
             play_lock: false,
-        })
+        }
+        .into())
     }
 
     fn pos_percentage_from_x(&self, x: scalar) -> f64 {

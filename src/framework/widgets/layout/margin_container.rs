@@ -9,7 +9,7 @@ pub struct MarginContainer<T: Widget> {
 }
 
 impl<T: Widget> MarginContainer<T> {
-    pub fn new(inner: impl Into<Wrap<T>>, margin: Margin) -> Self {
+    pub fn new(inner: Wrap<T>, margin: Margin) -> Self {
         FrameworkState::request_load();
         Self {
             margin,

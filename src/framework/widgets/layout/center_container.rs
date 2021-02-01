@@ -8,7 +8,7 @@ pub struct CenterContainer<T: Widget> {
 }
 
 impl<T: Widget> CenterContainer<T> {
-    pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+    pub fn new(inner: Wrap<T>) -> Self {
         FrameworkState::request_load();
         Self {
             inner: inner.into(),

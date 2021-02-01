@@ -20,9 +20,17 @@ use super::{resource::ResourceStack, FrameworkState};
 
 #[allow(unused_variables)]
 pub trait Widget {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        for i in state.children() {
+            i.load(stack);
+        }
+    }
 
-    fn update(&mut self, state: &mut WidgetState) {}
+    fn update(&mut self, state: &mut WidgetState) {
+        for i in state.children() {
+            i.update();
+        }
+    }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         false
@@ -31,6 +39,10 @@ pub trait Widget {
     fn hover(&mut self, state: &mut WidgetState) {}
 
     fn hover_lost(&mut self, state: &mut WidgetState) {}
+
+    fn on_child_add(&mut self, child: &mut Wrap<dyn Widget>) {}
+
+    fn on_child_remove(&mut self, child: &mut Wrap<dyn Widget>) {}
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
         (LayoutSize::ZERO, false)
@@ -62,6 +74,14 @@ impl Widget for Box<dyn Widget> {
         self.as_mut().hover_lost(state);
     }
 
+    fn on_child_add(&mut self, child: &mut Wrap<dyn Widget>) {
+        self.as_mut().on_child_add(child);
+    }
+
+    fn on_child_remove(&mut self, child: &mut Wrap<dyn Widget>) {
+        self.as_mut().on_child_remove(child);
+    }
+
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
         self.as_mut().size(state)
     }
@@ -75,7 +95,7 @@ impl Widget for Box<dyn Widget> {
     }
 }
 
-pub struct WidgetBorrow<'a, T: Widget> {
+pub struct WidgetBorrow<'a, T: 'a + Widget + ?Sized> {
     widget: &'a mut T,
     _ref: RefMut<'a, WrapInner<T>>,
 }
@@ -94,18 +114,28 @@ impl<'a, T: Widget> DerefMut for WidgetBorrow<'a, T> {
     }
 }
 
-pub struct Wrap<T: Widget> {
+pub struct Wrap<T: Widget + ?Sized> {
     inner: Rc<RefCell<WrapInner<T>>>,
 }
 
-impl<T: Widget> Wrap<T> {
+impl<'a, T: Widget + 'a> Wrap<T> {
     pub fn new(inner: T) -> Self {
         Self {
             inner: Rc::new(RefCell::new(WrapInner::new(inner))),
         }
     }
 
-    pub fn inner(&mut self) -> WidgetBorrow<'_, T> {
+    fn to_dyn(self) -> Wrap<dyn Widget + 'a> {
+        Wrap { inner: self.inner }
+    }
+}
+
+impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
+    pub fn id(&self) -> ID {
+        self.inner.borrow().state.id()
+    }
+
+    pub fn inner(&'a mut self) -> WidgetBorrow<'a, T> {
         let mut r = self.inner.borrow_mut();
         // This is obviously fine, as `_ref` is never to be accessed.
         let b = unsafe { std::mem::transmute(&mut r.inner) };
@@ -153,6 +183,29 @@ impl<T: Widget> Wrap<T> {
         let inner = &mut s.inner;
         state.draw(inner, canvas);
     }
+
+    pub fn add_child<E: Widget + 'static>(&mut self, child: Wrap<E>) {
+        let s = &mut *self.inner.borrow_mut();
+        let mut child = child.to_dyn();
+        s.inner.on_child_add(&mut child);
+        s.state.add_child_dyn(child);
+    }
+
+    pub fn add_child_dyn(&mut self, mut child: Wrap<dyn Widget>) {
+        let s = &mut *self.inner.borrow_mut();
+        s.inner.on_child_add(&mut child);
+        s.state.add_child_dyn(child);
+    }
+
+    pub fn with_child<E: Widget + 'static>(mut self, child: Wrap<E>) -> Self {
+        self.add_child(child);
+        self
+    }
+
+    pub fn with_child_dyn(mut self, child: Wrap<dyn Widget>) -> Self {
+        self.add_child_dyn(child);
+        self
+    }
 }
 
 impl<T: Widget> From<T> for Wrap<T> {
@@ -176,9 +229,9 @@ impl<'a, T: 'a + Widget> Wrappable<'a, T> for T {
     }
 }
 
-struct WrapInner<T: Widget> {
-    inner: T,
+struct WrapInner<T: Widget + ?Sized> {
     state: WidgetState,
+    inner: T,
 }
 
 impl<T: Widget> WrapInner<T> {
@@ -190,9 +243,9 @@ impl<T: Widget> WrapInner<T> {
     }
 }
 
-#[derive(Debug)]
 pub struct WidgetState {
     id: ID,
+    children: Vec<Wrap<dyn Widget>>,
     is_hovered: bool,
     was_hovered: bool,
 }
@@ -201,17 +254,22 @@ impl WidgetState {
     pub fn new() -> Self {
         Self {
             id: ID::next(),
+            children: vec![],
             is_hovered: false,
             was_hovered: false,
         }
     }
 
-    pub fn id(&self) -> &ID {
-        &self.id
+    pub fn id(&self) -> ID {
+        self.id
     }
 
     pub fn is_hovered(&self) -> bool {
         self.is_hovered
+    }
+
+    pub fn children(&mut self) -> core::slice::IterMut<Wrap<dyn Widget>> {
+        self.children.iter_mut()
     }
 
     pub fn load<T: Widget + ?Sized>(&mut self, widget: &mut T, stack: &mut ResourceStack) {
@@ -282,6 +340,14 @@ impl WidgetState {
             .map(|id| self.id == id)
             .unwrap_or(false)
     }
+
+    pub fn add_child<E: 'static + Widget>(&mut self, child: Wrap<E>) {
+        self.add_child_dyn(child.to_dyn());
+    }
+
+    pub fn add_child_dyn(&mut self, child: Wrap<dyn Widget>) {
+        self.children.push(child);
+    }
 }
 
 impl Default for WidgetState {
@@ -290,7 +356,7 @@ impl Default for WidgetState {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct LayoutSize {
     pub width: LayoutDimension,
     pub height: LayoutDimension,
@@ -377,7 +443,7 @@ impl LayoutSize {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct LayoutDimension {
     /// The minimum number of logical pixels this dimension should receive.
     /// May not always be respected by containers, for example when they run out

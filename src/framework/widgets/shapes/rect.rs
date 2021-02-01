@@ -7,12 +7,13 @@ pub struct Rectangle {
 }
 
 impl Rectangle {
-    pub fn new(size: LayoutSize, paint: Paint) -> Self {
+    pub fn new(size: LayoutSize, paint: Paint) -> Wrap<Self> {
         Self {
             layout_size: size,
             size: Size::new_empty(),
             paint,
         }
+        .into()
     }
 }
 

@@ -8,13 +8,14 @@ pub struct Throbber {
 }
 
 impl Throbber {
-    pub fn new(radius: LayoutDimension, paint: Paint) -> Self {
+    pub fn new(radius: LayoutDimension, paint: Paint) -> Wrap<Self> {
         Self {
             radius,
             size: Size::new_empty(),
             paint,
             rad: 0.0,
         }
+        .into()
     }
 }
 
