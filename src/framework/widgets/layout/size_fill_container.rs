@@ -2,19 +2,21 @@ use crate::prelude::*;
 
 pub struct SizeFillContainer<T: Widget> {
     size: Size,
-    child_layout_size: LayoutSize,
+    child_size: LayoutSize,
+    target_size: Size,
     matrix: Matrix,
     inner: Wrap<T>,
 }
 
 impl<T: Widget> SizeFillContainer<T> {
-    pub fn new(inner: impl Into<Wrap<T>>) -> Self {
+    pub fn new(inner: impl Into<Wrap<T>>, target_size: Size) -> Self {
         FrameworkState::request_load();
         Self {
-            inner: inner.into(),
-            child_layout_size: LayoutSize::ZERO,
-            matrix: Matrix::default(),
             size: Size::default(),
+            child_size: LayoutSize::ZERO,
+            target_size,
+            matrix: Matrix::default(),
+            inner: inner.into(),
         }
     }
 }
@@ -37,18 +39,17 @@ impl<T: Widget> Widget for SizeFillContainer<T> {
 
     fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
         let (child_size, changed) = self.inner.size();
-        self.child_layout_size = child_size;
+        self.child_size = child_size;
         (LayoutSize::ZERO.expand_width().expand_height(), changed)
     }
 
     fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
         self.size = size;
-        let child_min = self.child_layout_size.get_min();
-        let scale = (self.size.width / child_min.width).min(self.size.height / child_min.height);
+        let scale = (size.width / self.target_size.width).min(size.height / self.target_size.height);
         self.matrix = Matrix::scale((scale, scale));
         let child_max_size = size / scale;
         self.inner
-            .set_size(self.child_layout_size.layout_one(child_max_size));
+            .set_size(self.child_size.layout_one(child_max_size));
     }
 
     fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut skia::Canvas) {

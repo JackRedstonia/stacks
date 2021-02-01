@@ -49,11 +49,9 @@ fn main() {
                 .expect("Failed to create AudioPlayer")
                 .boxed(),
             ],
-            ContainerSize::min(1366.0, 768.0)
-                .expand_width()
-                .expand_height(),
+            ContainerSize::ZERO.expand_width().expand_height(),
         );
-        let root = FullscreenContainer::new(SizeFillContainer::new(root));
+        let root = FullscreenContainer::new(SizeFillContainer::new(root, Size::new(1366.0, 768.0)));
         let root = Audio::new(root)?;
         Ok(root)
     })
