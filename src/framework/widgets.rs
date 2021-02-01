@@ -1,11 +1,9 @@
 pub mod audio;
 pub mod layout;
-mod parallax;
 pub mod shapes;
 mod text;
 mod transform;
 
-pub use parallax::Parallax;
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
@@ -270,6 +268,10 @@ impl WidgetState {
 
     pub fn children(&mut self) -> core::slice::IterMut<Wrap<dyn Widget>> {
         self.children.iter_mut()
+    }
+
+    pub fn child(&mut self) -> Option<&mut Wrap<dyn Widget>> {
+        self.children.first_mut()
     }
 
     pub fn load<T: Widget + ?Sized>(&mut self, widget: &mut T, stack: &mut ResourceStack) {

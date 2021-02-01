@@ -36,7 +36,7 @@ impl Text {
         font: Font,
         style: FontStyle,
         paint: Paint,
-    ) -> Self {
+    ) -> Wrap<Self> {
         let font = font.resolve(&style);
         let text = text.as_ref();
         Self {
@@ -47,6 +47,7 @@ impl Text {
             text: text.to_owned(),
             blob: None,
         }
+        .into()
     }
 
     fn shape(&mut self) {

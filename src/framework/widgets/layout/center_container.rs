@@ -1,17 +1,15 @@
 use crate::prelude::*;
 
-pub struct CenterContainer<T: Widget> {
+pub struct CenterContainer {
     size: Size,
     child_layout_size: LayoutSize,
     matrix: Matrix,
-    inner: Wrap<T>,
 }
 
-impl<T: Widget> CenterContainer<T> {
-    pub fn new(inner: Wrap<T>) -> Self {
+impl CenterContainer {
+    pub fn new() -> Self {
         FrameworkState::request_load();
         Self {
-            inner: inner.into(),
             child_layout_size: LayoutSize::ZERO,
             matrix: Matrix::default(),
             size: Size::default(),
@@ -19,40 +17,46 @@ impl<T: Widget> CenterContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for CenterContainer<T> {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.inner.load(stack);
-    }
-
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.inner.update();
-    }
-
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        event
-            .reverse_map_position(self.matrix)
-            .map(|e| self.inner.input(&e))
+impl Widget for CenterContainer {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        state
+            .child()
+            .map(|child| {
+                event
+                    .reverse_map_position(self.matrix)
+                    .map(|e| child.input(&e))
+                    .unwrap_or(false)
+            })
             .unwrap_or(false)
     }
 
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        let (child_size, changed) = self.inner.size();
-        self.child_layout_size = child_size;
-        (child_size.expand_width().expand_height(), changed)
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        state
+            .child()
+            .map(|child| {
+                let (child_size, changed) = child.size();
+                self.child_layout_size = child_size;
+                (child_size.expand_width().expand_height(), changed)
+            })
+            .unwrap_or_default()
     }
 
-    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
-        self.size = size;
-        let child_size = self.child_layout_size.layout_one(size);
-        let offset = (size.bottom_right() - child_size.bottom_right()) * 0.5;
-        self.matrix = Matrix::translate(offset);
-        self.inner.set_size(child_size);
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+        if let Some(child) = state.child() {
+            self.size = size;
+            let child_size = self.child_layout_size.layout_one(size);
+            let offset = (size.bottom_right() - child_size.bottom_right()) * 0.5;
+            self.matrix = Matrix::translate(offset);
+            child.set_size(child_size);
+        }
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
-        canvas.save();
-        canvas.concat(&self.matrix);
-        self.inner.draw(canvas);
-        canvas.restore();
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+        if let Some(child) = state.child() {
+            canvas.save();
+            canvas.concat(&self.matrix);
+            child.draw(canvas);
+            canvas.restore();
+        }
     }
 }

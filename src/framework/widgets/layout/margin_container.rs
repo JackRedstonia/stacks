@@ -1,19 +1,17 @@
 use crate::prelude::*;
 
-pub struct MarginContainer<T: Widget> {
+pub struct MarginContainer {
     pub margin: Margin,
     size: Size,
     child_layout_size: LayoutSize,
     matrix: Matrix,
-    inner: Wrap<T>,
 }
 
-impl<T: Widget> MarginContainer<T> {
-    pub fn new(inner: Wrap<T>, margin: Margin) -> Self {
+impl MarginContainer {
+    pub fn new(margin: Margin) -> Self {
         FrameworkState::request_load();
         Self {
             margin,
-            inner: inner.into(),
             child_layout_size: LayoutSize::ZERO,
             matrix: Matrix::default(),
             size: Size::default(),
@@ -21,43 +19,49 @@ impl<T: Widget> MarginContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for MarginContainer<T> {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.inner.load(stack);
-    }
-
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.inner.update();
-    }
-
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        event
-            .reverse_map_position(self.matrix)
-            .map(|e| self.inner.input(&e))
+impl Widget for MarginContainer {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        state
+            .child()
+            .map(|child| {
+                event
+                    .reverse_map_position(self.matrix)
+                    .map(|e| child.input(&e))
+                    .unwrap_or(false)
+            })
             .unwrap_or(false)
     }
 
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        let (mut child_size, changed) = self.inner.size();
-        self.child_layout_size = child_size;
-        let margin_size = self.margin.size();
-        child_size.width.min += margin_size.width;
-        child_size.height.min += margin_size.height;
-        (child_size, changed)
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        state
+            .child()
+            .map(|child| {
+                let (mut child_size, changed) = child.size();
+                self.child_layout_size = child_size;
+                let margin_size = self.margin.size();
+                child_size.width.min += margin_size.width;
+                child_size.height.min += margin_size.height;
+                (child_size, changed)
+            })
+            .unwrap_or_default()
     }
 
-    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         self.size = size;
-        let child_size = size.bottom_right() - self.margin.size().bottom_right();
         self.matrix = Matrix::translate((self.margin.left, self.margin.top));
-        self.inner.set_size(Size::new(child_size.x, child_size.y));
+        if let Some(child) = state.child() {
+            let child_size = size.bottom_right() - self.margin.size().bottom_right();
+            child.set_size(Size::new(child_size.x, child_size.y));
+        }
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
-        canvas.save();
-        canvas.concat(&self.matrix);
-        self.inner.draw(canvas);
-        canvas.restore();
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+        if let Some(child) = state.child() {
+            canvas.save();
+            canvas.concat(&self.matrix);
+            child.draw(canvas);
+            canvas.restore();
+        }
     }
 }
 

@@ -1,16 +1,14 @@
 use crate::prelude::*;
 
-pub struct FullscreenContainer<T: Widget> {
-    inner: Wrap<T>,
+pub struct FullscreenContainer {
     key: Keycode,
     lock: bool,
 }
 
-impl<T: Widget> FullscreenContainer<T> {
-    pub fn new(inner: Wrap<T>) -> Wrap<Self> {
+impl FullscreenContainer {
+    pub fn new() -> Wrap<Self> {
         FrameworkState::request_load();
         Self {
-            inner: inner.into(),
             key: Keycode::F11,
             lock: false,
         }
@@ -18,16 +16,8 @@ impl<T: Widget> FullscreenContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for FullscreenContainer<T> {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.inner.load(stack);
-    }
-
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.inner.update();
-    }
-
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
+impl Widget for FullscreenContainer {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(k) if *k == self.key => {
                 if !self.lock {
@@ -40,19 +30,23 @@ impl<T: Widget> Widget for FullscreenContainer<T> {
                 self.lock = false;
                 true
             }
-            _ => self.inner.input(event),
+            _ => state.child().map(|e| e.input(event)).unwrap_or(false),
         }
     }
 
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        self.inner.size()
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        state.child().map(|e| e.size()).unwrap_or_default()
     }
 
-    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
-        self.inner.set_size(size);
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+        if let Some(child) = state.child() {
+            child.set_size(size);
+        }
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
-        self.inner.draw(canvas);
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+        if let Some(child) = state.child() {
+            child.draw(canvas);
+        }
     }
 }

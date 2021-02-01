@@ -234,13 +234,13 @@ impl Widget for Audio {
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
-        if let Some(child) = state.children().next() {
+        if let Some(child) = state.child() {
             child.set_size(size);
         }
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(child) = state.children().next() {
+        if let Some(child) = state.child() {
             child.draw(canvas);
         }
     }

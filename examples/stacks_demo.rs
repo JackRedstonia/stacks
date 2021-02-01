@@ -20,13 +20,12 @@ fn main() {
                 LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
                 Paint::new_color4f(0.7, 0.1, 0.2, 0.3).anti_alias(),
             ))
-            .with_child(Transform::new(
-                Rectangle::new(
+            .with_child(
+                Transform::new(Matrix::scale((1.5, 1.7))).with_child(Rectangle::new(
                     LayoutSize::min(100.0, 50.0),
                     Paint::new_color4f(0.0, 0.0, 1.0, 0.5).anti_alias(),
-                ),
-                Matrix::scale((1.5, 1.7)),
-            ))
+                )),
+            )
             .with_child(Throbber::new(
                 LayoutDimension::min(100.0),
                 Paint::new_color4f(0.0, 1.0, 0.0, 1.0)
@@ -44,7 +43,8 @@ fn main() {
                 )
                 .expect("Failed to create AudioPlayer"),
             );
-        let root = FullscreenContainer::new(SizeFillContainer::new(root, Size::new(1366.0, 768.0)));
+        let root = SizeFillContainer::new(Size::new(1366.0, 768.0)).with_child(root);
+        let root = FullscreenContainer::new().with_child(root);
         let root = Audio::new()?.with_child(root);
         Ok(root)
     })

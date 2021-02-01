@@ -1,52 +1,53 @@
 use crate::prelude::*;
 
-pub struct Transform<T: Widget> {
-    pub inner: Wrap<T>,
+pub struct Transform {
     pub matrix: Matrix,
 }
 
-impl<T: Widget> Transform<T> {
-    pub fn new(inner: Wrap<T>, matrix: Matrix) -> Wrap<Self> {
+impl Transform {
+    pub fn new(matrix: Matrix) -> Wrap<Self> {
         FrameworkState::request_load();
-        Self {
-            inner: inner.into(),
-            matrix,
-        }
-        .into()
+        Self { matrix }.into()
     }
 }
 
-impl<T: Widget> Widget for Transform<T> {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.inner.load(stack);
+impl Widget for Transform {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        state
+            .child()
+            .map(|child| {
+                event
+                    .reverse_map_position(self.matrix)
+                    .map_or(false, |event| child.input(&event))
+            })
+            .unwrap_or(false)
     }
 
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.inner.update();
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        state
+            .child()
+            .map(|child| {
+                let s = child.size();
+                (s.0.map(self.matrix), s.1)
+            })
+            .unwrap_or_default()
     }
 
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        event
-            .reverse_map_position(self.matrix)
-            .map_or(false, |event| self.inner.input(&event))
-    }
-
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        let s = self.inner.size();
-        (s.0.map(self.matrix), s.1)
-    }
-
-    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         if let Some(m) = self.matrix.invert() {
-            let (rect, _) = m.map_rect(Rect::from_size(size));
-            self.inner.set_size(rect.size());
+            if let Some(child) = state.child() {
+                let (rect, _) = m.map_rect(Rect::from_size(size));
+                child.set_size(rect.size());
+            }
         }
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        canvas.save();
-        canvas.concat(&self.matrix);
-        self.inner.draw(canvas);
-        canvas.restore();
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+        if let Some(child) = state.child() {
+            canvas.save();
+            canvas.concat(&self.matrix);
+            child.draw(canvas);
+            canvas.restore();
+        }
     }
 }
