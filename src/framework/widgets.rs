@@ -31,6 +31,11 @@ pub trait Widget {
     }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        for i in state.children().rev() {
+            if i.input(event) {
+                return true;
+            }
+        }
         false
     }
 
@@ -203,6 +208,14 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
     pub fn with_child_dyn(mut self, child: Wrap<dyn Widget>) -> Self {
         self.add_child_dyn(child);
         self
+    }
+}
+
+impl<T: Widget + ?Sized> Clone for Wrap<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Rc::clone(&self.inner)
+        }
     }
 }
 

@@ -7,7 +7,7 @@ pub trait TimeReport: Widget {
 }
 
 // Transitions from one specific widget to its children permanently.
-pub struct AB<T: TimeReport> {
+pub struct AB<T: TimeReport + ?Sized> {
     a: Option<(Wrap<T>, scalar)>,
     fade_time: Duration,
     running: Option<(Duration, Duration)>,
@@ -16,18 +16,20 @@ pub struct AB<T: TimeReport> {
     schedule_set_size: bool,
 }
 
-impl<T: TimeReport> AB<T> {
-    pub fn new(a: Wrap<T>, fade_time: Duration) -> Self {
-        Self {
-            a: Some((a.into(), 0.0)),
+impl<T: TimeReport + 'static> AB<T> {
+    pub fn new(a: Wrap<T>, fade_time: Duration) -> Wrap<Self> {
+        Wrap::new(Self {
+            a: Some((a.clone(), 0.0)),
             fade_time,
             running: None,
             just_switched: false,
             size: Size::default(),
             schedule_set_size: false,
-        }
+        })
     }
+}
 
+impl<T: TimeReport> AB<T> {
     pub fn is_running(&self) -> bool {
         self.a.is_none() || self.running.is_some()
     }
@@ -70,14 +72,18 @@ impl<T: TimeReport> Widget for AB<T> {
         if let Some((a, _)) = &mut self.a {
             a.load(stack);
         }
-        Widget::load(self, state, stack);
+        for i in state.children() {
+            i.load(stack);
+        }
     }
 
     fn update(&mut self, state: &mut WidgetState) {
         if let Some((a, _)) = &mut self.a {
             a.update();
         }
-        Widget::update(self, state);
+        for i in state.children() {
+            i.update();
+        }
     }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
