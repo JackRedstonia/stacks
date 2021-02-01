@@ -45,7 +45,8 @@ impl<T: Widget> Widget for SizeFillContainer<T> {
 
     fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
         self.size = size;
-        let scale = (size.width / self.target_size.width).min(size.height / self.target_size.height);
+        let scale =
+            (size.width / self.target_size.width).min(size.height / self.target_size.height);
         self.matrix = Matrix::scale((scale, scale));
         let child_max_size = size / scale;
         self.inner

@@ -10,8 +10,8 @@ pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 
 use std::cell::{RefCell, RefMut};
-use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{scalar, Canvas, Matrix, Rect, Size, Vector};
@@ -109,10 +109,7 @@ impl<T: Widget> Wrap<T> {
         let mut r = self.inner.borrow_mut();
         // This is obviously fine, as `_ref` is never to be accessed.
         let b = unsafe { std::mem::transmute(&mut r.inner) };
-        WidgetBorrow {
-            widget: b,
-            _ref: r,
-        }
+        WidgetBorrow { widget: b, _ref: r }
     }
 
     pub fn load(&mut self, stack: &mut ResourceStack) {
