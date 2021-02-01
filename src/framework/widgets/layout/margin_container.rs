@@ -22,22 +22,22 @@ impl<T: Widget> MarginContainer<T> {
 }
 
 impl<T: Widget> Widget for MarginContainer<T> {
-    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.inner.load(stack);
     }
 
-    fn update(&mut self, _wrap: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         event
             .reverse_map_position(self.matrix)
             .map(|e| self.inner.input(&e))
             .unwrap_or(false)
     }
 
-    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let (mut child_size, changed) = self.inner.size();
         self.child_layout_size = child_size;
         let margin_size = self.margin.size();
@@ -46,14 +46,14 @@ impl<T: Widget> Widget for MarginContainer<T> {
         (child_size, changed)
     }
 
-    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         let child_size = size.bottom_right() - self.margin.size().bottom_right();
         self.matrix = Matrix::translate((self.margin.left, self.margin.top));
         self.inner.set_size(Size::new(child_size.x, child_size.y));
     }
 
-    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut skia::Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
         canvas.save();
         canvas.concat(&self.matrix);
         self.inner.draw(canvas);

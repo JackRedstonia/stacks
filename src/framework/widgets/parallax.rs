@@ -42,31 +42,31 @@ impl<T: Widget> Parallax<T> {
 }
 
 impl<T: Widget> Widget for Parallax<T> {
-    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.inner.load(stack);
     }
 
-    fn update(&mut self, _wrap: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.inner.update();
     }
 
-    fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         let m = self.calc_parallax();
         event
             .reverse_map_position(m)
             .map_or(false, |event| self.inner.input(&event))
     }
 
-    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         self.inner.size()
     }
 
-    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         self.inner.set_size(size);
     }
 
-    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.interpolate_mouse();
         canvas.save();
         canvas.concat(&self.calc_parallax());

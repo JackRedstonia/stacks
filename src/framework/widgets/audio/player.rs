@@ -86,7 +86,7 @@ impl AudioPlayer {
 }
 
 impl Widget for AudioPlayer {
-    fn load(&mut self, _wrap: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(resource) = stack.get::<ResourceUser<AudioResource>>() {
             if !self
                 .instance
@@ -101,7 +101,7 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
                 if let Some(instance) = &self.instance {
@@ -118,8 +118,8 @@ impl Widget for AudioPlayer {
                 true
             }
             InputEvent::MouseUp(MouseButton::Left, pos) => {
-                if wrap.is_focused() {
-                    wrap.release_focus();
+                if state.is_focused() {
+                    state.release_focus();
                     let pos = self.pos_percentage_from_x(pos.x);
                     self.seek_percentage(pos).expect("Failed to seek sound");
                     self.seek_preview_percentage = None;
@@ -129,14 +129,14 @@ impl Widget for AudioPlayer {
             InputEvent::MouseDown(MouseButton::Left, pos) => {
                 let c = Rect::from_size(self.size).contains(*pos);
                 if c {
-                    wrap.grab_focus();
+                    state.grab_focus();
                     let pos = (pos.x / self.size.width).clamp_zero_one();
                     self.seek_preview_percentage = Some(pos);
                 }
                 c
             }
             InputEvent::MouseMove(pos) => {
-                if wrap.is_focused() || wrap.is_hovered() {
+                if state.is_focused() || state.is_hovered() {
                     let pos = (pos.x / self.size.width).clamp_zero_one();
                     self.seek_preview_percentage = Some(pos);
                 }
@@ -146,19 +146,19 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn hover_lost(&mut self, _wrap: &mut WidgetState) {
+    fn hover_lost(&mut self, _state: &mut WidgetState) {
         self.seek_preview_percentage = None;
     }
 
-    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         (self.layout_size, false)
     }
 
-    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
     }
 
-    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         // Draw background
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
 

@@ -20,58 +20,58 @@ use super::{resource::ResourceStack, FrameworkState};
 
 #[allow(unused_variables)]
 pub trait Widget {
-    fn load(&mut self, wrap: &mut WidgetState, stack: &mut ResourceStack) {}
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
 
-    fn update(&mut self, wrap: &mut WidgetState) {}
+    fn update(&mut self, state: &mut WidgetState) {}
 
-    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         false
     }
 
-    fn hover(&mut self, wrap: &mut WidgetState) {}
+    fn hover(&mut self, state: &mut WidgetState) {}
 
-    fn hover_lost(&mut self, wrap: &mut WidgetState) {}
+    fn hover_lost(&mut self, state: &mut WidgetState) {}
 
-    fn size(&mut self, wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
         (LayoutSize::ZERO, false)
     }
 
-    fn set_size(&mut self, wrap: &mut WidgetState, size: Size) {}
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {}
 
-    fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {}
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {}
 }
 
 impl Widget for Box<dyn Widget> {
-    fn load(&mut self, wrap: &mut WidgetState, stack: &mut ResourceStack) {
-        self.as_mut().load(wrap, stack);
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.as_mut().load(state, stack);
     }
 
-    fn update(&mut self, wrap: &mut WidgetState) {
-        self.as_mut().update(wrap);
+    fn update(&mut self, state: &mut WidgetState) {
+        self.as_mut().update(state);
     }
 
-    fn input(&mut self, wrap: &mut WidgetState, event: &InputEvent) -> bool {
-        self.as_mut().input(wrap, event)
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        self.as_mut().input(state, event)
     }
 
-    fn hover(&mut self, wrap: &mut WidgetState) {
-        self.as_mut().hover(wrap);
+    fn hover(&mut self, state: &mut WidgetState) {
+        self.as_mut().hover(state);
     }
 
-    fn hover_lost(&mut self, wrap: &mut WidgetState) {
-        self.as_mut().hover_lost(wrap);
+    fn hover_lost(&mut self, state: &mut WidgetState) {
+        self.as_mut().hover_lost(state);
     }
 
-    fn size(&mut self, wrap: &mut WidgetState) -> (LayoutSize, bool) {
-        self.as_mut().size(wrap)
+    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+        self.as_mut().size(state)
     }
 
-    fn set_size(&mut self, wrap: &mut WidgetState, size: Size) {
-        self.as_mut().set_size(wrap, size);
+    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+        self.as_mut().set_size(state, size);
     }
 
-    fn draw(&mut self, wrap: &mut WidgetState, canvas: &mut Canvas) {
-        self.as_mut().draw(wrap, canvas);
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+        self.as_mut().draw(state, canvas);
     }
 }
 

@@ -58,22 +58,22 @@ impl Text {
 }
 
 impl Widget for Text {
-    fn input(&mut self, _wrap: &mut WidgetState, _event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, _event: &InputEvent) -> bool {
         // TODO: this is mostly a placeholder value.
         // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.
         false
     }
 
-    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         (self.layout_size, false)
     }
 
-    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         self.shape();
     }
 
-    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         if let Some(blob) = &self.blob {
             let bounds = blob.bounds();
             canvas.draw_text_blob(blob, (-bounds.left, -bounds.top), &self.paint);

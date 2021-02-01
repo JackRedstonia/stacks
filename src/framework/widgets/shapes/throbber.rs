@@ -19,14 +19,14 @@ impl Throbber {
 }
 
 impl Widget for Throbber {
-    fn input(&mut self, _wrap: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         event.position().map_or(false, |p| {
             let s = self.size.width.min(self.size.height);
             Rect::from_wh(s, s).contains(p)
         })
     }
 
-    fn size(&mut self, _wrap: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         (
             LayoutSize {
                 width: self.radius,
@@ -36,11 +36,11 @@ impl Widget for Throbber {
         )
     }
 
-    fn set_size(&mut self, _wrap: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
     }
 
-    fn draw(&mut self, _wrap: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         let stroke_width = self.paint.stroke_width();
         let s = self.size.width.min(self.size.height) - stroke_width;
         canvas.draw_arc(
