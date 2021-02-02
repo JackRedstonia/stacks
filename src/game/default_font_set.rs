@@ -20,16 +20,24 @@ impl DefaultFontSet {
         let family_name = "IBM Plex Sans";
         Self {
             size: 16.0,
-            default_regular: Typeface::from_name(family_name, SkFontStyle::normal()).unwrap(),
-            default_bold: Typeface::from_name(
+            default_regular: Typeface::from_name(
                 family_name,
-                SkFontStyle::new(Weight::SEMI_BOLD, Width::NORMAL, Slant::Upright),
+                SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Upright),
             )
             .unwrap(),
-            default_italic: Typeface::from_name(family_name, SkFontStyle::italic()).unwrap(),
+            default_bold: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Upright),
+            )
+            .unwrap(),
+            default_italic: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Italic),
+            )
+            .unwrap(),
             default_bold_italic: Typeface::from_name(
                 family_name,
-                SkFontStyle::new(Weight::SEMI_BOLD, Width::NORMAL, Slant::Italic),
+                SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Italic),
             )
             .unwrap(),
         }
