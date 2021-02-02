@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use skia::{Canvas, Font as SkFont, Shaper, TextBlob};
+use skia::{Canvas, Font as SkFont, Path};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -26,7 +26,8 @@ pub struct Text {
     pub paint: Paint,
     size: Size,
     text: String,
-    blob: Option<TextBlob>,
+    paragraph: Option<Paragraph>,
+    // blob: Option<TextBlob>,
 }
 
 impl Text {
@@ -45,26 +46,20 @@ impl Text {
             paint,
             size: Size::new_empty(),
             text: text.to_owned(),
-            blob: None,
+            paragraph: None,
         }
         .into()
     }
 
-    pub fn bounds(&self) -> Size {
-        self.blob
+    pub fn bounds(&self) -> Rect {
+        self.paragraph
             .as_ref()
-            .map(|blob| {
-                let bounds = blob.bounds();
-                Size::new(self.size.width, bounds.bottom + bounds.top)
-            })
+            .map(|blob| blob.bounds)
             .unwrap_or_default()
     }
 
     fn shape(&mut self) {
-        let shaper = Shaper::new(None);
-        self.blob = shaper
-            .shape_text_blob(&self.text, &self.font, true, self.size.width, (0.0, 0.0))
-            .map(|e| e.0);
+        self.paragraph = Some(Paragraph::new(&self.text, &self.font, self.size.width));
     }
 }
 
@@ -85,8 +80,91 @@ impl Widget for Text {
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(blob) = &self.blob {
-            canvas.draw_text_blob(blob, (0.0, 0.0), &self.paint);
+        if let Some(p) = &self.paragraph {
+            p.draw(canvas, &self.paint);
         }
     }
+}
+
+struct Word {
+    path: Path,
+    bounds: Rect,
+}
+
+impl Word {
+    fn new(s: &str, font: &SkFont) -> Self {
+        let glyphs = font.str_to_glyphs_vec(s);
+        let mut bounds = Rect::new_empty();
+        let pos = unsafe {
+            let mut pos = Vec::with_capacity(glyphs.len());
+            pos.set_len(glyphs.len());
+            font.get_pos(&glyphs, &mut pos, None);
+            pos
+        };
+        let mut path = Path::new();
+        for (&glyph, &pos) in glyphs.iter().zip(pos.iter()) {
+            if let Some(glyph_path) = font.get_path(glyph) {
+                let glb = glyph_path.bounds();
+                combine(&mut bounds, &glb.with_offset(pos));
+                path.add_path(&glyph_path, pos, None);
+            }
+        }
+        Self { path, bounds }
+    }
+}
+
+struct Paragraph {
+    words: Vec<(Word, Vector)>,
+    bounds: Rect,
+}
+
+impl Paragraph {
+    fn new(s: &str, font: &SkFont, width: scalar) -> Self {
+        let words = s
+            .split_whitespace()
+            .filter(|e| !e.is_empty())
+            .map(|e| Word::new(e, font));
+        let mut out = vec![];
+        let mut bounds = Rect::new_empty();
+        let mut offset = Vector::default();
+        // TODO: figure out spacing & line instead of hard coded value
+        let spacing = 5.0;
+        let line = 20.0;
+        for word in words {
+            let nx = offset.x + word.bounds.right - word.bounds.left;
+            if nx > width {
+                offset = Vector::new(0.0, offset.y + line);
+            }
+            let b = word.bounds.with_offset(offset);
+            combine(&mut bounds, &b);
+            out.push((word, offset));
+            offset.x += spacing + b.right - b.left;
+        }
+        Self { words: out, bounds }
+    }
+
+    fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
+        canvas.save();
+        {
+            canvas.translate((-self.bounds.left, -self.bounds.top));
+
+            for (word, position) in &self.words {
+                canvas.save();
+                {
+                    canvas.translate(*position);
+                    canvas.draw_path(&word.path, &paint);
+                }
+                canvas.restore();
+            }
+        }
+        canvas.restore();
+    }
+}
+
+// TODO: promote this to an utils function
+fn combine(a: &mut Rect, b: &Rect) {
+    a.left = a.left.min(b.left);
+    a.right = a.right.max(b.right);
+    a.top = a.top.min(b.top);
+    a.bottom = a.bottom.max(b.bottom);
 }
