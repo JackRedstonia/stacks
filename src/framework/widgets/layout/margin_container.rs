@@ -8,7 +8,7 @@ pub struct MarginContainer {
 }
 
 impl MarginContainer {
-    pub fn new(margin: Margin) -> Self {
+    pub fn new(margin: Margin) -> Wrap<Self> {
         FrameworkState::request_load();
         Self {
             margin,
@@ -16,6 +16,7 @@ impl MarginContainer {
             matrix: Matrix::default(),
             size: Size::default(),
         }
+        .into()
     }
 }
 

@@ -7,13 +7,13 @@ pub struct CenterContainer {
 }
 
 impl CenterContainer {
-    pub fn new() -> Self {
+    pub fn new() -> Wrap<Self> {
         FrameworkState::request_load();
         Self {
             child_layout_size: LayoutSize::ZERO,
             matrix: Matrix::default(),
             size: Size::default(),
-        }
+        }.into()
     }
 }
 
