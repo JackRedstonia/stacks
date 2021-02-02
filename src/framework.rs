@@ -94,7 +94,7 @@ impl<T: Widget> Game for Framework<T> {
         let (size, changed) = self.root.size();
         if size != self.layout_size || changed {
             self.layout_size = size;
-            self.root.set_size(self.size);
+            self.root.set_size(self.layout_size.layout_one(self.size));
         }
 
         // Do the actual drawing
@@ -107,7 +107,6 @@ impl<T: Widget> Game for Framework<T> {
             self.layout_size.width.min.max(window_size.width),
             self.layout_size.height.min.max(window_size.height),
         );
-        self.root.set_size(self.size);
         self.maybe_load();
     }
 
