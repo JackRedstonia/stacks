@@ -3,6 +3,7 @@ use super::{LayoutSize, Widget};
 use std::cell::{RefCell, RefMut};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
+use std::slice::IterMut;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{Canvas, Size};
@@ -15,7 +16,7 @@ pub struct WidgetBorrow<'a, T: 'a + Widget + ?Sized> {
     _ref: RefMut<'a, WrapInner<T>>,
 }
 
-impl<'a, T: Widget> Deref for WidgetBorrow<'a, T> {
+impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetBorrow<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -23,9 +24,28 @@ impl<'a, T: Widget> Deref for WidgetBorrow<'a, T> {
     }
 }
 
-impl<'a, T: Widget> DerefMut for WidgetBorrow<'a, T> {
+impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetBorrow<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.widget
+    }
+}
+
+pub struct WidgetChildrenBorrow<'a, T: 'a + Widget + ?Sized> {
+    iter: IterMut<'a, Wrap<dyn Widget>>,
+    _ref: RefMut<'a, WrapInner<T>>,
+}
+
+impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetChildrenBorrow<'a, T> {
+    type Target = IterMut<'a, Wrap<dyn Widget>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.iter
+    }
+}
+
+impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetChildrenBorrow<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.iter
     }
 }
 
@@ -55,6 +75,12 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         // This is obviously fine, as `_ref` is never to be accessed.
         let b = unsafe { std::mem::transmute(&mut r.inner) };
         WidgetBorrow { widget: b, _ref: r }
+    }
+
+    pub fn children(&'a mut self) -> WidgetChildrenBorrow<'a, T> {
+        let mut r = self.inner.borrow_mut();
+        let b = unsafe { std::mem::transmute(r.state.children()) };
+        WidgetChildrenBorrow { iter: b, _ref: r }
     }
 
     pub fn load(&mut self, stack: &mut ResourceStack) {
@@ -191,7 +217,7 @@ impl WidgetState {
         self.is_hovered
     }
 
-    pub fn children(&mut self) -> core::slice::IterMut<Wrap<dyn Widget>> {
+    pub fn children(&mut self) -> IterMut<Wrap<dyn Widget>> {
         self.children.iter_mut()
     }
 
