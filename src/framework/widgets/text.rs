@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use skia::{shaper::TextBlobBuilderRunHandler, Canvas, Font as SkFont, Shaper, TextBlob};
+use skia::{Canvas, Font as SkFont, Shaper, TextBlob};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -50,11 +50,21 @@ impl Text {
         .into()
     }
 
+    pub fn bounds(&self) -> Size {
+        self.blob
+            .as_ref()
+            .map(|blob| {
+                let bounds = blob.bounds();
+                Size::new(self.size.width, bounds.bottom + bounds.top)
+            })
+            .unwrap_or_default()
+    }
+
     fn shape(&mut self) {
-        let mut handler = TextBlobBuilderRunHandler::new(&self.text, (0.0, 0.0));
         let shaper = Shaper::new(None);
-        shaper.shape(&self.text, &self.font, true, self.size.width, &mut handler);
-        self.blob = handler.make_blob();
+        self.blob = shaper
+            .shape_text_blob(&self.text, &self.font, true, self.size.width, (0.0, 0.0))
+            .map(|e| e.0);
     }
 }
 
@@ -76,8 +86,7 @@ impl Widget for Text {
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         if let Some(blob) = &self.blob {
-            let bounds = blob.bounds();
-            canvas.draw_text_blob(blob, (-bounds.left, -bounds.top), &self.paint);
+            canvas.draw_text_blob(blob, (0.0, 0.0), &self.paint);
         }
     }
 }
