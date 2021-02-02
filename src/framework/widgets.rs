@@ -1,11 +1,15 @@
 pub mod audio;
 pub mod layout;
-mod layout_size;
 pub mod shapes;
+pub mod ui;
+
+mod backgrounded;
+mod layout_size;
 mod text;
 mod transform;
 mod wrap;
 
+pub use backgrounded::Backgrounded;
 pub use layout_size::{LayoutDimension, LayoutSize};
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
