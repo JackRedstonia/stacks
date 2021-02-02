@@ -1,20 +1,20 @@
 pub mod audio;
 pub mod layout;
+mod layout_size;
 pub mod shapes;
 mod text;
 mod transform;
 mod wrap;
-mod layout_size;
 
+pub use layout_size::{LayoutDimension, LayoutSize};
 pub use text::{Font, FontStyle, Text};
 pub use transform::Transform;
 pub use wrap::{WidgetBorrow, WidgetState, Wrap, Wrappable};
-pub use layout_size::{LayoutSize, LayoutDimension};
 
-use crate::game::{InputEvent};
+use crate::game::InputEvent;
 use crate::skia::{Canvas, Size};
 
-use super::{resource::ResourceStack};
+use super::resource::ResourceStack;
 
 #[allow(unused_variables)]
 pub trait Widget {

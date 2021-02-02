@@ -1,6 +1,6 @@
-use super::{Widget, LayoutSize};
+use super::{LayoutSize, Widget};
 
-use std::cell::{RefMut, RefCell};
+use std::cell::{RefCell, RefMut};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
@@ -126,7 +126,7 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
 impl<T: Widget + ?Sized> Clone for Wrap<T> {
     fn clone(&self) -> Self {
         Self {
-            inner: Rc::clone(&self.inner)
+            inner: Rc::clone(&self.inner),
         }
     }
 }

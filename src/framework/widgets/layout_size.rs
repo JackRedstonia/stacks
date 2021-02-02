@@ -1,4 +1,4 @@
-use crate::skia::{scalar, Rect, Size, Matrix, Vector};
+use crate::skia::{scalar, Matrix, Rect, Size, Vector};
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct LayoutSize {
@@ -111,7 +111,7 @@ impl LayoutDimension {
     pub fn min(min: scalar) -> Self {
         Self { min, expand: None }
     }
-    
+
     pub fn with_expand(mut self, expand: scalar) -> Self {
         self.expand = Some(expand);
         self
