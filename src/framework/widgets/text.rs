@@ -27,7 +27,6 @@ pub struct Text {
     size: Size,
     text: String,
     paragraph: Option<Paragraph>,
-    // blob: Option<TextBlob>,
 }
 
 impl Text {
