@@ -1,4 +1,4 @@
-use stacks::framework::{widgets::ui::Button, Framework};
+use stacks::framework::{widgets::{ui::Button, Fonts}, Framework};
 use stacks::prelude::*;
 
 fn main() {
@@ -10,6 +10,7 @@ fn main() {
             background,
             label,
         );
+        let root = Fonts::new().with_child(root);
         Ok(root)
     })
     .expect("Failed to run game");
