@@ -31,7 +31,7 @@ $ apt-get install libsdl2-dev
 A MSVC toolchain is required (solely to build `skia-bindings`). Follow the `sdl2` crate's instructions on how to install development dependencies.
 
 ## License
-Mozilla Public License version 2.0. See the LICENSE file for more information.
+MIT license. See the LICENSE file for more information.
 
 ## Contributing
 This repository is actively reviewing and accepting pull requests & issues, especially those that improve performance and code quality. Please follow the same code of conduct as the Rust project when participating.
