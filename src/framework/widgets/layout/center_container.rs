@@ -8,7 +8,6 @@ pub struct CenterContainer {
 
 impl CenterContainer {
     pub fn new() -> Wrap<Self> {
-        FrameworkState::request_load();
         Self {
             child_layout_size: LayoutSize::ZERO,
             matrix: Matrix::default(),

@@ -13,7 +13,6 @@ pub struct HContainer {
 
 impl HContainer {
     pub fn new(size: ContainerSize) -> Wrap<Self> {
-        FrameworkState::request_load();
         Self {
             states: HashMap::new(),
             sizes_changed: false,

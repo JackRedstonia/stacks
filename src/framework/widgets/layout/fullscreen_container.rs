@@ -7,7 +7,6 @@ pub struct FullscreenContainer {
 
 impl FullscreenContainer {
     pub fn new() -> Wrap<Self> {
-        FrameworkState::request_load();
         Self {
             key: Keycode::F11,
             lock: false,

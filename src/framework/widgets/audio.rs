@@ -206,7 +206,6 @@ pub struct Audio {
 
 impl Audio {
     pub fn new() -> Result<Wrap<Self>, AudioError> {
-        FrameworkState::request_load();
         Ok(Self {
             resource: AudioResource::new()?,
         }

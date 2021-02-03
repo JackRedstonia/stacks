@@ -9,7 +9,6 @@ pub struct SizeFillContainer {
 
 impl SizeFillContainer {
     pub fn new(target_size: Size) -> Wrap<Self> {
-        FrameworkState::request_load();
         Self {
             size: Size::default(),
             child_size: LayoutSize::ZERO,

@@ -69,8 +69,9 @@ impl Text {
 impl Widget for Text {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(f) = stack.get::<ResourceUser<FontResource>>() {
-            self.sk_font =
-                f.try_access().map(|e| e.resolve(self.font, self.style));
+            if let Some(f) = f.try_access() {
+                self.sk_font = Some(f.resolve(self.font, self.style));
+            }
         }
     }
 

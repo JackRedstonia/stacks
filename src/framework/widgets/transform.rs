@@ -6,7 +6,6 @@ pub struct Transform {
 
 impl Transform {
     pub fn new(matrix: Matrix) -> Wrap<Self> {
-        FrameworkState::request_load();
         Self { matrix }.into()
     }
 }

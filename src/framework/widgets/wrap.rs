@@ -315,6 +315,7 @@ impl WidgetState {
 
     pub fn add_child_dyn(&mut self, child: Wrap<dyn Widget>) {
         self.children.push(child);
+        FrameworkState::request_load();
     }
 }
 
