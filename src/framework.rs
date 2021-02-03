@@ -107,6 +107,7 @@ impl<T: Widget> Game for Framework<T> {
             self.layout_size.width.min.max(window_size.width),
             self.layout_size.height.min.max(window_size.height),
         );
+        self.root.set_size(self.layout_size.layout_one(self.size));
         self.maybe_load();
     }
 
