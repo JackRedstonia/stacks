@@ -62,7 +62,9 @@ impl Widget for HContainer {
         let mut any = false;
         for i in state.children().rev() {
             let state = self.states.get(&i.id()).unwrap();
-            if let Some(event) = event.reverse_map_position(Matrix::translate(state.position)) {
+            if let Some(event) =
+                event.reverse_map_position(Matrix::translate(state.position))
+            {
                 if i.input(&event) {
                     any = true;
                     if c {

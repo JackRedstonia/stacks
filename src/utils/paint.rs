@@ -9,7 +9,13 @@ where
     // Currently blocked on https://github.com/rust-skia/rust-skia/issues/456
 
     // Quick constructors
-    fn new_color4f_colorspaced(r: f32, g: f32, b: f32, a: f32, s: Option<&ColorSpace>) -> Self;
+    fn new_color4f_colorspaced(
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+        s: Option<&ColorSpace>,
+    ) -> Self;
 
     fn new_color4f(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self::new_color4f_colorspaced(r, g, b, a, None)
@@ -52,7 +58,13 @@ where
 }
 
 impl PaintUtils for Paint {
-    fn new_color4f_colorspaced(r: f32, g: f32, b: f32, a: f32, space: Option<&ColorSpace>) -> Self {
+    fn new_color4f_colorspaced(
+        r: f32,
+        g: f32,
+        b: f32,
+        a: f32,
+        space: Option<&ColorSpace>,
+    ) -> Self {
         Self::new(Color4f::new(r, g, b, a), space)
     }
 

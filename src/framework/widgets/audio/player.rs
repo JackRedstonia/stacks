@@ -166,7 +166,8 @@ impl Widget for AudioPlayer {
         // Draw progress bar
         if let Some(instance) = &self.instance {
             let percentage = (instance.position() / self.sound.length()) as f32;
-            let foreground = Rect::from_wh(self.size.width * percentage, self.size.height);
+            let foreground =
+                Rect::from_wh(self.size.width * percentage, self.size.height);
             canvas.draw_rect(foreground, &self.foreground);
             if let Some(preview) = self.seek_preview_percentage {
                 let center = self.size.width * preview;
@@ -181,7 +182,8 @@ impl Widget for AudioPlayer {
         }
 
         // Draw visualizations
-        let factor = (State::last_update_time_draw().as_secs_f32() * 16.0).min(1.0);
+        let factor =
+            (State::last_update_time_draw().as_secs_f32() * 16.0).min(1.0);
         self.refresh_fft(factor);
         let fft = &self.fft[..180];
         let width = self.size.width / fft.len() as f32;
@@ -192,7 +194,8 @@ impl Widget for AudioPlayer {
         let last = fft
             .iter()
             .fold((0.0, self.size.height), |(n, prev), i| {
-                let height = self.size.height - Self::curve_fft_height(i / 16.0) * self.size.height;
+                let height = self.size.height
+                    - Self::curve_fft_height(i / 16.0) * self.size.height;
                 let mid = (height + prev) / 2.0;
                 path.quad_to((n - quad_spacing, prev), (n, mid));
                 path.quad_to((n + quad_spacing, height), (n + spacing, height));

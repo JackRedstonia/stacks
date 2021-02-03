@@ -80,14 +80,20 @@ impl InputState {
 
     pub fn new(window_size: LogicalSize) -> Self {
         Self {
-            window_size: Size::new(window_size.width as _, window_size.height as _),
+            window_size: Size::new(
+                window_size.width as _,
+                window_size.height as _,
+            ),
             keys: HashSet::new(),
             mouse_position: Point::default(),
             mouse_buttons: HashSet::new(),
         }
     }
 
-    pub fn handle_event(&mut self, event: &Sdl2Event) -> Option<EventHandleResult> {
+    pub fn handle_event(
+        &mut self,
+        event: &Sdl2Event,
+    ) -> Option<EventHandleResult> {
         match event {
             Sdl2Event::Quit { .. } => return Some(EventHandleResult::Exit),
             Sdl2Event::Window { win_event, .. } => match win_event {
@@ -126,15 +132,21 @@ impl InputState {
             } => {
                 self.mouse_buttons.remove(mouse_btn);
                 let p = Point::new(*x as _, *y as _);
-                return Some(EventHandleResult::Input(InputEvent::MouseUp(*mouse_btn, p)));
+                return Some(EventHandleResult::Input(InputEvent::MouseUp(
+                    *mouse_btn, p,
+                )));
             }
             Sdl2Event::MouseMotion { x, y, .. } => {
                 let p = Point::new(*x as _, *y as _);
                 self.mouse_position = p;
-                return Some(EventHandleResult::Input(InputEvent::MouseMove(p)));
+                return Some(EventHandleResult::Input(InputEvent::MouseMove(
+                    p,
+                )));
             }
             Sdl2Event::MouseWheel { y, .. } => {
-                return Some(EventHandleResult::Input(InputEvent::MouseScroll(*y)));
+                return Some(EventHandleResult::Input(
+                    InputEvent::MouseScroll(*y),
+                ));
             }
             _ => {}
         };

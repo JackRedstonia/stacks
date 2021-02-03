@@ -45,7 +45,8 @@ impl Widget for Throbber {
         let stroke_width = self.paint.stroke_width();
         let s = self.size.width.min(self.size.height) - stroke_width;
         canvas.draw_arc(
-            Rect::from_wh(s, s).with_offset(Vector::new(stroke_width, stroke_width) * 0.5),
+            Rect::from_wh(s, s)
+                .with_offset(Vector::new(stroke_width, stroke_width) * 0.5),
             self.rad,
             240.0,
             false,

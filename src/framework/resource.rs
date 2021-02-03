@@ -117,7 +117,8 @@ impl<T> ResourceUser<T> {
         // onto the corresponding `Rc`, which means the data `Ref` is pointing
         // to is valid for as long as we require it to.
         unsafe {
-            let mut val: RefMut<'_, ResourceWrapper<T>> = transmute(rc.borrow_mut());
+            let mut val: RefMut<'_, ResourceWrapper<T>> =
+                transmute(rc.borrow_mut());
             let usage = transmute(&mut val.deref_mut().resource);
             let r = ResourceRefMutHolder { _val: val, _rc: rc };
             Some(ResourceUsageMut { usage, holder: r })

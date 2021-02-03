@@ -12,7 +12,7 @@ fn main() {
             LayoutSize::ZERO.expand_width().expand_height(),
             text,
             Font::Default,
-            FontStyle::Bold,
+            FontStyle::Regular,
             paint,
         );
         Ok(root)

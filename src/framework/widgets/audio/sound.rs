@@ -3,7 +3,8 @@ use std::path::Path;
 use super::{AudioBus, AudioResource};
 use crate::prelude::*;
 use soloud::{
-    AudioExt, Bus as SoloudBus, Handle as SoloudHandle, LoadExt, SoloudError, Wav, WavStream,
+    AudioExt, Bus as SoloudBus, Handle as SoloudHandle, LoadExt, SoloudError,
+    Wav, WavStream,
 };
 
 pub struct Sound<T>
@@ -18,7 +19,9 @@ impl Sound<Wav> {
         Self::from_source(wav)
     }
 
-    pub fn new_wav_from_path<P: AsRef<Path>>(path: P) -> Result<Self, SoloudError> {
+    pub fn new_wav_from_path<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<Self, SoloudError> {
         let mut wav = Wav::default();
         wav.load(path.as_ref())?;
         Ok(Self::new_wav(wav))
@@ -34,7 +37,9 @@ impl Sound<WavStream> {
         Self::from_source(wav_stream)
     }
 
-    pub fn new_wav_stream_from_path<P: AsRef<Path>>(path: P) -> Result<Self, SoloudError> {
+    pub fn new_wav_stream_from_path<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<Self, SoloudError> {
         let mut wav = WavStream::default();
         wav.load(path.as_ref())?;
         Ok(Self::new_wav_stream(wav))

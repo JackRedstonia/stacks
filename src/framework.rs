@@ -136,7 +136,8 @@ impl FrameworkState {
     thread_local!(static STATE: RefCell<Option<FrameworkState>> = RefCell::new(None));
 
     pub fn initialize() {
-        FrameworkState::STATE.with(|x| *x.borrow_mut() = Some(Default::default()));
+        FrameworkState::STATE
+            .with(|x| *x.borrow_mut() = Some(Default::default()));
     }
 
     pub fn request_load() {
@@ -193,6 +194,7 @@ impl FrameworkState {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        Self::STATE.with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
+        Self::STATE
+            .with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
     }
 }

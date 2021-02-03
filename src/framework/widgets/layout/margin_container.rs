@@ -51,7 +51,8 @@ impl Widget for MarginContainer {
         self.size = size;
         self.matrix = Matrix::translate((self.margin.left, self.margin.top));
         if let Some(child) = state.child() {
-            let child_size = size.bottom_right() - self.margin.size().bottom_right();
+            let child_size =
+                size.bottom_right() - self.margin.size().bottom_right();
             child.set_size(Size::new(child_size.x, child_size.y));
         }
     }

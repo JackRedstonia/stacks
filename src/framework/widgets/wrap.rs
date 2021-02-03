@@ -225,7 +225,11 @@ impl WidgetState {
         self.children.first_mut()
     }
 
-    pub fn load<T: Widget + ?Sized>(&mut self, widget: &mut T, stack: &mut ResourceStack) {
+    pub fn load<T: Widget + ?Sized>(
+        &mut self,
+        widget: &mut T,
+        stack: &mut ResourceStack,
+    ) {
         widget.load(self, stack);
     }
 
@@ -233,7 +237,11 @@ impl WidgetState {
         widget.update(self);
     }
 
-    pub fn input<T: Widget + ?Sized>(&mut self, widget: &mut T, event: &InputEvent) -> bool {
+    pub fn input<T: Widget + ?Sized>(
+        &mut self,
+        widget: &mut T,
+        event: &InputEvent,
+    ) -> bool {
         match event {
             InputEvent::RemoveHoverExcept(id) => {
                 let b = self.id == *id;
@@ -260,7 +268,10 @@ impl WidgetState {
         }
     }
 
-    pub fn size<T: Widget + ?Sized>(&mut self, widget: &mut T) -> (LayoutSize, bool) {
+    pub fn size<T: Widget + ?Sized>(
+        &mut self,
+        widget: &mut T,
+    ) -> (LayoutSize, bool) {
         widget.size(self)
     }
 
@@ -268,7 +279,11 @@ impl WidgetState {
         widget.set_size(self, size);
     }
 
-    pub fn draw<T: Widget + ?Sized>(&mut self, widget: &mut T, canvas: &mut Canvas) {
+    pub fn draw<T: Widget + ?Sized>(
+        &mut self,
+        widget: &mut T,
+        canvas: &mut Canvas,
+    ) {
         if self.is_hovered != self.was_hovered {
             self.was_hovered = self.is_hovered;
             if self.is_hovered {

@@ -123,7 +123,10 @@ impl ContainerState {
         }
     }
 
-    pub fn size(&mut self, widget: &mut Wrap<dyn Widget>) -> (LayoutSize, bool, bool) {
+    pub fn size(
+        &mut self,
+        widget: &mut Wrap<dyn Widget>,
+    ) -> (LayoutSize, bool, bool) {
         let (s, c) = widget.size();
         self.changed = self.layout_size != s;
         self.layout_size = s;
@@ -132,7 +135,11 @@ impl ContainerState {
         (s, self.changed, c)
     }
 
-    pub fn maybe_set_size(&mut self, widget: &mut Wrap<dyn Widget>, size: Size) {
+    pub fn maybe_set_size(
+        &mut self,
+        widget: &mut Wrap<dyn Widget>,
+        size: Size,
+    ) {
         if self.changed || self.children_changed || size != self.size {
             self.size = size;
             widget.set_size(size);

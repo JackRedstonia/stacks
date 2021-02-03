@@ -1,4 +1,6 @@
-use skulpin_renderer::{CoordinateSystem, LogicalSize, PresentMode, RendererBuilder};
+use skulpin_renderer::{
+    CoordinateSystem, LogicalSize, PresentMode, RendererBuilder,
+};
 
 use super::{runner::Runner, Game};
 
@@ -20,7 +22,8 @@ impl<'a> Builder<'a> {
         Self {
             inner_size: LogicalSize::new(1280, 720),
             window_title: "Stacks",
-            renderer_builder: RendererBuilder::new().use_vulkan_debug_layer(false),
+            renderer_builder: RendererBuilder::new()
+                .use_vulkan_debug_layer(false),
         }
     }
 
@@ -46,8 +49,12 @@ impl<'a> Builder<'a> {
 
     /// Determine the coordinate system to use for the canvas. This can be overridden by using the
     /// canvas sizer passed into the draw callback
-    pub fn coordinate_system(mut self, coordinate_system: CoordinateSystem) -> Self {
-        self.renderer_builder = self.renderer_builder.coordinate_system(coordinate_system);
+    pub fn coordinate_system(
+        mut self,
+        coordinate_system: CoordinateSystem,
+    ) -> Self {
+        self.renderer_builder =
+            self.renderer_builder.coordinate_system(coordinate_system);
         self
     }
 

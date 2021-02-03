@@ -58,7 +58,8 @@ impl Text {
     }
 
     fn shape(&mut self) {
-        self.paragraph = Some(Paragraph::new(&self.text, &self.font, self.size.width));
+        self.paragraph =
+            Some(Paragraph::new(&self.text, &self.font, self.size.width));
     }
 }
 

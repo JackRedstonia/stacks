@@ -15,8 +15,15 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(label: String, background: Paint, label_paint: Paint) -> Wrap<Self> {
-        let background = Rectangle::new(LayoutSize::ZERO.expand_width().expand_height(), background);
+    pub fn new(
+        label: String,
+        background: Paint,
+        label_paint: Paint,
+    ) -> Wrap<Self> {
+        let background = Rectangle::new(
+            LayoutSize::ZERO.expand_width().expand_height(),
+            background,
+        );
         let label = ButtonLabel::new(label, label_paint);
         let label = MarginContainer::new(Margin::all(15.0)).with_child(label);
         Self {
@@ -25,8 +32,11 @@ impl Button {
             circ: 0.0,
             size: Size::default(),
             pos: Vector::default(),
-        }.wrap()
-            .with_child(Backgrounded::new().with_child(background).with_child(label))
+        }
+        .wrap()
+        .with_child(
+            Backgrounded::new().with_child(background).with_child(label),
+        )
     }
 }
 
@@ -61,7 +71,11 @@ impl Widget for Button {
         self.background.draw(canvas);
         canvas.save();
         canvas.clip_rect(Rect::from_size(self.size), None, true);
-        canvas.draw_circle(self.pos, q * p, &Paint::new_color4f(1.0, 1.0, 1.0, (1.0 - q) / 5.0).anti_alias());
+        canvas.draw_circle(
+            self.pos,
+            q * p,
+            &Paint::new_color4f(1.0, 1.0, 1.0, (1.0 - q) / 5.0).anti_alias(),
+        );
         canvas.restore();
         self.label.draw(canvas);
     }
@@ -73,12 +87,14 @@ struct ButtonLabel {
 
 impl ButtonLabel {
     fn new(label: String, label_paint: Paint) -> Wrap<Self> {
-        let l = Text::new(LayoutSize::ZERO.expand_width().expand_height(), label, Font::Default,
-        FontStyle::Regular,
-        label_paint);
-        Self {
-            label: l.clone(),
-        }.wrap().with_child(l)
+        let l = Text::new(
+            LayoutSize::ZERO.expand_width().expand_height(),
+            label,
+            Font::Default,
+            FontStyle::Regular,
+            label_paint,
+        );
+        Self { label: l.clone() }.wrap().with_child(l)
     }
 }
 

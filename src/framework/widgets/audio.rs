@@ -9,8 +9,8 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::prelude::*;
 use soloud::{
-    AudioExt, Backend as SoloudBackend, Bus as SoloudBus, Handle as SoloudHandle, Soloud,
-    SoloudError, SoloudFlag,
+    AudioExt, Backend as SoloudBackend, Bus as SoloudBus,
+    Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag,
 };
 
 #[derive(Debug)]
@@ -121,8 +121,12 @@ impl AudioResource {
     where
         T: AudioExt,
     {
-        bus.to_bus(&self)
-            .play_clocked_ex(time, sound, volume.unwrap_or(1.0), pan.unwrap_or(0.0))
+        bus.to_bus(&self).play_clocked_ex(
+            time,
+            sound,
+            volume.unwrap_or(1.0),
+            pan.unwrap_or(0.0),
+        )
     }
 
     pub fn resume(&mut self, handle: SoloudHandle) {
@@ -151,7 +155,11 @@ impl AudioResource {
         !self.soloud.pause(handle)
     }
 
-    pub fn seek(&self, handle: SoloudHandle, seconds: f64) -> Result<(), SoloudError> {
+    pub fn seek(
+        &self,
+        handle: SoloudHandle,
+        seconds: f64,
+    ) -> Result<(), SoloudError> {
         self.soloud.seek(handle, seconds)
     }
 
@@ -163,7 +171,11 @@ impl AudioResource {
         self.soloud.calc_fft()
     }
 
-    pub fn set_speed(&mut self, handle: SoloudHandle, speed: f32) -> Result<(), SoloudError> {
+    pub fn set_speed(
+        &mut self,
+        handle: SoloudHandle,
+        speed: f32,
+    ) -> Result<(), SoloudError> {
         self.soloud.set_relative_play_speed(handle, speed)
     }
 

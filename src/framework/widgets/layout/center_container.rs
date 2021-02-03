@@ -13,7 +13,8 @@ impl CenterContainer {
             child_layout_size: LayoutSize::ZERO,
             matrix: Matrix::default(),
             size: Size::default(),
-        }.into()
+        }
+        .into()
     }
 }
 
@@ -45,7 +46,8 @@ impl Widget for CenterContainer {
         if let Some(child) = state.child() {
             self.size = size;
             let child_size = self.child_layout_size.layout_one(size);
-            let offset = (size.bottom_right() - child_size.bottom_right()) * 0.5;
+            let offset =
+                (size.bottom_right() - child_size.bottom_right()) * 0.5;
             self.matrix = Matrix::translate(offset);
             child.set_size(child_size);
         }

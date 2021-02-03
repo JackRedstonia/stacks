@@ -7,7 +7,10 @@ use std::{cell::RefCell, sync::mpsc::Receiver};
 
 use crate::{
     framework::widgets::{Font, FontStyle},
-    skia::{Color, Font as SkFont, Matrix, Picture, PictureRecorder, Point, Rect, Size},
+    skia::{
+        Color, Font as SkFont, Matrix, Picture, PictureRecorder, Point, Rect,
+        Size,
+    },
 };
 
 use super::input::{EventHandleResult, InputState};
@@ -16,7 +19,9 @@ use super::Game;
 use super::{default_font_set::DefaultFontSet, FontSet};
 
 use sdl2::{event::Event as Sdl2Event, video::FullscreenType};
-use skulpin_renderer::{ash::vk::Result as VkResult, LogicalSize, RendererBuilder};
+use skulpin_renderer::{
+    ash::vk::Result as VkResult, LogicalSize, RendererBuilder,
+};
 use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
 enum Event {
@@ -96,7 +101,8 @@ pub struct State {
 }
 
 impl State {
-    const PANIC_MESSAGE: &'static str = "Attempt to get game state while game is uninitialized";
+    const PANIC_MESSAGE: &'static str =
+        "Attempt to get game state while game is uninitialized";
     thread_local!(static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
@@ -112,7 +118,8 @@ impl State {
     where
         F: FnOnce(&mut Self) -> R,
     {
-        Self::STATE.with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
+        Self::STATE
+            .with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
     }
 
     pub fn last_update_time() -> Duration {
@@ -192,7 +199,8 @@ impl Runner {
 
         let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
-        let (feedback_tx, feedback_rx) = sync_channel(Self::FEEDBACK_QUEUE_SIZE);
+        let (feedback_tx, feedback_rx) =
+            sync_channel(Self::FEEDBACK_QUEUE_SIZE);
 
         spawn(move || {
             let input_state = InputState::new(size);
@@ -220,9 +228,9 @@ impl Runner {
                     return;
                 }
             };
-            game.set_size(
-                State::STATE.with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
-            );
+            game.set_size(State::STATE.with(|x| {
+                x.borrow().as_ref().unwrap().input_state.window_size
+            }));
             Self::game_thread(game, event_rx, pic_tx, feedback_tx);
         });
 
@@ -230,7 +238,8 @@ impl Runner {
             .build(&Sdl2Window::new(&sdl_window))
             .expect("Failed to create renderer");
 
-        let mut event_pump = sdl.event_pump().expect("Failed to create SDL2 event pump");
+        let mut event_pump =
+            sdl.event_pump().expect("Failed to create SDL2 event pump");
 
         event_tx
             .send(Event::CanvasReady)
@@ -251,7 +260,8 @@ impl Runner {
                         } else {
                             FullscreenType::Off
                         }) {
-                            let _ = event_tx.send(Event::Crash(Error::FullscreenError(e)));
+                            let _ = event_tx
+                                .send(Event::Crash(Error::FullscreenError(e)));
                             break 'events;
                         }
                     }
@@ -265,17 +275,28 @@ impl Runner {
                         }
                         match pic_rx.try_recv() {
                             Ok(pic) => {
-                                let skulpin_window = Sdl2Window::new(&sdl_window);
-                                if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
-                                    canvas.clear(Self::BACKGROUND);
-                                    canvas.draw_picture(pic, Some(&Matrix::default()), None);
-                                }) {
-                                    let _ = event_tx.send(Event::Crash(e.into()));
+                                let skulpin_window =
+                                    Sdl2Window::new(&sdl_window);
+                                if let Err(e) = renderer.draw(
+                                    &skulpin_window,
+                                    |canvas, _| {
+                                        canvas.clear(Self::BACKGROUND);
+                                        canvas.draw_picture(
+                                            pic,
+                                            Some(&Matrix::default()),
+                                            None,
+                                        );
+                                    },
+                                ) {
+                                    let _ =
+                                        event_tx.send(Event::Crash(e.into()));
                                     break 'events;
                                 }
                             }
                             Err(e) => match e {
-                                TryRecvError::Empty => sleep(Self::MAIN_THREAD_SLEEP_DURATION),
+                                TryRecvError::Empty => {
+                                    sleep(Self::MAIN_THREAD_SLEEP_DURATION)
+                                }
                                 TryRecvError::Disconnected => break 'events,
                             },
                         }
@@ -327,9 +348,9 @@ impl Runner {
                         None
                     }
                 }) {
-                    feedback_tx
-                        .send(FeedbackEvent::SetFullscreen(s))
-                        .expect("Failed to send set fullscreen event to main thread");
+                    feedback_tx.send(FeedbackEvent::SetFullscreen(s)).expect(
+                        "Failed to send set fullscreen event to main thread",
+                    );
                 }
                 if State::with(|x| x.canvas_ready) {
                     let mut rec = PictureRecorder::new();
@@ -379,7 +400,9 @@ impl Runner {
                 State::with_mut(|x| x.canvas_ready = true);
             }
             Event::Sdl2(event) => {
-                if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event)) {
+                if let Some(r) =
+                    State::with_mut(|x| x.input_state.handle_event(&event))
+                {
                     match r {
                         EventHandleResult::Input(event) => game.input(event),
                         EventHandleResult::Resized(size) => {
@@ -387,9 +410,9 @@ impl Runner {
                         }
                         EventHandleResult::Exit => {
                             game.close();
-                            feedback_tx
-                                .send(FeedbackEvent::Exit)
-                                .expect("Failed to send feedback event to draw thread");
+                            feedback_tx.send(FeedbackEvent::Exit).expect(
+                                "Failed to send feedback event to draw thread",
+                            );
                             return true;
                         }
                     }
