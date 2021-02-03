@@ -91,6 +91,7 @@ impl Widget for Text {
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
+        // 
         if let Some(p) = &self.paragraph {
             p.draw(canvas, &self.paint);
         }
@@ -104,20 +105,53 @@ struct Word {
 
 impl Word {
     fn new(s: &str, font: &SkFont) -> Self {
-        let glyphs = font.str_to_glyphs_vec(s);
+        let mgr = skia::FontMgr::new();
+        let style = font.typeface_or_default().font_style();
+        let mut bf = [0; 4];
+        // TODO: maybe consider graphemes
         let mut bounds = Rect::new_empty();
-        let pos = unsafe {
-            let mut pos = Vec::with_capacity(glyphs.len());
-            pos.set_len(glyphs.len());
-            font.get_pos(&glyphs, &mut pos, None);
-            pos
-        };
         let mut path = Path::new();
-        for (&glyph, &pos) in glyphs.iter().zip(pos.iter()) {
-            if let Some(glyph_path) = font.get_path(glyph) {
-                let glb = glyph_path.bounds();
-                combine(&mut bounds, &glb.with_offset(pos));
-                path.add_path(&glyph_path, pos, None);
+        let mut offset = Vector::default();
+        for character in s.chars() {
+            let chs = character.encode_utf8(&mut bf);
+            let glyphs = font.str_to_glyphs_vec(&*chs);
+            if glyphs.iter().any(|e| *e == 0) {
+                let t = mgr.match_family_style_character("Noto Sans", style, &[], unsafe {
+                    std::mem::transmute(character)
+                });
+                if let Some(t) = t {
+                    let font = SkFont::new(t, font.size());
+                    let glyphs = font.str_to_glyphs_vec(chs);
+                    let mut v = Vec::with_capacity(glyphs.len());
+                    unsafe {
+                        v.set_len(glyphs.len());
+                    }
+                    font.get_widths(&glyphs, &mut v);
+                    for (&glyph, &pos) in glyphs.iter().zip(v.iter()) {
+                        if let Some(glyph_path) = font.get_path(glyph) {
+                            let glb = glyph_path.bounds();
+                            combine(&mut bounds, &glb.with_offset(offset));
+                            path.add_path(&glyph_path, offset, None);
+                            let pos = Vector::new(pos, 0.0);
+                            offset += pos;
+                        }
+                    }
+                }
+            } else {
+                let mut v = Vec::with_capacity(glyphs.len());
+                unsafe {
+                    v.set_len(glyphs.len());
+                }
+                font.get_widths(&glyphs, &mut v);
+                for (&glyph, &pos) in glyphs.iter().zip(v.iter()) {
+                    if let Some(glyph_path) = font.get_path(glyph) {
+                        let glb = glyph_path.bounds();
+                        combine(&mut bounds, &glb.with_offset(offset));
+                        path.add_path(&glyph_path, offset, None);
+                        let pos = Vector::new(pos, 0.0);
+                        offset += pos;
+                    }
+                }
             }
         }
         Self { path, bounds }
@@ -131,10 +165,12 @@ struct Paragraph {
 
 impl Paragraph {
     fn new(s: &str, font: &SkFont, width: scalar) -> Self {
-        let words = s
-            .split_whitespace()
-            .filter(|e| !e.is_empty())
-            .map(|e| Word::new(e, font));
+        let mut prev = 0;
+        let words = unicode_linebreak::linebreaks(s).map(|(e, _)| {
+            let r = &s[prev..e];
+            prev = e;
+            Word::new(r, font)
+        });
         let mut out = vec![];
         let mut bounds = Rect::new_empty();
         let mut offset = Vector::default();
@@ -143,7 +179,7 @@ impl Paragraph {
         let line = 20.0;
         for word in words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
-            if nx > width {
+            if nx > width && offset.x != 0.0 {
                 offset = Vector::new(0.0, offset.y + line);
             }
             let b = word.bounds.with_offset(offset);

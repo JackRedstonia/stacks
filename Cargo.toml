@@ -13,9 +13,14 @@ license = "MIT"
 lto = "thin"
 
 [dependencies]
-skulpin-renderer = "0.5"
 skulpin-renderer-sdl2 = "0.5"
 unsafe-any = "*"
+unicode-linebreak = "0.1"
+
+[dependencies.skulpin-renderer]
+version = "0.5"
+default-features = false
+features = ["svg"]
 
 [dependencies.soloud]
 git = "https://gitlab.com/JackRedstonia/soloud-rs"
