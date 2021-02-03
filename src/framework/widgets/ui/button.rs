@@ -44,7 +44,9 @@ impl Widget for Button {
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         let r = Rect::from_size(self.size);
         match event {
-            InputEvent::MouseDown(MouseButton::Left, position) if r.contains(*position) => {
+            InputEvent::MouseDown(MouseButton::Left, position)
+                if r.contains(*position) =>
+            {
                 state.grab_focus();
                 return true;
             }
@@ -55,7 +57,7 @@ impl Widget for Button {
                     return true;
                 }
             }
-            _ => {},
+            _ => {}
         }
         state.child().map(|e| e.input(event)).unwrap_or(false)
     }

@@ -1,15 +1,13 @@
+mod fonts;
+
+pub use fonts::{FontResource, Fonts};
+
 use crate::prelude::*;
 use skia::{Canvas, Font as SkFont, Path};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
     Default,
-}
-
-impl Font {
-    pub fn resolve(&self, style: &FontStyle) -> SkFont {
-        State::get_font_set(self, style)
-    }
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -22,8 +20,10 @@ pub enum FontStyle {
 
 pub struct Text {
     pub layout_size: LayoutSize,
-    pub font: SkFont,
     pub paint: Paint,
+    sk_font: Option<SkFont>,
+    font: Font,
+    style: FontStyle,
     size: Size,
     text: String,
     paragraph: Option<Paragraph>,
@@ -37,11 +37,12 @@ impl Text {
         style: FontStyle,
         paint: Paint,
     ) -> Wrap<Self> {
-        let font = font.resolve(&style);
         let text = text.as_ref();
         Self {
             layout_size: size,
+            sk_font: None,
             font,
+            style,
             paint,
             size: Size::new_empty(),
             text: text.to_owned(),
@@ -58,12 +59,21 @@ impl Text {
     }
 
     fn shape(&mut self) {
-        self.paragraph =
-            Some(Paragraph::new(&self.text, &self.font, self.size.width));
+        if let Some(f) = &self.sk_font {
+            self.paragraph =
+                Some(Paragraph::new(&self.text, f, self.size.width));
+        }
     }
 }
 
 impl Widget for Text {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
+        if let Some(f) = stack.get::<ResourceUser<FontResource>>() {
+            self.sk_font =
+                f.try_access().map(|e| e.resolve(self.font, self.style));
+        }
+    }
+
     fn input(&mut self, _state: &mut WidgetState, _event: &InputEvent) -> bool {
         // TODO: this is mostly a placeholder value.
         // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.

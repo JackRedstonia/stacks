@@ -223,12 +223,6 @@ impl Widget for Audio {
         stack.pop::<ResourceUser<AudioResource>>();
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
-        for c in state.children() {
-            c.update();
-        }
-    }
-
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         state
             .children()

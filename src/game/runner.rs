@@ -5,18 +5,11 @@ use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 use std::{cell::RefCell, sync::mpsc::Receiver};
 
-use crate::{
-    framework::widgets::{Font, FontStyle},
-    skia::{
-        Color, Font as SkFont, Matrix, Picture, PictureRecorder, Point, Rect,
-        Size,
-    },
-};
+use crate::skia::{Color, Matrix, Picture, PictureRecorder, Point, Rect, Size};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
-use super::{default_font_set::DefaultFontSet, FontSet};
 
 use sdl2::{event::Event as Sdl2Event, video::FullscreenType};
 use skulpin_renderer::{
@@ -90,8 +83,6 @@ pub struct State {
     pub time_state: TimeState,
     pub time_state_draw: TimeState,
 
-    pub font_set: Box<dyn FontSet>,
-
     canvas_ready: bool,
 
     was_fullscreen: bool,
@@ -156,14 +147,6 @@ impl State {
     pub fn mouse_position() -> Point {
         Self::with(|x| x.input_state.mouse_position())
     }
-
-    pub fn get_font_set(font: &Font, style: &FontStyle) -> SkFont {
-        Self::with(|x| x.font_set.get(font, style))
-    }
-
-    pub fn get_default_font_set(style: &FontStyle) -> SkFont {
-        Self::with(|x| x.font_set.get_default(style))
-    }
 }
 
 pub struct Runner;
@@ -211,7 +194,6 @@ impl Runner {
                     input_state,
                     time_state,
                     time_state_draw,
-                    font_set: Box::new(DefaultFontSet::new()),
                     canvas_ready: false,
                     was_fullscreen: false,
                     is_fullscreen: false,

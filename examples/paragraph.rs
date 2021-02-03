@@ -1,5 +1,5 @@
 use stacks::framework::{
-    widgets::{Font, FontStyle, Text},
+    widgets::{Font, FontStyle, Fonts, Text},
     Framework,
 };
 use stacks::prelude::*;
@@ -15,6 +15,7 @@ fn main() {
             FontStyle::Regular,
             paint,
         );
+        let root = Fonts::new().with_child(root);
         Ok(root)
     })
     .expect("Failed to run game");
