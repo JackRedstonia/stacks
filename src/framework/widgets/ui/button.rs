@@ -9,9 +9,9 @@ use crate::prelude::*;
 pub struct Button {
     background: Wrap<Rectangle>,
     label: Wrap<MarginContainer>,
-    circ: scalar,
+    glow: scalar,
+    glow_paint: Paint,
     size: Size,
-    pos: Vector,
 }
 
 impl Button {
@@ -29,9 +29,9 @@ impl Button {
         Self {
             background: background.clone(),
             label: label.clone(),
-            circ: 0.0,
+            glow: 0.0,
+            glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
             size: Size::default(),
-            pos: Vector::default(),
         }
         .wrap()
         .with_child(
@@ -44,8 +44,7 @@ impl Widget for Button {
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         if let InputEvent::MouseDown(MouseButton::Left, position) = event {
             if Rect::from_size(self.size).contains(*position) {
-                self.circ = self.size.width.max(self.size.height);
-                self.pos = *position;
+                self.glow = 1.0;
                 return true;
             }
         }
@@ -64,19 +63,13 @@ impl Widget for Button {
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        self.circ -= State::last_update_time_draw().as_secs_f32() * 700.0;
-        self.circ = self.circ.max(0.0);
-        let p = self.size.width.max(self.size.height);
-        let q = 1.0 - self.circ / p;
         self.background.draw(canvas);
-        canvas.save();
-        canvas.clip_rect(Rect::from_size(self.size), None, true);
-        canvas.draw_circle(
-            self.pos,
-            q * p,
-            &Paint::new_color4f(1.0, 1.0, 1.0, (1.0 - q) / 5.0).anti_alias(),
-        );
-        canvas.restore();
+
+        let t = State::last_update_time_draw().as_secs_f32() * 4.0;
+        self.glow = (self.glow - t).max(0.0);
+        self.glow_paint.set_alpha_f(self.glow * 0.25);
+        canvas.draw_rect(Rect::from_size(self.size), &self.glow_paint);
+
         self.label.draw(canvas);
     }
 }
