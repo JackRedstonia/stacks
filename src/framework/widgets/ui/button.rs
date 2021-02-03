@@ -42,11 +42,20 @@ impl Button {
 
 impl Widget for Button {
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        if let InputEvent::MouseDown(MouseButton::Left, position) = event {
-            if Rect::from_size(self.size).contains(*position) {
-                self.glow = 1.0;
+        let r = Rect::from_size(self.size);
+        match event {
+            InputEvent::MouseDown(MouseButton::Left, position) if r.contains(*position) => {
+                state.grab_focus();
                 return true;
             }
+            InputEvent::MouseUp(MouseButton::Left, position) => {
+                state.release_focus();
+                if r.contains(*position) {
+                    self.glow = 1.0;
+                    return true;
+                }
+            }
+            _ => {},
         }
         state.child().map(|e| e.input(event)).unwrap_or(false)
     }
