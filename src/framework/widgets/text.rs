@@ -3,7 +3,7 @@ mod fonts;
 pub use fonts::{FontResource, Fonts};
 
 use crate::prelude::*;
-use skia::{Canvas, Font as SkFont, Path};
+use skia::{Canvas, Font as SkFont, GlyphId, Path};
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -91,7 +91,7 @@ impl Widget for Text {
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        // 
+        //
         if let Some(p) = &self.paragraph {
             p.draw(canvas, &self.paint);
         }
@@ -107,54 +107,66 @@ impl Word {
     fn new(s: &str, font: &SkFont) -> Self {
         let mgr = skia::FontMgr::new();
         let style = font.typeface_or_default().font_style();
-        let mut bf = [0; 4];
-        // TODO: maybe consider graphemes
         let mut bounds = Rect::new_empty();
         let mut path = Path::new();
         let mut offset = Vector::default();
-        for character in s.chars() {
-            let chs = character.encode_utf8(&mut bf);
+        use unicode_segmentation::UnicodeSegmentation;
+        for chs in s.graphemes(true) {
+            let character = chs.chars().next().unwrap();
+            // let chs = character.encode_utf8(&mut bf);
             let glyphs = font.str_to_glyphs_vec(&*chs);
             if glyphs.iter().any(|e| *e == 0) {
-                let t = mgr.match_family_style_character("Noto Sans", style, &[], unsafe {
-                    std::mem::transmute(character)
-                });
+                let t = mgr.match_family_style_character(
+                    "Noto Sans",
+                    style,
+                    &[],
+                    unsafe { std::mem::transmute(character) },
+                );
                 if let Some(t) = t {
                     let font = SkFont::new(t, font.size());
                     let glyphs = font.str_to_glyphs_vec(chs);
-                    let mut v = Vec::with_capacity(glyphs.len());
-                    unsafe {
-                        v.set_len(glyphs.len());
-                    }
-                    font.get_widths(&glyphs, &mut v);
-                    for (&glyph, &pos) in glyphs.iter().zip(v.iter()) {
-                        if let Some(glyph_path) = font.get_path(glyph) {
-                            let glb = glyph_path.bounds();
-                            combine(&mut bounds, &glb.with_offset(offset));
-                            path.add_path(&glyph_path, offset, None);
-                            let pos = Vector::new(pos, 0.0);
-                            offset += pos;
-                        }
-                    }
-                }
-            } else {
-                let mut v = Vec::with_capacity(glyphs.len());
-                unsafe {
-                    v.set_len(glyphs.len());
-                }
-                font.get_widths(&glyphs, &mut v);
-                for (&glyph, &pos) in glyphs.iter().zip(v.iter()) {
-                    if let Some(glyph_path) = font.get_path(glyph) {
-                        let glb = glyph_path.bounds();
-                        combine(&mut bounds, &glb.with_offset(offset));
-                        path.add_path(&glyph_path, offset, None);
-                        let pos = Vector::new(pos, 0.0);
-                        offset += pos;
-                    }
+                    Self::make_char(
+                        &glyphs,
+                        &font,
+                        &mut bounds,
+                        &mut offset,
+                        &mut path,
+                    );
+                    continue;
                 }
             }
+            Self::make_char(
+                &glyphs,
+                &font,
+                &mut bounds,
+                &mut offset,
+                &mut path,
+            );
         }
         Self { path, bounds }
+    }
+
+    fn make_char(
+        glyphs: &[GlyphId],
+        font: &SkFont,
+        bounds: &mut Rect,
+        offset: &mut Vector,
+        path: &mut Path,
+    ) {
+        let mut widths = Vec::with_capacity(glyphs.len());
+        unsafe {
+            widths.set_len(glyphs.len());
+        }
+        font.get_widths(&glyphs, &mut widths);
+        for (&glyph, &width) in glyphs.iter().zip(widths.iter()) {
+            if let Some(glyph_path) = font.get_path(glyph) {
+                let mut glb = glyph_path.bounds().clone();
+                glb.right = glb.right.max(width);
+                combine(bounds, &glb.with_offset(*offset));
+                path.add_path(&glyph_path, *offset, None);
+                offset.x += glb.right;
+            }
+        }
     }
 }
 
@@ -174,9 +186,7 @@ impl Paragraph {
         let mut out = vec![];
         let mut bounds = Rect::new_empty();
         let mut offset = Vector::default();
-        // TODO: figure out spacing & line instead of hard coded value
-        let spacing = 5.0;
-        let line = 20.0;
+        let line = font.metrics().0;
         for word in words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if nx > width && offset.x != 0.0 {
@@ -185,7 +195,7 @@ impl Paragraph {
             let b = word.bounds.with_offset(offset);
             combine(&mut bounds, &b);
             out.push((word, offset));
-            offset.x += spacing + b.right - b.left;
+            offset.x += b.right - b.left;
         }
         Self { words: out, bounds }
     }

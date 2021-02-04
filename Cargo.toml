@@ -16,6 +16,7 @@ lto = "thin"
 skulpin-renderer-sdl2 = "0.5"
 unsafe-any = "*"
 unicode-linebreak = "0.1"
+unicode-segmentation = "1.7"
 
 [dependencies.skulpin-renderer]
 version = "0.5"

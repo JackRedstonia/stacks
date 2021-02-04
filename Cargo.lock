@@ -874,6 +874,7 @@ dependencies = [
  "skulpin-renderer-sdl2",
  "soloud",
  "unicode-linebreak",
+ "unicode-segmentation",
  "unsafe-any",
 ]
 
