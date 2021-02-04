@@ -91,7 +91,11 @@ struct ButtonLabel {
 }
 
 impl ButtonLabel {
-    fn new(label: String, label_size: Option<scalar>, label_paint: Paint) -> Wrap<Self> {
+    fn new(
+        label: String,
+        label_size: Option<scalar>,
+        label_paint: Paint,
+    ) -> Wrap<Self> {
         let l = Text::new(
             LayoutSize::ZERO.expand_width().expand_height(),
             label,

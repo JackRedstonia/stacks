@@ -1,10 +1,10 @@
 use super::{LayoutSize, Widget};
 
 use std::cell::{RefCell, RefMut};
+use std::mem::transmute;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::slice::IterMut;
-use std::mem::transmute;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{Canvas, Size};

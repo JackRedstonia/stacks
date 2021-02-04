@@ -66,7 +66,7 @@ pub struct FontResource {
 impl FontResource {
     pub fn new() -> ResourceHoster<Self> {
         let mgr = FontMgr::new();
-        
+
         // We're mostly just probing system fonts here based on whether they
         // support Japanese and Vietnamese, falling back to Noto Sans because
         // that's what Skia comes with.
@@ -83,7 +83,7 @@ impl FontResource {
         let ja = ja
             .map(|e| e.family_name())
             .unwrap_or("Noto Sans".to_owned());
-        
+
         let vn = unsafe { transmute('ố') };
         let vn = mgr.match_family_style_character(
             "",
@@ -102,7 +102,12 @@ impl FontResource {
         })
     }
 
-    pub fn resolve(&self, font: Font, style: FontStyle, size: Option<scalar>) -> Vec<SkFont> {
+    pub fn resolve(
+        &self,
+        font: Font,
+        style: FontStyle,
+        size: Option<scalar>,
+    ) -> Vec<SkFont> {
         let f = match font {
             Font::Default => &self.default,
         };
