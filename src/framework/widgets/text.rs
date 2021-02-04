@@ -202,17 +202,12 @@ impl Paragraph {
 
     fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
         canvas.save();
-        {
-            canvas.translate((-self.bounds.left, -self.bounds.top));
-
-            for (word, position) in &self.words {
-                canvas.save();
-                {
-                    canvas.translate(*position);
-                    canvas.draw_path(&word.path, &paint);
-                }
-                canvas.restore();
-            }
+        canvas.translate((-self.bounds.left, -self.bounds.top));
+        for (word, position) in &self.words {
+            canvas.save();
+            canvas.translate(*position);
+            canvas.draw_path(&word.path, &paint);
+            canvas.restore();
         }
         canvas.restore();
     }
