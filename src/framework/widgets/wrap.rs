@@ -4,6 +4,7 @@ use std::cell::{RefCell, RefMut};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::slice::IterMut;
+use std::mem::transmute;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{Canvas, Size};
@@ -73,13 +74,14 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
     pub fn inner(&'a mut self) -> WidgetBorrow<'a, T> {
         let mut r = self.inner.borrow_mut();
         // This is obviously fine, as `_ref` is never to be accessed.
-        let b = unsafe { std::mem::transmute(&mut r.inner) };
+        let b = unsafe { transmute(&mut r.inner) };
         WidgetBorrow { widget: b, _ref: r }
     }
 
     pub fn children(&'a mut self) -> WidgetChildrenBorrow<'a, T> {
         let mut r = self.inner.borrow_mut();
-        let b = unsafe { std::mem::transmute(r.state.children()) };
+        // This is obviously fine, as `_ref` is never to be accessed.
+        let b = unsafe { transmute(r.state.children()) };
         WidgetChildrenBorrow { iter: b, _ref: r }
     }
 

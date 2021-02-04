@@ -1,11 +1,10 @@
-/*! Utility for resource management where there is one "owner" and multiple
-   users. Used for state management, resource management, audio, and other
-   things.
-
-   Contains `unsafe` blocks, borrowing safety backed by RefCell. Is memory safe
-   and cannot be exploited to get two or more mutable references to the resource
-   as far as testing done by the author can tell.
-*/
+//! Utility for resource management where there is one "owner" and multiple
+//! users. Used for state management, resource management, audio, and other
+//! things.
+//!
+//! Contains `unsafe` blocks, borrowing safety backed by RefCell. Is memory safe
+//! and cannot be exploited to get two or more mutable references to the resource
+//! as far as testing done by the author can tell.
 
 mod stack;
 
