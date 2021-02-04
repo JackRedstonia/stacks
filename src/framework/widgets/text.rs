@@ -113,7 +113,6 @@ impl Word {
         use unicode_segmentation::UnicodeSegmentation;
         for chs in s.graphemes(true) {
             let character = chs.chars().next().unwrap();
-            // let chs = character.encode_utf8(&mut bf);
             let glyphs = font.str_to_glyphs_vec(&*chs);
             if glyphs.iter().any(|e| *e == 0) {
                 let t = mgr.match_family_style_character(
