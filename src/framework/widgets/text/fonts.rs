@@ -1,8 +1,10 @@
 use super::{Font, FontStyle};
 use crate::prelude::*;
 
+use std::mem::transmute;
+
 use skia::font_style::{Slant, Weight, Width};
-use skia::{Font as SkFont, FontStyle as SkFontStyle, Typeface};
+use skia::{Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
 
 pub struct Fonts {
     resource: ResourceHoster<FontResource>,
@@ -57,20 +59,58 @@ impl Widget for Fonts {
 
 pub struct FontResource {
     default: FontSet,
+    fallback_ja: FontSet,
+    fallback_vn: FontSet,
 }
 
 impl FontResource {
     pub fn new() -> ResourceHoster<Self> {
+        let mgr = FontMgr::new();
+        
+        // We're mostly just probing system fonts here based on whether they
+        // support Japanese and Vietnamese, falling back to Noto Sans because
+        // that's what Skia comes with.
+        // The unsafe code here is because skia-safe (heheh, "safe"...) takes
+        // i32 instead of char for Skia's Unichar.
+
+        let ja = unsafe { transmute('あ') };
+        let ja = mgr.match_family_style_character(
+            "",
+            SkFontStyle::default(),
+            &["ja"],
+            ja,
+        );
+        let ja = ja
+            .map(|e| e.family_name())
+            .unwrap_or("Noto Sans".to_owned());
+        
+        let vn = unsafe { transmute('ố') };
+        let vn = mgr.match_family_style_character(
+            "",
+            SkFontStyle::default(),
+            &["vn"],
+            vn,
+        );
+        let vn = vn
+            .map(|e| e.family_name())
+            .unwrap_or("Noto Sans".to_owned());
+
         ResourceHoster::new(Self {
             default: FontSet::new("IBM Plex Sans"),
+            fallback_ja: FontSet::new(&ja),
+            fallback_vn: FontSet::new(&vn),
         })
     }
 
-    pub fn resolve(&self, font: Font, style: FontStyle) -> SkFont {
+    pub fn resolve(&self, font: Font, style: FontStyle) -> Vec<SkFont> {
         let f = match font {
             Font::Default => &self.default,
         };
-        f.get(style)
+        vec![
+            f.get(style),
+            self.fallback_ja.get(style),
+            self.fallback_vn.get(style),
+        ]
     }
 }
 

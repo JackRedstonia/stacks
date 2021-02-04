@@ -21,7 +21,7 @@ pub enum FontStyle {
 pub struct Text {
     pub layout_size: LayoutSize,
     pub paint: Paint,
-    sk_font: Option<SkFont>,
+    sk_font: Option<Vec<SkFont>>,
     font: Font,
     style: FontStyle,
     size: Size,
@@ -104,43 +104,29 @@ struct Word {
 }
 
 impl Word {
-    fn new(s: &str, font: &SkFont) -> Self {
-        let mgr = skia::FontMgr::new();
-        let style = font.typeface_or_default().font_style();
+    fn new(s: &str, font: &[SkFont]) -> Self {
+        assert!(!font.is_empty());
         let mut bounds = Rect::new_empty();
         let mut path = Path::new();
         let mut offset = Vector::default();
         use unicode_segmentation::UnicodeSegmentation;
         for chs in s.graphemes(true) {
-            let character = chs.chars().next().unwrap();
-            let glyphs = font.str_to_glyphs_vec(&*chs);
-            if glyphs.iter().any(|e| *e == 0) {
-                let t = mgr.match_family_style_character(
-                    "Noto Sans",
-                    style,
-                    &[],
-                    unsafe { std::mem::transmute(character) },
-                );
-                if let Some(t) = t {
-                    let font = SkFont::new(t, font.size());
-                    let glyphs = font.str_to_glyphs_vec(chs);
+            let mut p = 0;
+            while p < font.len() {
+                let glyphs = font[p].str_to_glyphs_vec(&*chs);
+                if p == font.len() - 1 || glyphs.iter().all(|e| *e != 0) {
                     Self::make_char(
                         &glyphs,
-                        &font,
+                        &font[p],
                         &mut bounds,
                         &mut offset,
                         &mut path,
                     );
-                    continue;
+                    break;
                 }
+
+                p += 1;
             }
-            Self::make_char(
-                &glyphs,
-                &font,
-                &mut bounds,
-                &mut offset,
-                &mut path,
-            );
         }
         Self { path, bounds }
     }
@@ -175,7 +161,8 @@ struct Paragraph {
 }
 
 impl Paragraph {
-    fn new(s: &str, font: &SkFont, width: scalar) -> Self {
+    fn new(s: &str, font: &[SkFont], width: scalar) -> Self {
+        assert!(!font.is_empty());
         let mut prev = 0;
         let words = unicode_linebreak::linebreaks(s).map(|(e, _)| {
             let r = &s[prev..e];
@@ -185,7 +172,7 @@ impl Paragraph {
         let mut out = vec![];
         let mut bounds = Rect::new_empty();
         let mut offset = Vector::default();
-        let line = font.metrics().0;
+        let line = font[0].metrics().0;
         for word in words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if nx > width && offset.x != 0.0 {

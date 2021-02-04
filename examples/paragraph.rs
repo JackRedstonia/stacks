@@ -6,13 +6,13 @@ use stacks::prelude::*;
 
 fn main() {
     Framework::run("Stacks", || {
-        let text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Odio facilisis mauris sit amet massa vitae tortor condimentum lacinia. Nec dui nunc mattis enim ut tellus. Purus in mollis nunc sed id semper risus. Dolor sed viverra ipsum nunc. Amet mattis vulputate enim nulla aliquet porttitor. Ut pharetra sit amet aliquam id. Vestibulum morbi blandit cursus risus at ultrices. Maecenas accumsan lacus vel facilisis volutpat est velit egestas. Porttitor eget dolor morbi non arcu. Enim blandit volutpat maecenas volutpat blandit aliquam etiam erat velit. Id leo in vitae turpis massa sed elementum tempus. Nulla aliquet enim tortor at auctor urna nunc id cursus. Maecenas sed enim ut sem. Lectus magna fringilla urna porttitor. Nibh tortor id aliquet lectus proin nibh nisl. Interdum posuere lorem ipsum dolor sit amet consectetur. Ornare arcu odio ut sem nulla pharetra diam sit amet. Dictum at tempor commodo ullamcorper.";
+        let text = "hello world i am text 環トソホ報質ぜぶゆて開場決下ト教平スち託在7加ヲ市置げせわ呼同監毎スそら段情ヱヒケス年問尊限且佃ぜあ。載トづルゅ需像ヱリハル並転イコソト納長マハ法不フ筋給ム日省ヌ療福ゃひてし問奉ぱ要2施録ぼずぎす大料解づゆ。事ネ産亡ヤナユ読領ぴちルよ国再どドょ写断にくとゆ真検びレた個物リ大揮ンまに子認高ナヒイ別96乾凍刷往4財トオモ著気いねべ欠広やぞこぱ説梨ヨ提体ラるだ窃術座め存常連夫補おッ。";
         let paint = Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias();
         let root = Text::new(
             LayoutSize::ZERO.expand_width().expand_height(),
             text,
             Font::Default,
-            FontStyle::Regular,
+            FontStyle::Bold,
             paint,
         );
         let root = Fonts::new().with_child(root);
