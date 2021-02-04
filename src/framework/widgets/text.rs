@@ -178,7 +178,7 @@ impl Paragraph {
         let line = font[0].metrics().0;
         for word in words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
-            if nx > width && offset.x != 0.0 {
+            if nx >= width && offset.x != 0.0 {
                 offset = Vector::new(0.0, offset.y + line);
             }
             let b = word.bounds.with_offset(offset);
