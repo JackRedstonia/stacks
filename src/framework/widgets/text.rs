@@ -94,7 +94,6 @@ impl Widget for Text {
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        //
         if let Some(p) = &self.paragraph {
             p.draw(canvas, &self.paint);
         }
