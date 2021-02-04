@@ -17,6 +17,7 @@ pub struct Button {
 impl Button {
     pub fn new(
         label: String,
+        label_size: Option<scalar>,
         background: Paint,
         label_paint: Paint,
     ) -> Wrap<Self> {
@@ -24,7 +25,7 @@ impl Button {
             LayoutSize::ZERO.expand_width().expand_height(),
             background,
         );
-        let label = ButtonLabel::new(label, label_paint);
+        let label = ButtonLabel::new(label, label_size, label_paint);
         let label = MarginContainer::new(Margin::all(15.0)).with_child(label);
         Self {
             background: background.clone(),
@@ -90,12 +91,13 @@ struct ButtonLabel {
 }
 
 impl ButtonLabel {
-    fn new(label: String, label_paint: Paint) -> Wrap<Self> {
+    fn new(label: String, label_size: Option<scalar>, label_paint: Paint) -> Wrap<Self> {
         let l = Text::new(
             LayoutSize::ZERO.expand_width().expand_height(),
             label,
             Font::Default,
             FontStyle::Regular,
+            label_size,
             label_paint,
         );
         Self { label: l.clone() }.wrap().with_child(l)

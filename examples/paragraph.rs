@@ -12,7 +12,8 @@ fn main() {
             LayoutSize::ZERO.expand_width().expand_height(),
             text,
             Font::Default,
-            FontStyle::Bold,
+            FontStyle::Regular,
+            Some(24.0),
             paint,
         );
         let root = Fonts::new().with_child(root);

@@ -102,20 +102,19 @@ impl FontResource {
         })
     }
 
-    pub fn resolve(&self, font: Font, style: FontStyle) -> Vec<SkFont> {
+    pub fn resolve(&self, font: Font, style: FontStyle, size: Option<scalar>) -> Vec<SkFont> {
         let f = match font {
             Font::Default => &self.default,
         };
         vec![
-            f.get(style),
-            self.fallback_ja.get(style),
-            self.fallback_vn.get(style),
+            f.get(style, size),
+            self.fallback_ja.get(style, size),
+            self.fallback_vn.get(style, size),
         ]
     }
 }
 
 struct FontSet {
-    size: scalar,
     regular: Typeface,
     bold: Typeface,
     italic: Typeface,
@@ -125,7 +124,6 @@ struct FontSet {
 impl FontSet {
     fn new(family_name: &str) -> Self {
         Self {
-            size: 16.0,
             regular: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Upright),
@@ -149,7 +147,7 @@ impl FontSet {
         }
     }
 
-    fn get(&self, style: FontStyle) -> SkFont {
+    fn get(&self, style: FontStyle, size: Option<scalar>) -> SkFont {
         SkFont::new(
             match style {
                 FontStyle::Regular => &self.regular,
@@ -157,7 +155,7 @@ impl FontSet {
                 FontStyle::Italic => &self.italic,
                 FontStyle::BoldItalic => &self.bold_italic,
             },
-            self.size,
+            size.unwrap_or(16.0),
         )
     }
 }

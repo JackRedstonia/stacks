@@ -10,6 +10,7 @@ fn main() {
         let label = Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias();
         let root = Button::new(
             "some random button, don't mind me...".to_owned(),
+            Some(24.0),
             background,
             label,
         );

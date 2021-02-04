@@ -24,6 +24,7 @@ pub struct Text {
     sk_font: Option<Vec<SkFont>>,
     font: Font,
     style: FontStyle,
+    font_size: Option<scalar>,
     size: Size,
     text: String,
     paragraph: Option<Paragraph>,
@@ -35,6 +36,7 @@ impl Text {
         text: impl AsRef<str>,
         font: Font,
         style: FontStyle,
+        font_size: Option<scalar>,
         paint: Paint,
     ) -> Wrap<Self> {
         let text = text.as_ref();
@@ -43,6 +45,7 @@ impl Text {
             sk_font: None,
             font,
             style,
+            font_size,
             paint,
             size: Size::new_empty(),
             text: text.to_owned(),
@@ -70,7 +73,7 @@ impl Widget for Text {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(f) = stack.get::<ResourceUser<FontResource>>() {
             if let Some(f) = f.try_access() {
-                self.sk_font = Some(f.resolve(self.font, self.style));
+                self.sk_font = Some(f.resolve(self.font, self.style, self.font_size));
             }
         }
     }
