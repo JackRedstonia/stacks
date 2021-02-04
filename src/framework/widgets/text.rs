@@ -78,10 +78,10 @@ impl Widget for Text {
         }
     }
 
-    fn input(&mut self, _state: &mut WidgetState, _event: &InputEvent) -> bool {
-        // TODO: this is mostly a placeholder value.
-        // I'm pretty sure somebody will have a use for some text to handle click events, that sort of stuff.
-        false
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
+        event
+            .position()
+            .map_or(false, |p| self.bounds().contains(p))
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
