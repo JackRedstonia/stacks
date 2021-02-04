@@ -2,6 +2,8 @@ mod fonts;
 
 pub use fonts::{FontResource, Fonts};
 
+use std::mem::MaybeUninit;
+
 use crate::prelude::*;
 use skia::{Canvas, Font as SkFont, GlyphId, Path};
 
@@ -60,20 +62,14 @@ impl Text {
             .map(|blob| blob.bounds)
             .unwrap_or_default()
     }
-
-    fn shape(&mut self) {
-        if let Some(f) = &self.sk_font {
-            self.paragraph =
-                Some(Paragraph::new(&self.text, f, self.size.width));
-        }
-    }
 }
 
 impl Widget for Text {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(f) = stack.get::<ResourceUser<FontResource>>() {
             if let Some(f) = f.try_access() {
-                self.sk_font = Some(f.resolve(self.font, self.style, self.font_size));
+                self.sk_font =
+                    Some(f.resolve(self.font, self.style, self.font_size));
             }
         }
     }
@@ -90,7 +86,12 @@ impl Widget for Text {
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
-        self.shape();
+        if let Some(p) = &mut self.paragraph {
+            p.rerun_with_width(size.width);
+        } else if let Some(f) = &self.sk_font {
+            self.paragraph =
+                Some(Paragraph::new(&self.text, f, self.size.width));
+        }
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
@@ -160,32 +161,44 @@ impl Word {
 struct Paragraph {
     words: Vec<(Word, Vector)>,
     bounds: Rect,
+    line_height: scalar,
 }
 
 impl Paragraph {
     fn new(s: &str, font: &[SkFont], width: scalar) -> Self {
         assert!(!font.is_empty());
         let mut prev = 0;
-        let words = unicode_linebreak::linebreaks(s).map(|(e, _)| {
-            let r = &s[prev..e];
-            prev = e;
-            Word::new(r, font)
-        });
-        let mut out = vec![];
-        let mut bounds = Rect::new_empty();
+        let words = unicode_linebreak::linebreaks(s)
+            .map(|(e, _)| {
+                let r = &s[prev..e];
+                prev = e;
+                (Word::new(r, font), unsafe {
+                    MaybeUninit::uninit().assume_init()
+                })
+            })
+            .collect();
+        let mut s = Self {
+            words,
+            bounds: Rect::new_empty(),
+            line_height: font[0].metrics().0,
+        };
+        s.rerun_with_width(width);
+        s
+    }
+
+    fn rerun_with_width(&mut self, width: scalar) {
+        self.bounds = Rect::new_empty();
         let mut offset = Vector::default();
-        let line = font[0].metrics().0;
-        for word in words {
+        for (word, word_offset) in &mut self.words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if nx >= width && offset.x != 0.0 {
-                offset = Vector::new(0.0, offset.y + line);
+                offset = Vector::new(0.0, offset.y + self.line_height);
             }
             let b = word.bounds.with_offset(offset);
-            combine(&mut bounds, &b);
-            out.push((word, offset));
+            combine(&mut self.bounds, &b);
+            *word_offset = offset;
             offset.x += b.right - b.left;
         }
-        Self { words: out, bounds }
     }
 
     fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
