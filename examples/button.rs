@@ -1,4 +1,7 @@
-use stacks::framework::{widgets::{ui::Button, Fonts}, Framework};
+use stacks::framework::{
+    widgets::{ui::Button, Fonts},
+    Framework,
+};
 use stacks::prelude::*;
 
 fn main() {
