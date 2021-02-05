@@ -44,15 +44,22 @@ impl AudioPlayer {
         .into())
     }
 
-    fn pos_percentage_from_x(&self, x: scalar) -> f64 {
-        (x as f64 / self.size.width as f64).clamp_zero_one()
+    pub fn seek_seconds(&self, seconds: f64) -> Result<(), SoloudError> {
+        if let Some(instance) = &self.instance {
+            instance.seek(seconds.min(self.sound.length()).max(0.0))?;
+        }
+        Ok(())
     }
 
-    fn seek_percentage(&self, percentage: f64) -> Result<(), SoloudError> {
+    pub fn seek_percentage(&self, percentage: f64) -> Result<(), SoloudError> {
         if let Some(instance) = &self.instance {
             instance.seek(self.sound.length() * percentage.clamp_zero_one())?;
         }
         Ok(())
+    }
+
+    fn pos_percentage_from_x(&self, x: scalar) -> f64 {
+        (x as f64 / self.size.width as f64).clamp_zero_one()
     }
 
     fn refresh_fft(&mut self, factor: f32) {
