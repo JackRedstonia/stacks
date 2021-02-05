@@ -2,7 +2,7 @@ use super::super::{
     backgrounded::Backgrounded,
     layout::{Margin, MarginContainer},
     shapes::Rectangle,
-    Font, FontStyle, Text,
+    Font, FontStyle, Text, TextLayoutMode
 };
 use crate::prelude::*;
 
@@ -110,6 +110,7 @@ impl ButtonLabel {
     ) -> Wrap<Self> {
         let l = Text::new(
             LayoutSize::ZERO.expand_width().expand_height(),
+            Some(TextLayoutMode::OneLine),
             label,
             Font::Default,
             FontStyle::Regular,
@@ -121,8 +122,8 @@ impl ButtonLabel {
 }
 
 impl Widget for ButtonLabel {
-    fn set_size(&mut self, _state: &mut WidgetState, _size: Size) {
-        self.label.set_size(Size::new(std::f32::INFINITY, 0.0))
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
+        self.label.set_size(size)
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {

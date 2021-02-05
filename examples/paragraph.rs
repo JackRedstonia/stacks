@@ -10,6 +10,7 @@ fn main() {
         let paint = Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias();
         let root = Text::new(
             LayoutSize::ZERO.expand_width().expand_height(),
+            None,
             text,
             Font::Default,
             FontStyle::Regular,
