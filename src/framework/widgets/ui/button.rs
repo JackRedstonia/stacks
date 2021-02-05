@@ -12,6 +12,8 @@ pub struct Button {
     glow: scalar,
     glow_paint: Paint,
     size: Size,
+
+    on_click_fns: Vec<Box<dyn FnMut()>>,
 }
 
 impl Button {
@@ -33,11 +35,16 @@ impl Button {
             glow: 0.0,
             glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
             size: Size::default(),
+            on_click_fns: vec![],
         }
         .wrap()
         .with_child(
             Backgrounded::new().with_child(background).with_child(label),
         )
+    }
+
+    pub fn on_click<F: FnMut() + 'static>(&mut self, f: F) {
+        self.on_click_fns.push(Box::new(f));
     }
 }
 
@@ -55,6 +62,9 @@ impl Widget for Button {
                 state.release_focus();
                 if r.contains(*position) {
                     self.glow = 1.0;
+                    for f in &mut self.on_click_fns {
+                        f();
+                    }
                     return true;
                 }
             }
