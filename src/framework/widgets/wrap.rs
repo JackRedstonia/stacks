@@ -3,7 +3,7 @@ use super::{LayoutSize, Widget};
 use std::cell::{RefCell, RefMut};
 use std::mem::transmute;
 use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::slice::IterMut;
 
 use crate::game::{InputEvent, ID};
@@ -85,6 +85,12 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         WidgetChildrenBorrow { iter: b, _ref: r }
     }
 
+    pub fn downgrade(&self) -> WrapWeak<T> {
+        WrapWeak {
+            inner: Rc::downgrade(&self.inner),
+        }
+    }
+
     pub fn load(&mut self, stack: &mut ResourceStack) {
         let s = &mut *self.inner.borrow_mut();
         let state = &mut s.state;
@@ -162,6 +168,16 @@ impl<T: Widget + ?Sized> Clone for Wrap<T> {
 impl<T: Widget> From<T> for Wrap<T> {
     fn from(t: T) -> Self {
         Self::new(t)
+    }
+}
+
+pub struct WrapWeak<T: Widget + ?Sized> {
+    inner: Weak<RefCell<WrapInner<T>>>,
+}
+
+impl<T: Widget + ?Sized> WrapWeak<T> {
+    pub fn upgrade(&self) -> Option<Wrap<T>> {
+        self.inner.upgrade().map(|inner| Wrap { inner })
     }
 }
 
