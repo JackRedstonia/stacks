@@ -40,16 +40,13 @@ fn main() {
                         .anti_alias()
                         .stroke(),
                 ))
-                .with_child(
-                    AudioPlayer::new(
-                        "resources/sound.ogg",
-                        LayoutSize::min(500.0, 200.0).expand_width(),
-                        Paint::new_color4f(0.8, 0.8, 1.0, 1.0).anti_alias(),
-                        Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
-                        Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
-                    )
-                    .expect("Failed to create AudioPlayer"),
-                );
+                .with_child(AudioPlayer::new(
+                    "resources/sound.ogg",
+                    LayoutSize::min(500.0, 200.0).expand_width(),
+                    Paint::new_color4f(0.8, 0.8, 1.0, 1.0).anti_alias(),
+                    Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
+                    Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
+                )?);
         let root = SizeFillContainer::new(Some(Size::new(1366.0, 768.0)))
             .with_child(root);
         let root = FullscreenContainer::new().with_child(root);
