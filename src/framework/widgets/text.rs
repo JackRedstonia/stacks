@@ -132,20 +132,17 @@ impl Widget for Text {
         match self.layout_mode {
             TextLayoutMode::Static | TextLayoutMode::MinHeight => {
                 if let Some(p) = &mut self.paragraph {
-                    p.rerun_with_width(size.width);
+                    p.rerun_with_width(Some(size.width));
                 } else if let Some(f) = &self.sk_font {
                     self.paragraph =
-                        Some(Paragraph::new(&self.text, f, self.size.width));
+                        Some(Paragraph::new(&self.text, f, Some(size.width)));
                 }
             }
             TextLayoutMode::OneLine => {
                 if self.paragraph.is_none() {
                     if let Some(f) = &self.sk_font {
-                        self.paragraph = Some(Paragraph::new(
-                            &self.text,
-                            f,
-                            self.size.width,
-                        ));
+                        self.paragraph =
+                            Some(Paragraph::new(&self.text, f, None));
                     }
                 }
             }
@@ -223,7 +220,7 @@ struct Paragraph {
 }
 
 impl Paragraph {
-    fn new(s: &str, font: &[SkFont], width: scalar) -> Self {
+    fn new(s: &str, font: &[SkFont], width: Option<scalar>) -> Self {
         assert!(!font.is_empty());
         let mut prev = 0;
         let words = unicode_linebreak::linebreaks(s)
@@ -244,13 +241,15 @@ impl Paragraph {
         s
     }
 
-    fn rerun_with_width(&mut self, width: scalar) {
+    fn rerun_with_width(&mut self, width: Option<scalar>) {
         self.bounds = Rect::new_empty();
         let mut offset = Vector::default();
         for (word, word_offset) in &mut self.words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
-            if nx >= width && offset.x != 0.0 {
-                offset = Vector::new(0.0, offset.y + self.line_height);
+            if let Some(width) = width {
+                if nx >= width && offset.x != 0.0 {
+                    offset = Vector::new(0.0, offset.y + self.line_height);
+                }
             }
             let b = word.bounds.with_offset(offset);
             combine(&mut self.bounds, &b);
