@@ -19,6 +19,16 @@ impl LayoutSize {
         }
     }
 
+    pub fn with_expand_from(self, other: &Self) -> Self {
+        self.with_expand_width(other.width.expand)
+            .with_expand_height(other.height.expand)
+    }
+
+    pub fn with_expand_width(mut self, expand: Option<scalar>) -> Self {
+        self.width.expand = expand;
+        self
+    }
+
     pub fn expand_width_by(mut self, expand: scalar) -> Self {
         self.width.expand = Some(expand);
         self
@@ -31,6 +41,11 @@ impl LayoutSize {
 
     pub fn no_expand_width(mut self) -> Self {
         self.width.expand = None;
+        self
+    }
+
+    pub fn with_expand_height(mut self, expand: Option<scalar>) -> Self {
+        self.height.expand = expand;
         self
     }
 
