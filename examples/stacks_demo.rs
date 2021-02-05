@@ -50,8 +50,8 @@ fn main() {
                     )
                     .expect("Failed to create AudioPlayer"),
                 );
-        let root =
-            SizeFillContainer::new(Some(Size::new(1366.0, 768.0))).with_child(root);
+        let root = SizeFillContainer::new(Some(Size::new(1366.0, 768.0)))
+            .with_child(root);
         let root = FullscreenContainer::new().with_child(root);
         let root = Audio::new()?.with_child(root);
         Ok(root)
