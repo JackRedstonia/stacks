@@ -27,13 +27,15 @@ impl Button {
             LayoutSize::ZERO.expand_width().expand_height(),
             background,
         );
+        let label_aa = label_paint.is_anti_alias();
         let label = ButtonLabel::new(label, label_size, label_paint);
         let label = MarginContainer::new(Margin::all(15.0)).with_child(label);
         Self {
             background: background.clone(),
             label: label.clone(),
             glow: 0.0,
-            glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
+            glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0)
+                .with_anti_alias(label_aa),
             size: Size::default(),
             on_click_fns: vec![],
         }
