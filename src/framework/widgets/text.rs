@@ -7,6 +7,8 @@ use std::mem::MaybeUninit;
 use crate::prelude::*;
 use skia::{Canvas, Font as SkFont, GlyphId, Path};
 
+use unicode_linebreak::{linebreaks, BreakOpportunity};
+
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
     Default,
@@ -214,7 +216,7 @@ impl Word {
 }
 
 struct Paragraph {
-    words: Vec<(Word, Vector)>,
+    words: Vec<(Word, bool, Vector)>,
     bounds: Rect,
     line_height: scalar,
 }
@@ -223,11 +225,19 @@ impl Paragraph {
     fn new(s: &str, font: &[SkFont], width: Option<scalar>) -> Self {
         assert!(!font.is_empty());
         let mut prev = 0;
-        let words = unicode_linebreak::linebreaks(s)
-            .map(|(e, _)| {
-                let r = &s[prev..e];
-                prev = e;
-                (Word::new(r, font), unsafe {
+        let mut prev_break = false;
+        let words = linebreaks(s)
+            .map(|(end_index, break_op)| {
+                let word = &s[prev..end_index];
+                prev = end_index;
+                let pb = prev_break;
+                prev_break = matches!(break_op, BreakOpportunity::Mandatory);
+                let word = if prev_break {
+                    word.trim_end_matches('\n')
+                } else {
+                    word
+                };
+                (Word::new(word, font), pb, unsafe {
                     MaybeUninit::uninit().assume_init()
                 })
             })
@@ -244,10 +254,10 @@ impl Paragraph {
     fn rerun_with_width(&mut self, width: Option<scalar>) {
         self.bounds = Rect::new_empty();
         let mut offset = Vector::default();
-        for (word, word_offset) in &mut self.words {
+        for (word, must_break, word_offset) in &mut self.words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if let Some(width) = width {
-                if nx >= width && offset.x != 0.0 {
+                if *must_break || (nx >= width && offset.x != 0.0) {
                     offset = Vector::new(0.0, offset.y + self.line_height);
                 }
             }
@@ -261,7 +271,7 @@ impl Paragraph {
     fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
         canvas.save();
         canvas.translate((-self.bounds.left, -self.bounds.top));
-        for (word, position) in &self.words {
+        for (word, _, position) in &self.words {
             canvas.save();
             canvas.translate(*position);
             canvas.draw_path(&word.path, &paint);
