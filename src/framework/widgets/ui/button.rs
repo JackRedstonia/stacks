@@ -2,7 +2,7 @@ use super::super::{
     backgrounded::Backgrounded,
     layout::{Margin, MarginContainer},
     shapes::Rectangle,
-    Font, FontStyle, Text, TextLayoutMode
+    Font, FontStyle, Text, TextLayoutMode,
 };
 use crate::prelude::*;
 
