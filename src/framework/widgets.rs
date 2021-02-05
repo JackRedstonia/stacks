@@ -13,7 +13,7 @@ pub use backgrounded::Backgrounded;
 pub use layout_size::{LayoutDimension, LayoutSize};
 pub use text::{Font, FontResource, FontStyle, Fonts, Text, TextLayoutMode};
 pub use transform::Transform;
-pub use wrap::{WidgetBorrow, WidgetState, Wrap, Wrappable};
+pub use wrap::{WidgetBorrow, WidgetBorrowMut, WidgetState, Wrap, Wrappable};
 
 use crate::game::InputEvent;
 use crate::skia::{Canvas, Size};

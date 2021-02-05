@@ -48,7 +48,7 @@ impl<T: TimeReport> AB<T> {
             let fade_time = self.fade_time.as_secs_f32();
             let delta_scaled = delta / du;
 
-            f.0.inner().time(delta_scaled.min(1.0));
+            f.0.inner_mut().time(delta_scaled.min(1.0));
             if delta_scaled >= 1.0 {
                 if f.1 == 0.0 {
                     self.schedule_set_size = true;

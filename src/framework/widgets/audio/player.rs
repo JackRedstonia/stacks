@@ -44,15 +44,18 @@ impl AudioPlayer {
         .into())
     }
 
-    pub fn seek_seconds(&self, seconds: f64) -> Result<(), SoloudError> {
-        if let Some(instance) = &self.instance {
+    pub fn seek_seconds(&mut self, seconds: f64) -> Result<(), SoloudError> {
+        if let Some(instance) = &mut self.instance {
             instance.seek(seconds.min(self.sound.length()).max(0.0))?;
         }
         Ok(())
     }
 
-    pub fn seek_percentage(&self, percentage: f64) -> Result<(), SoloudError> {
-        if let Some(instance) = &self.instance {
+    pub fn seek_percentage(
+        &mut self,
+        percentage: f64,
+    ) -> Result<(), SoloudError> {
+        if let Some(instance) = &mut self.instance {
             instance.seek(self.sound.length() * percentage.clamp_zero_one())?;
         }
         Ok(())
@@ -112,7 +115,7 @@ impl Widget for AudioPlayer {
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
-                if let Some(instance) = &self.instance {
+                if let Some(instance) = &mut self.instance {
                     if !self.play_lock {
                         self.play_lock = true;
                         instance.toggle_playing();

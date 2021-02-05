@@ -1,6 +1,6 @@
 use super::{LayoutSize, Widget};
 
-use std::cell::{RefCell, RefMut};
+use std::cell::{Ref, RefCell, RefMut};
 use std::mem::transmute;
 use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak};
@@ -13,8 +13,8 @@ use super::super::resource::ResourceStack;
 use super::super::FrameworkState;
 
 pub struct WidgetBorrow<'a, T: 'a + Widget + ?Sized> {
-    widget: &'a mut T,
-    _ref: RefMut<'a, WrapInner<T>>,
+    widget: &'a T,
+    _ref: Ref<'a, WrapInner<T>>,
 }
 
 impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetBorrow<'a, T> {
@@ -25,7 +25,20 @@ impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetBorrow<'a, T> {
     }
 }
 
-impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetBorrow<'a, T> {
+pub struct WidgetBorrowMut<'a, T: 'a + Widget + ?Sized> {
+    widget: &'a mut T,
+    _ref: RefMut<'a, WrapInner<T>>,
+}
+
+impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetBorrowMut<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.widget
+    }
+}
+
+impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetBorrowMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.widget
     }
@@ -71,11 +84,18 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         self.inner.borrow().state.id()
     }
 
-    pub fn inner(&'a mut self) -> WidgetBorrow<'a, T> {
+    pub fn inner(&'a self) -> WidgetBorrow<'a, T> {
+        let r = self.inner.borrow();
+        // This is obviously fine, as `_ref` is never to be accessed.
+        let b = unsafe { transmute(&r.inner) };
+        WidgetBorrow { widget: b, _ref: r }
+    }
+
+    pub fn inner_mut(&'a mut self) -> WidgetBorrowMut<'a, T> {
         let mut r = self.inner.borrow_mut();
         // This is obviously fine, as `_ref` is never to be accessed.
         let b = unsafe { transmute(&mut r.inner) };
-        WidgetBorrow { widget: b, _ref: r }
+        WidgetBorrowMut { widget: b, _ref: r }
     }
 
     pub fn children(&'a mut self) -> WidgetChildrenBorrow<'a, T> {

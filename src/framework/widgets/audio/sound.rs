@@ -137,25 +137,25 @@ impl SoundInstance {
             .map(|e| e.map(|e| self.bus.to_bus(&*e)))
     }
 
-    pub fn resume(&self) {
+    pub fn resume(&mut self) {
         if let Some(mut e) = self.resource.try_access_mut() {
             e.resume(self.handle);
         }
     }
 
-    pub fn pause(&self) {
+    pub fn pause(&mut self) {
         if let Some(mut e) = self.resource.try_access_mut() {
             e.pause(self.handle);
         }
     }
 
-    pub fn set_playing(&self, playing: bool) {
+    pub fn set_playing(&mut self, playing: bool) {
         if let Some(mut e) = self.resource.try_access_mut() {
             e.set_playing(self.handle, playing);
         }
     }
 
-    pub fn toggle_playing(&self) -> bool {
+    pub fn toggle_playing(&mut self) -> bool {
         self.resource
             .try_access_mut()
             .map(|mut e| e.toggle_playing(self.handle))
@@ -169,7 +169,7 @@ impl SoundInstance {
             .unwrap_or(false)
     }
 
-    pub fn seek(&self, seconds: f64) -> Result<(), SoloudError> {
+    pub fn seek(&mut self, seconds: f64) -> Result<(), SoloudError> {
         self.resource
             .try_access_mut()
             .map(|e| e.seek(self.handle, seconds))
@@ -183,7 +183,7 @@ impl SoundInstance {
             .unwrap_or(0.0)
     }
 
-    pub fn set_speed(&self, speed: f32) -> Result<(), SoloudError> {
+    pub fn set_speed(&mut self, speed: f32) -> Result<(), SoloudError> {
         self.resource
             .try_access_mut()
             .map(|mut e| e.set_speed(self.handle, speed))
@@ -197,7 +197,7 @@ impl SoundInstance {
             .unwrap_or(1.0)
     }
 
-    pub fn set_volume(&self, volume: f32) {
+    pub fn set_volume(&mut self, volume: f32) {
         if let Some(mut resource) = self.resource.try_access_mut() {
             resource.set_volume(self.handle, volume);
         }
@@ -210,7 +210,7 @@ impl SoundInstance {
             .unwrap_or(1.0)
     }
 
-    pub fn set_pan(&self, pan: f32) {
+    pub fn set_pan(&mut self, pan: f32) {
         if let Some(mut resource) = self.resource.try_access_mut() {
             resource.set_pan(self.handle, pan);
         }

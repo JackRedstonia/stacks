@@ -40,9 +40,9 @@ fn main() {
         )?;
 
         let player_weak = player.downgrade();
-        button.inner().on_click(move || {
+        button.inner_mut().on_click(move || {
             if let Some(mut player) = player_weak.upgrade() {
-                let _ = player.inner().seek_percentage(0.25);
+                let _ = player.inner_mut().seek_percentage(0.25);
             }
         });
 
