@@ -45,6 +45,9 @@ impl Button {
         )
     }
 
+    /// Adds a function that will be called whenever this button is pressed.
+    /// Note that this should not be used to mutate widgets parenting this, as
+    /// that obviously violates the exclusive mutability rule of RefCell.
     pub fn on_click<F: FnMut() + 'static>(&mut self, f: F) {
         self.on_click_fns.push(Box::new(f));
     }
