@@ -47,7 +47,7 @@ fn main() {
         });
 
         let root =
-            VContainer::new(ContainerSize::ZERO.expand_width().expand_height())
+            VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), None)
                 .with_child(text)
                 .with_child(button)
                 .with_child(player);

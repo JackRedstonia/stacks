@@ -14,7 +14,7 @@ use stacks::prelude::*;
 fn main() {
     Framework::run("Stacks", || {
         let root =
-            VContainer::new(ContainerSize::ZERO.expand_width().expand_height())
+            VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), None)
                 .with_child(Rectangle::new(
                     LayoutSize::min(200.0, 100.0)
                         .expand_width()

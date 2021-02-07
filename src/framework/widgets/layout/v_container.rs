@@ -6,17 +6,19 @@ use super::container::{ContainerSize, ContainerState};
 use std::collections::HashMap;
 
 pub struct VContainer {
+    size: ContainerSize,
+    spacing: scalar,
     states: HashMap<ID, ContainerState>,
     sizes_changed: bool,
-    pub size: ContainerSize,
 }
 
 impl VContainer {
-    pub fn new(size: ContainerSize) -> Wrap<Self> {
+    pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
         Self {
+            size,
+            spacing: spacing.unwrap_or(0.0),
             states: HashMap::new(),
             sizes_changed: false,
-            size,
         }
         .into()
     }
@@ -24,7 +26,8 @@ impl VContainer {
     fn layout(&mut self, state: &mut WidgetState, size: Size) {
         let total_space = size.height;
 
-        let mut min = 0.0f32;
+        let mut min =
+            (state.children().len() as scalar - 1.0).max(0.0) * self.spacing;
         let mut expand = 0.0f32;
 
         for child in state.children() {
@@ -44,13 +47,12 @@ impl VContainer {
                 height += space_left * e / expand;
             }
             state.position.set(0.0, offset);
-            offset += height;
+            offset += height + self.spacing;
             let width = if state.layout_size.width.expand.is_some() {
                 size.width
             } else {
                 state.layout_size.width.min.min(size.width)
             };
-            // TODO: maybe set size.
             state.maybe_set_size(child, Size::new(width, height));
         }
     }

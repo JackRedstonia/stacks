@@ -6,15 +6,17 @@ use super::container::{ContainerSize, ContainerState};
 use std::collections::HashMap;
 
 pub struct HContainer {
+    size: ContainerSize,
+    spacing: scalar,
     states: HashMap<ID, ContainerState>,
     sizes_changed: bool,
-    pub size: ContainerSize,
 }
 
 impl HContainer {
-    pub fn new(size: ContainerSize) -> Wrap<Self> {
+    pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
         Self {
             states: HashMap::new(),
+            spacing: spacing.unwrap_or(0.0),
             sizes_changed: false,
             size,
         }
@@ -24,7 +26,7 @@ impl HContainer {
     fn layout(&mut self, state: &mut WidgetState, size: Size) {
         let total_space = size.width;
 
-        let mut min = 0.0f32;
+        let mut min = (state.children().len() as scalar - 1.0).max(0.0) * self.spacing;
         let mut expand = 0.0f32;
 
         for child in state.children() {
@@ -44,7 +46,7 @@ impl HContainer {
                 width += space_left * e / expand;
             }
             state.position.set(offset, 0.0);
-            offset += width;
+            offset += width + self.spacing;
             let height = if state.layout_size.height.expand.is_some() {
                 size.height
             } else {
