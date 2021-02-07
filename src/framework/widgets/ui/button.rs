@@ -60,11 +60,9 @@ impl Widget for Button {
             InputEvent::MouseDown(MouseButton::Left, position)
                 if r.contains(*position) =>
             {
-                state.grab_focus();
                 return true;
             }
             InputEvent::MouseUp(MouseButton::Left, position) => {
-                state.release_focus();
                 if r.contains(*position) {
                     self.glow = 1.0;
                     for f in &mut self.on_click_fns {
