@@ -4,7 +4,7 @@ use crate::prelude::*;
 use std::mem::transmute;
 
 use skia::font_style::{Slant, Weight, Width};
-use skia::{Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
+use skia::{Data, Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
 
 pub struct Fonts {
     resource: ResourceHoster<FontResource>,
@@ -96,9 +96,9 @@ impl FontResource {
             .unwrap_or("Noto Sans".to_owned());
 
         ResourceHoster::new(Self {
-            default: FontSet::new("IBM Plex Sans"),
-            fallback_ja: FontSet::new(&ja),
-            fallback_vn: FontSet::new(&vn),
+            default: FontSet::new(),
+            fallback_ja: FontSet::from_type_name(&ja),
+            fallback_vn: FontSet::from_type_name(&vn),
         })
     }
 
@@ -126,8 +126,31 @@ struct FontSet {
     bold_italic: Typeface,
 }
 
+macro_rules! font_bytes {
+    ($s:expr) => {
+        include_bytes!(concat!(
+            "../../../../resources/fonts/IBMPlexSans-",
+            $s,
+            ".ttf"
+        ))
+    };
+}
+
 impl FontSet {
-    fn new(family_name: &str) -> Self {
+    fn new() -> Self {
+        let regular = unsafe { Data::new_bytes(font_bytes!("Medium")) };
+        let bold = unsafe { Data::new_bytes(font_bytes!("Bold")) };
+        let italic = unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
+        let bold_italic = unsafe { Data::new_bytes(font_bytes!("BoldItalic")) };
+        Self {
+            regular: Typeface::from_data(regular, None).unwrap(),
+            bold: Typeface::from_data(bold, None).unwrap(),
+            italic: Typeface::from_data(italic, None).unwrap(),
+            bold_italic: Typeface::from_data(bold_italic, None).unwrap(),
+        }
+    }
+
+    fn from_type_name(family_name: &str) -> Self {
         Self {
             regular: Typeface::from_name(
                 family_name,
