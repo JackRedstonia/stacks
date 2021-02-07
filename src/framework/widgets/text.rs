@@ -45,6 +45,7 @@ impl Default for TextLayoutMode {
 }
 
 pub struct Text {
+    pub take_input: bool,
     layout_size: LayoutSize,
     layout_mode: TextLayoutMode,
     paint: Paint,
@@ -69,6 +70,7 @@ impl Text {
     ) -> Wrap<Self> {
         let text = text.as_ref();
         Self {
+            take_input: false,
             layout_size: size,
             layout_mode: layout_mode.unwrap_or_default(),
             sk_font: None,
@@ -102,9 +104,10 @@ impl Widget for Text {
     }
 
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        event
-            .position()
-            .map_or(false, |p| self.bounds().contains(p))
+        self.take_input
+            && event
+                .position()
+                .map_or(false, |p| self.bounds().contains(p))
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
