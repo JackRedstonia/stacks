@@ -26,7 +26,8 @@ impl HContainer {
     fn layout(&mut self, state: &mut WidgetState, size: Size) {
         let total_space = size.width;
 
-        let mut min = (state.children().len() as scalar - 1.0).max(0.0) * self.spacing;
+        let mut min =
+            (state.children().len() as scalar - 1.0).max(0.0) * self.spacing;
         let mut expand = 0.0f32;
 
         for child in state.children() {
