@@ -1,15 +1,17 @@
 use crate::prelude::*;
 
 pub struct Throbber {
-    pub radius: LayoutDimension,
-    size: Size,
+    pub take_input: bool,
     pub paint: Paint,
+    radius: LayoutDimension,
+    size: Size,
     rad: scalar,
 }
 
 impl Throbber {
     pub fn new(radius: LayoutDimension, paint: Paint) -> Wrap<Self> {
         Self {
+            take_input: false,
             radius,
             size: Size::new_empty(),
             paint,
@@ -21,10 +23,11 @@ impl Throbber {
 
 impl Widget for Throbber {
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        event.position().map_or(false, |p| {
-            let s = self.size.width.min(self.size.height);
-            Rect::from_wh(s, s).contains(p)
-        })
+        self.take_input
+            && event.position().map_or(false, |p| {
+                let s = self.size.width.min(self.size.height);
+                Rect::from_wh(s, s).contains(p)
+            })
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
