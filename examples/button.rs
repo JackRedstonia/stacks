@@ -21,7 +21,6 @@ fn main() {
             None,
             text_paint.clone(),
         );
-        let text = MarginContainer::new(Margin::all(24.0)).with_child(text);
 
         let background = Paint::new_color4f(0.2, 0.4, 0.6, 1.0).anti_alias();
         let mut button = Button::new(
@@ -47,10 +46,11 @@ fn main() {
         });
 
         let root =
-            VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), None)
+            VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0))
                 .with_child(text)
                 .with_child(button)
                 .with_child(player);
+        let root = MarginContainer::new(Margin::all(18.0)).with_child(root);
         let root = Fonts::new().with_child(root);
         let root = Audio::new()?.with_child(root);
         Ok(root)
