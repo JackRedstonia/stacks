@@ -30,6 +30,7 @@ impl InputEvent {
             Self::MouseDown(_, p) => *p,
             Self::MouseUp(_, p) => *p,
             Self::MouseScroll(_, p) => *p,
+            Self::Focused(_, e) => e.position()?,
             _ => return None,
         })
     }
@@ -37,28 +38,34 @@ impl InputEvent {
     pub fn consumable(&self) -> bool {
         match self {
             InputEvent::MouseMove(_)
+            | InputEvent::MouseUp(_, _)
+            | InputEvent::KeyUp(_)
             | InputEvent::RemoveHoverExcept(_)
             | InputEvent::Focused(..) => false,
             InputEvent::KeyDown(_)
-            | InputEvent::KeyUp(_)
             | InputEvent::MouseDown(_, _)
-            | InputEvent::MouseUp(_, _)
             | InputEvent::MouseScroll(_, _) => true,
         }
     }
 
+    fn position_mut_ref(&mut self) -> Option<&mut Point> {
+        Some(match self {
+            Self::MouseMove(p) => p,
+            Self::MouseDown(_, p) => p,
+            Self::MouseUp(_, p) => p,
+            Self::MouseScroll(_, p) => p,
+            Self::Focused(_, e) => e.position_mut_ref()?,
+            _ => return None,
+        })
+    }
+
     pub fn reverse_map_position(&self, matrix: Matrix) -> Option<Self> {
         let m = matrix.invert()?;
-        Some(match self {
-            Self::MouseMove(p) => Self::MouseMove(m.map_point(*p)),
-            Self::MouseDown(b, p) => Self::MouseDown(*b, m.map_point(*p)),
-            Self::MouseUp(b, p) => Self::MouseUp(*b, m.map_point(*p)),
-            Self::Focused(i, b) => {
-                let inner = b.reverse_map_position(matrix)?;
-                Self::Focused(*i, Box::new(inner))
-            }
-            _ => self.clone(),
-        })
+        let mut new_self = self.clone();
+        if let Some(p) = new_self.position_mut_ref() {
+            *p = m.map_point(*p);
+        }
+        Some(new_self)
     }
 }
 
