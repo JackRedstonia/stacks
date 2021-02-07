@@ -18,7 +18,7 @@ pub enum InputEvent {
     MouseMove(Point),
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
-    MouseScroll(i32),
+    MouseScroll(i32, Point),
     Focused(ID, Box<Self>),
     RemoveHoverExcept(ID),
 }
@@ -29,6 +29,7 @@ impl InputEvent {
             Self::MouseMove(p) => *p,
             Self::MouseDown(_, p) => *p,
             Self::MouseUp(_, p) => *p,
+            Self::MouseScroll(_, p) => *p,
             _ => return None,
         })
     }
@@ -42,7 +43,7 @@ impl InputEvent {
             | InputEvent::KeyUp(_)
             | InputEvent::MouseDown(_, _)
             | InputEvent::MouseUp(_, _)
-            | InputEvent::MouseScroll(_) => true,
+            | InputEvent::MouseScroll(_, _) => true,
         }
     }
 
@@ -145,7 +146,7 @@ impl InputState {
             }
             Sdl2Event::MouseWheel { y, .. } => {
                 return Some(EventHandleResult::Input(
-                    InputEvent::MouseScroll(*y),
+                    InputEvent::MouseScroll(*y, self.mouse_position),
                 ));
             }
             _ => {}
