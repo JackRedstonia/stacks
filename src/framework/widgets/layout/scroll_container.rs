@@ -26,8 +26,13 @@ impl ScrollContainer {
 
     fn scroll(&mut self, i: i32) {
         let offset = i as scalar * 50.0;
+        self.target_offset += offset;
+        self.rescroll();
+    }
+
+    fn rescroll(&mut self) {
         let max = (self.child_size.height - self.size.height).max(0.0);
-        self.target_offset = (self.target_offset + offset).min(0.0).max(-max);
+        self.target_offset = (self.target_offset).min(0.0).max(-max);
     }
 
     fn interpolate_scroll(&mut self) {
@@ -85,6 +90,7 @@ impl Widget for ScrollContainer {
         if let Some(child) = state.child() {
             self.child_size = self.child_layout_size.layout_one(size);
             child.set_size(self.child_size);
+            self.rescroll();
         }
     }
 
