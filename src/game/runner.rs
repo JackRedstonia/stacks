@@ -262,7 +262,6 @@ impl Runner {
                                 Ok(pic) => {
                                     let skulpin_window =
                                         Sdl2Window::new(&sdl_window);
-                                    let t = Instant::now();
                                     if let Err(e) = renderer.draw(
                                         &skulpin_window,
                                         |canvas, _| {
@@ -278,7 +277,6 @@ impl Runner {
                                             .send(Event::Crash(e.into()));
                                         break 'events;
                                     }
-                                    dbg!(t.elapsed());
                                 }
                                 Err(e) => match e {
                                     TryRecvError::Empty => {
@@ -288,8 +286,8 @@ impl Runner {
                                             let rr = mode.refresh_rate;
                                             if rr != current_refresh_rate {
                                                 if event_tx.send(Event::RefreshRateChange(rr)).is_err() {
-                                                break 'events;
-                                            }
+                                                    break 'events;
+                                                }
                                                 current_refresh_rate = rr;
                                             }
                                         }
@@ -349,11 +347,10 @@ impl Runner {
             let frame_time = last_frame.elapsed();
             if frame_time > target_frame_time {
                 last_frame = Instant::now() - (frame_time - target_frame_time);
-                dbg!(frame_time);
                 // This is a rather cruddy way of detecting if we're sending
                 // too many frames, but it works rather well.
                 // We simply skip this frame if so. (but continue the clock)
-                if frame_time < target_frame_time * 2 {
+                if frame_time < target_frame_time * 3 / 2 {
                     is_redraw = true;
                     if canvas_ready {
                         let mut rec = PictureRecorder::new();
