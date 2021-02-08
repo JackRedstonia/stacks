@@ -12,9 +12,7 @@ A few noteworthy features:
 - Short compile times (3-5 seconds on a modern Linux machine, using LLD linker)
 
 ## Current state
-For graphics, Stacks utilises Skia with Vulkan. Only `Immediate` present mode works well for now, `Mailbox`/`Fifo` introduces a very noticeable delay and a fix is unplanned.
-
-Audio is in a usable state, based on the SoLoud audio library.
+For graphics, Stacks utilises Skia with Vulkan. Audio is in a usable state, based on the SoLoud audio library.
 
 The repository currently contains a library and a few examples as demos. To run them, execute `cargo run --example <name> --release`.
 
