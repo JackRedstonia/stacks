@@ -19,6 +19,7 @@ use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
 
 enum Event {
     CanvasReady,
+    RefreshRateChange(i32),
     Sdl2(Sdl2Event),
     Crash(Error),
 }
@@ -82,8 +83,6 @@ pub struct State {
     pub input_state: InputState,
     pub time_state: TimeState,
     pub time_state_draw: TimeState,
-
-    canvas_ready: bool,
 
     was_fullscreen: bool,
     is_fullscreen: bool,
@@ -152,13 +151,12 @@ impl State {
 pub struct Runner;
 
 impl Runner {
-    pub const PIC_QUEUE_LENGTH: usize = 1;
-    pub const EVENT_QUEUE_SIZE: usize = 8;
-    pub const FEEDBACK_QUEUE_SIZE: usize = 1;
+    const EVENT_QUEUE_SIZE: usize = 8;
+    const FEEDBACK_QUEUE_SIZE: usize = 1;
 
-    pub const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
+    const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
 
-    pub const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
+    const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
     pub fn run<F, T, E>(
         game: F,
@@ -180,7 +178,10 @@ impl Runner {
             .build()
             .expect("Failed to create game window");
 
-        let (pic_tx, pic_rx) = sync_channel(Self::PIC_QUEUE_LENGTH);
+        // Buffer size is 1 for pictures, we need pressure to immediately push
+        // back at the game thread if we're overloading the swapchain with too
+        // many frames.
+        let (pic_tx, pic_rx) = sync_channel(1);
         let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
         let (feedback_tx, feedback_rx) =
             sync_channel(Self::FEEDBACK_QUEUE_SIZE);
@@ -194,7 +195,6 @@ impl Runner {
                     input_state,
                     time_state,
                     time_state_draw,
-                    canvas_ready: false,
                     was_fullscreen: false,
                     is_fullscreen: false,
                     id_keeper: 0,
@@ -227,6 +227,8 @@ impl Runner {
             .send(Event::CanvasReady)
             .expect("Failed to send canvas ready event to game thread");
 
+        let mut current_refresh_rate = 60;
+
         'events: loop {
             match feedback_rx.try_recv() {
                 Ok(event) => match event {
@@ -248,47 +250,66 @@ impl Runner {
                         }
                     }
                 },
-                Err(e) => match e {
-                    TryRecvError::Empty => {
-                        for event in event_pump.poll_iter() {
-                            if event_tx.send(Event::Sdl2(event)).is_err() {
-                                break 'events;
-                            }
-                        }
-                        match pic_rx.try_recv() {
-                            Ok(pic) => {
-                                let skulpin_window =
-                                    Sdl2Window::new(&sdl_window);
-                                if let Err(e) = renderer.draw(
-                                    &skulpin_window,
-                                    |canvas, _| {
-                                        canvas.clear(Self::BACKGROUND);
-                                        canvas.draw_picture(
-                                            pic,
-                                            Some(&Matrix::default()),
-                                            None,
-                                        );
-                                    },
-                                ) {
-                                    let _ =
-                                        event_tx.send(Event::Crash(e.into()));
+                Err(e) => {
+                    match e {
+                        TryRecvError::Empty => {
+                            for event in event_pump.poll_iter() {
+                                if event_tx.send(Event::Sdl2(event)).is_err() {
                                     break 'events;
                                 }
                             }
-                            Err(e) => match e {
-                                TryRecvError::Empty => {
-                                    sleep(Self::MAIN_THREAD_SLEEP_DURATION)
+                            match pic_rx.try_recv() {
+                                Ok(pic) => {
+                                    let skulpin_window =
+                                        Sdl2Window::new(&sdl_window);
+                                    let t = Instant::now();
+                                    if let Err(e) = renderer.draw(
+                                        &skulpin_window,
+                                        |canvas, _| {
+                                            canvas.clear(Self::BACKGROUND);
+                                            canvas.draw_picture(
+                                                pic,
+                                                Some(&Matrix::default()),
+                                                None,
+                                            );
+                                        },
+                                    ) {
+                                        let _ = event_tx
+                                            .send(Event::Crash(e.into()));
+                                        break 'events;
+                                    }
+                                    dbg!(t.elapsed());
                                 }
-                                TryRecvError::Disconnected => break 'events,
-                            },
+                                Err(e) => match e {
+                                    TryRecvError::Empty => {
+                                        if let Ok(mode) =
+                                            sdl_window.display_mode()
+                                        {
+                                            let rr = mode.refresh_rate;
+                                            if rr != current_refresh_rate {
+                                                if event_tx.send(Event::RefreshRateChange(rr)).is_err() {
+                                                break 'events;
+                                            }
+                                                current_refresh_rate = rr;
+                                            }
+                                        }
+                                        sleep(Self::MAIN_THREAD_SLEEP_DURATION)
+                                    }
+                                    TryRecvError::Disconnected => break 'events,
+                                },
+                            }
                         }
+                        TryRecvError::Disconnected => break 'events,
                     }
-                    TryRecvError::Disconnected => break 'events,
-                },
+                }
             }
         }
 
         Ok(())
+    }
+
+    fn calc_target_frame_time(framerate: f64) -> Duration {
+        Duration::from_secs_f64(1.0 / framerate + 0.0005)
     }
 
     fn game_thread<E>(
@@ -298,17 +319,24 @@ impl Runner {
         feedback_tx: SyncSender<FeedbackEvent<E>>,
     ) {
         let target_update_time = Duration::from_millis(1); // 1000 fps
-        let target_frame_time = Duration::from_millis(8); // 120 fps
+
+        let mut canvas_ready = false;
+        let mut target_frame_time = Self::calc_target_frame_time(60.0);
         let mut last_frame = Instant::now();
 
         loop {
             game.update();
             let mut is_redraw = false;
-            // TODO: is this loop the cause of bad VSync?
             loop {
                 match event_rx.try_recv() {
                     Ok(event) => {
-                        if Self::handle_event(&mut game, event, &feedback_tx) {
+                        if Self::handle_event(
+                            &mut game,
+                            event,
+                            &feedback_tx,
+                            &mut canvas_ready,
+                            &mut target_frame_time,
+                        ) {
                             return;
                         }
                     }
@@ -321,44 +349,50 @@ impl Runner {
             let frame_time = last_frame.elapsed();
             if frame_time > target_frame_time {
                 last_frame = Instant::now() - (frame_time - target_frame_time);
-                is_redraw = true;
-                if let Some(s) = State::with_mut(|x| {
-                    if x.is_fullscreen != x.was_fullscreen {
-                        x.was_fullscreen = x.is_fullscreen;
-                        Some(x.is_fullscreen)
-                    } else {
-                        None
-                    }
-                }) {
-                    feedback_tx.send(FeedbackEvent::SetFullscreen(s)).expect(
-                        "Failed to send set fullscreen event to main thread",
-                    );
-                }
-                if State::with(|x| x.canvas_ready) {
-                    let mut rec = PictureRecorder::new();
-                    let bounds = Rect::from_size(State::with(|x| {
-                        let w = x.input_state.window_size;
-                        (w.width, w.height)
-                    }));
-                    let canvas = rec.begin_recording(bounds, None);
-                    game.draw(canvas);
-                    if let Err(why) = pic_tx.try_send(
-                        rec.finish_recording_as_picture(None)
-                            .expect("Failed to finish recording picture while rendering"),
-                    ) {
-                        match why {
-                            // Skip any unsent frames, just in case the renderer
-                            // fails to catch up, and to prevent lockups.
-                            TrySendError::Full(_) => {}
-                            TrySendError::Disconnected(_) => {
-                                panic!(
-                                    "Failed to send canvas to draw thread (disconnected channel)"
-                                )
+                dbg!(frame_time);
+                // This is a rather cruddy way of detecting if we're sending
+                // too many frames, but it works rather well.
+                // We simply skip this frame if so. (but continue the clock)
+                if frame_time < target_frame_time * 2 {
+                    is_redraw = true;
+                    if canvas_ready {
+                        let mut rec = PictureRecorder::new();
+                        let bounds = Rect::from_size(State::with(|x| {
+                            let w = x.input_state.window_size;
+                            (w.width, w.height)
+                        }));
+                        let canvas = rec.begin_recording(bounds, None);
+                        game.draw(canvas);
+                        if let Err(why) = pic_tx.try_send(
+                            rec.finish_recording_as_picture(None)
+                                .expect("Failed to finish recording picture while rendering"),
+                        ) {
+                            match why {
+                                // Skip any unsent frames, just in case the renderer
+                                // fails to catch up, and to prevent lockups.
+                                TrySendError::Full(_) => {}
+                                TrySendError::Disconnected(_) => {
+                                    panic!(
+                                        "Failed to send canvas to draw thread (disconnected channel)"
+                                    )
+                                }
                             }
                         }
                     }
+                    if let Some(s) = State::with_mut(|x| {
+                        if x.is_fullscreen != x.was_fullscreen {
+                            x.was_fullscreen = x.is_fullscreen;
+                            Some(x.is_fullscreen)
+                        } else {
+                            None
+                        }
+                    }) {
+                        feedback_tx.send(FeedbackEvent::SetFullscreen(s)).expect(
+                            "Failed to send set fullscreen event to main thread",
+                        );
+                    }
+                    State::with_mut(|x| x.time_state_draw.update());
                 }
-                State::with_mut(|x| x.time_state_draw.update());
             }
             State::with_mut(|state| {
                 if !is_redraw {
@@ -376,10 +410,15 @@ impl Runner {
         game: &mut impl Game,
         event: Event,
         feedback_tx: &SyncSender<FeedbackEvent<E>>,
+        canvas_ready: &mut bool,
+        target_frame_time: &mut Duration,
     ) -> bool {
         match event {
             Event::CanvasReady => {
-                State::with_mut(|x| x.canvas_ready = true);
+                *canvas_ready = true;
+            }
+            Event::RefreshRateChange(rr) => {
+                *target_frame_time = Self::calc_target_frame_time(rr as f64);
             }
             Event::Sdl2(event) => {
                 if let Some(r) =

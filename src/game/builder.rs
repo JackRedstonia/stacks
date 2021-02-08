@@ -70,7 +70,7 @@ impl<'a> Builder<'a> {
             self.inner_size,
             self.window_title,
             self.renderer_builder
-                .present_mode_priority(vec![PresentMode::Immediate]),
+                .present_mode_priority(vec![PresentMode::Mailbox]),
         )
     }
 }
