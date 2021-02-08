@@ -11,11 +11,14 @@ use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
 
-use sdl2::{event::Event as Sdl2Event, video::FullscreenType};
-use skulpin_renderer::{
-    ash::vk::Result as VkResult, LogicalSize, RendererBuilder,
+use sdl2::{
+    event::Event as Sdl2Event,
+    video::{FullscreenType, Window as Sdl2Window},
 };
-use skulpin_renderer_sdl2::{sdl2, Sdl2Window};
+use skulpin_renderer::{
+    ash::vk::Result as VkResult, LogicalSize, Renderer, RendererBuilder,
+};
+use skulpin_renderer_sdl2::{sdl2, Sdl2Window as SkulpinWindow};
 
 enum Event {
     CanvasReady,
@@ -172,7 +175,7 @@ impl Runner {
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
         let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");
 
-        let mut sdl_window = sdl_video
+        let mut win = sdl_video
             .window(title, size.width, size.height)
             .resizable()
             .build()
@@ -217,7 +220,7 @@ impl Runner {
         });
 
         let mut renderer = renderer_builder
-            .build(&Sdl2Window::new(&sdl_window))
+            .build(&SkulpinWindow::new(&win))
             .expect("Failed to create renderer");
 
         let mut event_pump =
@@ -231,79 +234,105 @@ impl Runner {
 
         'events: loop {
             match feedback_rx.try_recv() {
-                Ok(event) => match event {
-                    FeedbackEvent::GameError(err) => {
-                        return Err(err);
-                    }
-                    FeedbackEvent::Exit => {
+                Ok(event) => {
+                    if Self::handle_feedback(event, &mut win, &event_tx)? {
                         break 'events;
                     }
-                    FeedbackEvent::SetFullscreen(f) => {
-                        if let Err(e) = sdl_window.set_fullscreen(if f {
-                            FullscreenType::Desktop
-                        } else {
-                            FullscreenType::Off
-                        }) {
-                            let _ = event_tx
-                                .send(Event::Crash(Error::FullscreenError(e)));
+                }
+                Err(e) => match e {
+                    TryRecvError::Empty => {
+                        for event in event_pump.poll_iter() {
+                            if event_tx.send(Event::Sdl2(event)).is_err() {
+                                break 'events;
+                            }
+                        }
+                        if Self::handle_pic(
+                            &pic_rx,
+                            &mut win,
+                            &mut renderer,
+                            &event_tx,
+                            &mut current_refresh_rate,
+                        ) {
                             break 'events;
                         }
                     }
+                    TryRecvError::Disconnected => break 'events,
                 },
-                Err(e) => {
-                    match e {
-                        TryRecvError::Empty => {
-                            for event in event_pump.poll_iter() {
-                                if event_tx.send(Event::Sdl2(event)).is_err() {
-                                    break 'events;
-                                }
-                            }
-                            match pic_rx.try_recv() {
-                                Ok(pic) => {
-                                    let skulpin_window =
-                                        Sdl2Window::new(&sdl_window);
-                                    if let Err(e) = renderer.draw(
-                                        &skulpin_window,
-                                        |canvas, _| {
-                                            canvas.clear(Self::BACKGROUND);
-                                            canvas.draw_picture(
-                                                pic,
-                                                Some(&Matrix::default()),
-                                                None,
-                                            );
-                                        },
-                                    ) {
-                                        let _ = event_tx
-                                            .send(Event::Crash(e.into()));
-                                        break 'events;
-                                    }
-                                }
-                                Err(e) => match e {
-                                    TryRecvError::Empty => {
-                                        if let Ok(mode) =
-                                            sdl_window.display_mode()
-                                        {
-                                            let rr = mode.refresh_rate;
-                                            if rr != current_refresh_rate {
-                                                if event_tx.send(Event::RefreshRateChange(rr)).is_err() {
-                                                    break 'events;
-                                                }
-                                                current_refresh_rate = rr;
-                                            }
-                                        }
-                                        sleep(Self::MAIN_THREAD_SLEEP_DURATION)
-                                    }
-                                    TryRecvError::Disconnected => break 'events,
-                                },
-                            }
-                        }
-                        TryRecvError::Disconnected => break 'events,
-                    }
-                }
             }
         }
 
         Ok(())
+    }
+
+    fn handle_feedback<E>(
+        event: FeedbackEvent<E>,
+        win: &mut Sdl2Window,
+        event_tx: &SyncSender<Event>,
+    ) -> Result<bool, E> {
+        match event {
+            FeedbackEvent::GameError(err) => Err(err),
+            FeedbackEvent::Exit => Ok(true),
+            FeedbackEvent::SetFullscreen(enable) => {
+                Ok(Self::set_fullscreen(enable, win, event_tx))
+            }
+        }
+    }
+
+    fn set_fullscreen(
+        enable: bool,
+        win: &mut Sdl2Window,
+        event_tx: &SyncSender<Event>,
+    ) -> bool {
+        let kind = if enable {
+            FullscreenType::Desktop
+        } else {
+            FullscreenType::Off
+        };
+        if let Err(e) = win.set_fullscreen(kind) {
+            let _ = event_tx.send(Event::Crash(Error::FullscreenError(e)));
+            return true;
+        }
+        return false;
+    }
+
+    fn handle_pic(
+        pic_rx: &Receiver<Picture>,
+        win: &mut Sdl2Window,
+        renderer: &mut Renderer,
+        event_tx: &SyncSender<Event>,
+        current_refresh_rate: &mut i32,
+    ) -> bool {
+        match pic_rx.try_recv() {
+            Ok(pic) => {
+                let skulpin_window = SkulpinWindow::new(&win);
+                if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
+                    canvas.clear(Self::BACKGROUND);
+                    canvas.draw_picture(pic, Some(&Matrix::default()), None);
+                }) {
+                    let _ = event_tx.send(Event::Crash(e.into()));
+                    return true;
+                }
+            }
+            Err(e) => match e {
+                TryRecvError::Empty => {
+                    if let Ok(mode) = win.display_mode() {
+                        let rr = mode.refresh_rate;
+                        if rr != *current_refresh_rate {
+                            if event_tx
+                                .send(Event::RefreshRateChange(rr))
+                                .is_err()
+                            {
+                                return true;
+                            }
+                            *current_refresh_rate = rr;
+                        }
+                    }
+                    sleep(Self::MAIN_THREAD_SLEEP_DURATION);
+                }
+                TryRecvError::Disconnected => return true,
+            },
+        }
+        return false;
     }
 
     fn calc_target_frame_time(framerate: f64) -> Duration {
@@ -328,7 +357,7 @@ impl Runner {
             loop {
                 match event_rx.try_recv() {
                     Ok(event) => {
-                        if Self::handle_event(
+                        if Self::game_handle_event(
                             &mut game,
                             event,
                             &feedback_tx,
@@ -403,7 +432,7 @@ impl Runner {
         }
     }
 
-    fn handle_event<E>(
+    fn game_handle_event<E>(
         game: &mut impl Game,
         event: Event,
         feedback_tx: &SyncSender<FeedbackEvent<E>>,
