@@ -174,10 +174,10 @@ impl Widget for AudioPlayer {
         canvas.draw_rect(Rect::from_size(self.size), &self.background);
 
         // Draw progress bar
-        if let Some(instance) = &self.instance {
-            let percentage = (instance.position() / self.sound.length()) as f32;
+        if let Some(i) = &self.instance {
+            let p = (i.position() / self.sound.length()).min(1.0) as f32;
             let foreground =
-                Rect::from_wh(self.size.width * percentage, self.size.height);
+                Rect::from_wh(self.size.width * p, self.size.height);
             canvas.draw_rect(foreground, &self.foreground);
             if let Some(preview) = self.seek_preview_percentage {
                 let center = self.size.width * preview;
