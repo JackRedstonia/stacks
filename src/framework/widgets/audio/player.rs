@@ -106,7 +106,9 @@ impl Widget for AudioPlayer {
                 .unwrap_or(false)
             {
                 let bus = AudioBus::Default;
-                let instance = self.sound.create_instance(resource, Some(bus));
+                let mut instance =
+                    self.sound.create_instance(resource, Some(bus));
+                instance.set_auto_stop(false);
                 self.instance = Some(instance);
             }
         }

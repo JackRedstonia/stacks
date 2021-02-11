@@ -162,6 +162,12 @@ impl SoundInstance {
             .unwrap_or(false)
     }
 
+    pub fn set_auto_stop(&mut self, auto_stop: bool) {
+        if let Some(mut e) = self.resource.try_access_mut() {
+            e.set_auto_stop(self.handle, auto_stop);
+        }
+    }
+
     pub fn is_playing(&self) -> bool {
         self.resource
             .try_access()

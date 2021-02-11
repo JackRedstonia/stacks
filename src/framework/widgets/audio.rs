@@ -147,6 +147,10 @@ impl AudioResource {
         was_paused
     }
 
+    pub fn set_auto_stop(&mut self, handle: SoloudHandle, auto_stop: bool) {
+        self.soloud.set_auto_stop(handle, auto_stop);
+    }
+
     pub fn is_playing(&self, handle: SoloudHandle) -> bool {
         // The method is called "pause" but it actually returns a boolean
         // indicating whether the handle is paused for some reason.
