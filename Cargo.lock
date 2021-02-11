@@ -835,7 +835,7 @@ dependencies = [
 [[package]]
 name = "soloud"
 version = "0.3.4"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#b0c7635bc2f23593b3f223143084fd8db27fa04b"
+source = "git+https://gitlab.com/JackRedstonia/soloud-rs#18002df6d1f508c93eccda225c23559a7638d345"
 dependencies = [
  "bitflags",
  "soloud-derive",
@@ -845,7 +845,7 @@ dependencies = [
 [[package]]
 name = "soloud-derive"
 version = "0.3.2"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#b0c7635bc2f23593b3f223143084fd8db27fa04b"
+source = "git+https://gitlab.com/JackRedstonia/soloud-rs#18002df6d1f508c93eccda225c23559a7638d345"
 dependencies = [
  "quote",
  "syn",
@@ -854,7 +854,7 @@ dependencies = [
 [[package]]
 name = "soloud-sys"
 version = "0.3.4"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#b0c7635bc2f23593b3f223143084fd8db27fa04b"
+source = "git+https://gitlab.com/JackRedstonia/soloud-rs#18002df6d1f508c93eccda225c23559a7638d345"
 dependencies = [
  "cmake",
  "libc",
