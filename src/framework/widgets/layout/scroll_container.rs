@@ -32,7 +32,7 @@ impl ScrollContainer {
 
     fn rescroll(&mut self) {
         let max = (self.child_size.height - self.size.height).max(0.0);
-        self.target_offset = (self.target_offset).min(0.0).max(-max);
+        self.target_offset = self.target_offset.clamp(-max, 0.0);
     }
 
     fn interpolate_scroll(&mut self) {

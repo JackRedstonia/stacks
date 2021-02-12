@@ -46,7 +46,7 @@ impl AudioPlayer {
 
     pub fn seek_seconds(&mut self, seconds: f64) -> Result<(), SoloudError> {
         if let Some(instance) = &mut self.instance {
-            instance.seek(seconds.min(self.sound.length()).max(0.0))?;
+            instance.seek(seconds.clamp(0.0, self.sound.length()))?;
         }
         Ok(())
     }
