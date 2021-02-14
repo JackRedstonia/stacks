@@ -63,7 +63,7 @@ impl AudioResource {
         let mut soloud = Soloud::new(
             SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
             SoloudBackend::Auto,
-            44100,
+            48000,
             860,
             2,
         )?;
