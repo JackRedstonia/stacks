@@ -336,7 +336,7 @@ impl Runner {
     }
 
     fn calc_target_frame_time(framerate: f64) -> Duration {
-        Duration::from_secs_f64(1.0 / framerate + 0.0005)
+        Duration::from_secs_f64(1.0 / framerate)
     }
 
     fn game_thread<E>(
