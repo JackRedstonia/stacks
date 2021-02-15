@@ -226,9 +226,7 @@ impl Runner {
         let mut event_pump =
             sdl.event_pump().expect("Failed to create SDL2 event pump");
 
-        event_tx
-            .send(Event::CanvasReady)
-            .expect("Failed to send canvas ready event to game thread");
+        let _ = event_tx.send(Event::CanvasReady);
 
         let mut current_refresh_rate = 60;
 
