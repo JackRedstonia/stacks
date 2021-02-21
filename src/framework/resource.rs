@@ -97,7 +97,7 @@ impl<T> ResourceUser<T> {
         unsafe {
             let val: Ref<'_, ResourceWrapper<T>> = transmute(rc.borrow());
             let usage = transmute(&val.deref().resource);
-            let r = ResourceRefHolder { _val: val, _rc: rc };
+            let r = ResourceRef { _val: val, _rc: rc };
             Some(ResourceUsage { usage, holder: r })
         }
     }
@@ -119,7 +119,7 @@ impl<T> ResourceUser<T> {
             let mut val: RefMut<'_, ResourceWrapper<T>> =
                 transmute(rc.borrow_mut());
             let usage = transmute(&mut val.deref_mut().resource);
-            let r = ResourceRefMutHolder { _val: val, _rc: rc };
+            let r = ResourceRefMut { _val: val, _rc: rc };
             Some(ResourceUsageMut { usage, holder: r })
         }
     }
@@ -138,10 +138,10 @@ impl<T> ResourceUser<T> {
 /// Implements `Deref` as this is a smart pointer of some sort.
 pub struct ResourceUsage<'a, R, T = R> {
     usage: &'a T,
-    holder: ResourceRefHolder<'a, R>,
+    holder: ResourceRef<'a, R>,
 }
 
-struct ResourceRefHolder<'a, T> {
+struct ResourceRef<'a, T> {
     // SAFETY: Notice that the `_rc` field comes AFTER the `_val` field.
     // This is EXTREMELY important, as we always want the `Ref` to drop first.
     _val: Ref<'a, ResourceWrapper<T>>,
@@ -183,10 +183,10 @@ impl<'a, R, T> Deref for ResourceUsage<'a, R, T> {
 /// Implements `Deref` and `DerefMut` as this is a smart pointer of some sort.
 pub struct ResourceUsageMut<'a, R, T = R> {
     usage: &'a mut T,
-    holder: ResourceRefMutHolder<'a, R>,
+    holder: ResourceRefMut<'a, R>,
 }
 
-struct ResourceRefMutHolder<'a, T> {
+struct ResourceRefMut<'a, T> {
     // SAFETY: Notice that the `_rc` field comes AFTER the `_val` field.
     // This is EXTREMELY important, as we always want the `RefMut` to drop
     // first.
