@@ -1,4 +1,4 @@
-use crate::skia::{scalar, Color4f, ColorSpace, Paint, PaintStyle};
+use crate::skia::{scalar, Color4f, ColorSpace, Paint, PaintStyle, Shader};
 
 pub trait PaintUtils
 where
@@ -27,6 +27,8 @@ where
     fn with_stroke_width(self, width: scalar) -> Self;
     fn with_style(self, style: PaintStyle) -> Self;
     fn with_alpha(self, alpha: scalar) -> Self;
+    fn with_shader(self, shader: impl Into<Option<Shader>>) -> Self;
+    fn with_dither(self, dither: bool) -> Self;
 
     fn anti_alias(self) -> Self {
         self.with_anti_alias(true)
@@ -54,6 +56,22 @@ where
 
     fn stroke_and_fill_style(self) -> Self {
         self.with_style(PaintStyle::StrokeAndFill)
+    }
+
+    fn shader(self, shader: impl Into<Shader>) -> Self {
+        self.with_shader(Some(shader.into()))
+    }
+
+    fn no_shader(self) -> Self {
+        self.with_shader(None)
+    }
+
+    fn dither(self) -> Self {
+        self.with_dither(true)
+    }
+
+    fn no_dither(self) -> Self {
+        self.with_dither(false)
     }
 }
 
@@ -90,6 +108,16 @@ impl PaintUtils for Paint {
 
     fn with_alpha(mut self, alpha: scalar) -> Self {
         self.set_alpha_f(alpha);
+        self
+    }
+
+    fn with_shader(mut self, shader: impl Into<Option<Shader>>) -> Self {
+        self.set_shader(shader);
+        self
+    }
+
+    fn with_dither(mut self, dither: bool) -> Self {
+        self.set_dither(dither);
         self
     }
 }
