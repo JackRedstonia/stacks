@@ -1,14 +1,14 @@
 # Contributor Covenant Code of Conduct
 
-# Scope
+## Scope
 
 This Code of Conduct applies within this project's spaces and public spaces when an entity is representing the project or its community. Participation on this project requires and equates to agreement of this Code of Conduct. Representation of this project may be further defined and clarified by its maintainers.
 
-# Pledge
+## Pledge
 
 We as contributors and maintainers pledge to making participation in our project an open and welcoming experience, regardless of individual characteristics, including but not limited to age, body size, disability, ethnicity, sex & sexual preferences, race, religion, nationality or political preferences.
 
-# Standards
+## Standards
 
 In the process of participation, the following standards are expected of all participants:
 
@@ -19,7 +19,7 @@ In the process of participation, the following standards are expected of all par
 - Participants do not publish any entity's private information, such as physical or electronic addresses, without explicit and sufficient permissions.
 - Participants acknowledge and abide by the law applicable to each of themselves.
 
-# Responsibilities
+## Responsibilities
 
 The maintainers of this project are responsible for clarifying the standards of acceptable behaviour and are expected to take appropriative and fair corrective action in response to any instances of behaviour not meeting such standards.
 
