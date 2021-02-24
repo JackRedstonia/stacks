@@ -58,7 +58,7 @@ where
         self.with_style(PaintStyle::StrokeAndFill)
     }
 
-    fn shader(self, shader: impl Into<Shader>) -> Self {
+    fn shade(self, shader: impl Into<Shader>) -> Self {
         self.with_shader(Some(shader.into()))
     }
 
