@@ -37,7 +37,7 @@ A MSVC toolchain is required (solely to build `skia-bindings`). Follow the `sdl2
 MIT license. See the LICENSE file for more information.
 
 ## Contributing
-This repository is actively reviewing and accepting pull requests & issues, especially those that improve performance and code quality. Please follow the same code of conduct as the Rust project when participating.
+This repository is actively reviewing and accepting pull requests & issues, especially those that improve performance and code quality. When participating in this project, please follow the Code of Conduct, as specified by the [`CODE_OF_CONDUCT.md` file](CODE_OF_CONDUCT.md).
 
 Any code you contribute to this repository is to be under the MIT license.
 
