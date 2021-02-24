@@ -42,5 +42,4 @@ This repository is actively reviewing and accepting pull requests & issues, espe
 Any code you contribute to this repository is to be under the MIT license.
 
 ## Note for GitHub users
-This repository is mirrored from GitLab, at https://gitlab.com/JackRedstonia/stacks.
-Development happens and non-master branches appear over there.
+This repository is mirrored from GitLab. Development and non-`master` branches appear over at https://gitlab.com/JackRedstonia/stacks.
