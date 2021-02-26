@@ -29,6 +29,7 @@ pub struct Framework<T: Widget> {
     root: Wrap<T>,
     layout_size: LayoutSize,
     size: Size,
+    schedule_set_size: bool,
 
     recycled_resource_stack: ResourceStack,
 }
@@ -53,6 +54,7 @@ impl<T: Widget> Framework<T> {
             root: root.into(),
             layout_size: LayoutSize::ZERO,
             size: Size::new_empty(),
+            schedule_set_size: false,
             recycled_resource_stack: ResourceStack::new(),
         }
     }
@@ -91,8 +93,9 @@ impl<T: Widget> Game for Framework<T> {
         self.focus_aware_input(InputEvent::MouseMove(State::mouse_position()));
 
         // Trigger layout
+        println!("size()");
         let (size, changed) = self.root.size();
-        if size != self.layout_size || changed {
+        if self.schedule_set_size || size != self.layout_size || changed {
             self.layout_size = size;
             self.root.set_size(self.layout_size.layout_one(self.size));
         }
@@ -107,7 +110,7 @@ impl<T: Widget> Game for Framework<T> {
             self.layout_size.width.min.max(window_size.width),
             self.layout_size.height.min.max(window_size.height),
         );
-        self.root.set_size(self.layout_size.layout_one(self.size));
+        self.schedule_set_size = true;
         self.maybe_load();
     }
 
