@@ -61,7 +61,7 @@ impl<T: TimeReport> AB<T> {
                 self.a = None;
                 self.running = None;
             }
-            return fin;
+            return self.schedule_set_size;
         }
         false
     }
@@ -111,8 +111,13 @@ impl<T: TimeReport> Widget for AB<T> {
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         self.size = size;
-        if let Some((a, _)) = &mut self.a {
+        if let Some((a, f)) = &mut self.a {
             a.set_size(size);
+            if *f != 0.0 {
+                if let Some(b) = state.child() {
+                    b.set_size(size);
+                }
+            }
         } else if let Some(b) = state.child() {
             b.set_size(size);
         }
@@ -129,13 +134,17 @@ impl<T: TimeReport> Widget for AB<T> {
         }
         match &mut self.a {
             Some((a, f)) => {
-                a.draw(canvas);
                 if *f != 0.0 {
+                    let i = canvas.save_layer_alpha(None, ((1.0 - *f) * 255.0) as _);
+                    a.draw(canvas);
+                    canvas.restore_to_count(i);
                     let i = canvas.save_layer_alpha(None, (*f * 255.0) as _);
                     if let Some(b) = state.child() {
                         b.draw(canvas);
                     }
                     canvas.restore_to_count(i);
+                } else {
+                    a.draw(canvas);
                 }
             }
             None => {
