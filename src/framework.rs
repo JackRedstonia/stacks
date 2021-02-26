@@ -95,6 +95,7 @@ impl<T: Widget> Game for Framework<T> {
         // Trigger layout
         let (size, changed) = self.root.size();
         if self.schedule_set_size || size != self.layout_size || changed {
+            self.schedule_set_size = false;
             self.layout_size = size;
             self.root.set_size(self.layout_size.layout_one(self.size));
         }
