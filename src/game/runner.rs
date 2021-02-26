@@ -5,7 +5,7 @@ use std::thread::{sleep, spawn};
 use std::time::{Duration, Instant};
 use std::{cell::RefCell, sync::mpsc::Receiver};
 
-use crate::skia::{Color, Matrix, Picture, PictureRecorder, Point, Rect, Size};
+use crate::skia::{Color, Picture, PictureRecorder, Point, Rect, Size};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
@@ -305,7 +305,7 @@ impl Runner {
                 let skulpin_window = SkulpinWindow::new(&win);
                 if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
                     canvas.clear(Self::BACKGROUND);
-                    canvas.draw_picture(pic, Some(&Matrix::default()), None);
+                    canvas.draw_picture(pic, None, None);
                 }) {
                     let _ = event_tx.send(Event::Crash(e.into()));
                     return true;
