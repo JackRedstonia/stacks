@@ -93,7 +93,6 @@ impl<T: Widget> Game for Framework<T> {
         self.focus_aware_input(InputEvent::MouseMove(State::mouse_position()));
 
         // Trigger layout
-        println!("size()");
         let (size, changed) = self.root.size();
         if self.schedule_set_size || size != self.layout_size || changed {
             self.layout_size = size;
