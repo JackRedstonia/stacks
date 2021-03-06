@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub struct ScrollContainer<T: Widget> {
+pub struct ScrollContainer<T: Widget + ?Sized> {
     child: Wrap<T>,
     offset: scalar,
     target_offset: scalar,
@@ -11,8 +11,9 @@ pub struct ScrollContainer<T: Widget> {
     matrix: Matrix,
 }
 
-impl<T: Widget> ScrollContainer<T> {
+impl<T: Widget + ?Sized> ScrollContainer<T> {
     pub fn new(child: Wrap<T>, size: LayoutSize) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             offset: 0.0,
@@ -49,7 +50,7 @@ impl<T: Widget> ScrollContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for ScrollContainer<T> {
+impl<T: Widget + ?Sized> Widget for ScrollContainer<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }

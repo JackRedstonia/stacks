@@ -1,17 +1,18 @@
 use crate::prelude::*;
 
-pub struct Transform<T: Widget> {
+pub struct Transform<T: Widget + ?Sized> {
     child: Wrap<T>,
     pub matrix: Matrix,
 }
 
-impl<T: Widget> Transform<T> {
+impl<T: Widget + ?Sized> Transform<T> {
     pub fn new(child: Wrap<T>, matrix: Matrix) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self { child, matrix }.into()
     }
 }
 
-impl<T: Widget> Widget for Transform<T> {
+impl<T: Widget + ?Sized> Widget for Transform<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }

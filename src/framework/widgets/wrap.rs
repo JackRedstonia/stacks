@@ -153,16 +153,11 @@ impl<T: Widget + ?Sized> WrapWeak<T> {
 
 pub trait Wrappable<'a, T: Widget> {
     fn wrap(self) -> Wrap<T>;
-    fn boxed(self) -> Box<dyn Widget + 'a>;
 }
 
 impl<'a, T: 'a + Widget> Wrappable<'a, T> for T {
     fn wrap(self) -> Wrap<T> {
         Wrap::new(self)
-    }
-
-    fn boxed(self) -> Box<dyn Widget + 'a> {
-        Box::new(self)
     }
 }
 

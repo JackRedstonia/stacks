@@ -1,14 +1,15 @@
 use crate::prelude::*;
 
-pub struct CenterContainer<T: Widget> {
+pub struct CenterContainer<T: Widget + ?Sized> {
     child: Wrap<T>,
     size: Size,
     child_layout_size: LayoutSize,
     matrix: Matrix,
 }
 
-impl<T: Widget> CenterContainer<T> {
+impl<T: Widget + ?Sized> CenterContainer<T> {
     pub fn new(child: Wrap<T>) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             child_layout_size: LayoutSize::ZERO,
@@ -19,7 +20,7 @@ impl<T: Widget> CenterContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for CenterContainer<T> {
+impl<T: Widget + ?Sized> Widget for CenterContainer<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }

@@ -6,13 +6,14 @@ use std::mem::transmute;
 use skia::font_style::{Slant, Weight, Width};
 use skia::{Data, Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
 
-pub struct Fonts<T: Widget> {
+pub struct Fonts<T: Widget + ?Sized> {
     child: Wrap<T>,
     resource: ResourceHoster<FontResource>,
 }
 
-impl<T: Widget> Fonts<T> {
+impl<T: Widget + ?Sized> Fonts<T> {
     pub fn new(child: Wrap<T>) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             resource: FontResource::new(),
@@ -21,7 +22,7 @@ impl<T: Widget> Fonts<T> {
     }
 }
 
-impl<T: Widget> Widget for Fonts<T> {
+impl<T: Widget + ?Sized> Widget for Fonts<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
         self.child.load(stack);

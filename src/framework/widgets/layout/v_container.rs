@@ -2,15 +2,19 @@ use crate::prelude::*;
 
 use super::container::{ChildState, ContainerSize};
 
-pub struct VContainer<T: Widget> {
+pub struct VContainer<T: Widget + ?Sized> {
     children: Vec<(Wrap<T>, ChildState)>,
     size: ContainerSize,
     spacing: scalar,
     sizes_changed: bool,
 }
 
-impl<T: Widget> VContainer<T> {
+pub type VContainerDyn = VContainer<dyn Widget>;
+
+impl<T: Widget + ?Sized> VContainer<T> {
     pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
+        // `FrameworkState::request_load();` here is not needed, as there are
+        // no children just yet.
         Self {
             children: vec![],
             size,
@@ -51,9 +55,15 @@ impl<T: Widget> VContainer<T> {
             state.maybe_set_size(child, Size::new(width, height));
         }
     }
+
+    pub fn add_child(&mut self, child: Wrap<T>) -> &mut Self {
+        FrameworkState::request_load();
+        self.children.push((child, ChildState::new()));
+        self
+    }
 }
 
-impl<T: Widget> Widget for VContainer<T> {
+impl<T: Widget + ?Sized> Widget for VContainer<T> {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         for (child, _) in &mut self.children {
             child.load(stack);

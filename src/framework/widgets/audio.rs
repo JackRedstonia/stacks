@@ -204,13 +204,14 @@ impl AudioResource {
     }
 }
 
-pub struct Audio<T: Widget> {
+pub struct Audio<T: Widget + ?Sized> {
     child: Wrap<T>,
     resource: ResourceHoster<AudioResource>,
 }
 
-impl<T: Widget> Audio<T> {
+impl<T: Widget + ?Sized> Audio<T> {
     pub fn new(child: Wrap<T>) -> Result<Wrap<Self>, AudioError> {
+        FrameworkState::request_load();
         Ok(Self {
             child,
             resource: AudioResource::new()?,
@@ -219,7 +220,7 @@ impl<T: Widget> Audio<T> {
     }
 }
 
-impl<T: Widget> Widget for Audio<T> {
+impl<T: Widget + ?Sized> Widget for Audio<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
         self.child.load(stack);

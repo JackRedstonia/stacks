@@ -7,7 +7,7 @@ pub trait TimeReport: Widget {
 }
 
 // Transitions from one specific widget to its children permanently.
-pub struct AB<A: TimeReport + ?Sized, B: Widget> {
+pub struct AB<A: TimeReport + ?Sized, B: Widget + ?Sized> {
     a: Option<(Wrap<A>, scalar)>,
     b: Wrap<B>,
     fade_time: Duration,
@@ -17,8 +17,9 @@ pub struct AB<A: TimeReport + ?Sized, B: Widget> {
     schedule_set_size: bool,
 }
 
-impl<A: TimeReport, B: Widget> AB<A, B> {
+impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
     pub fn new(a: Wrap<A>, b: Wrap<B>, fade_time: Duration) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             a: Some((a, 0.0)),
             b,
@@ -32,7 +33,7 @@ impl<A: TimeReport, B: Widget> AB<A, B> {
     }
 }
 
-impl<A: TimeReport, B: Widget> AB<A, B> {
+impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
     pub fn is_running(&self) -> bool {
         self.a.is_none() || self.running.is_some()
     }
@@ -70,7 +71,7 @@ impl<A: TimeReport, B: Widget> AB<A, B> {
     }
 }
 
-impl<A: TimeReport, B: Widget> Widget for AB<A, B> {
+impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some((a, _)) = &mut self.a {
             a.load(stack);

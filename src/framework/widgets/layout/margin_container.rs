@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub struct MarginContainer<T: Widget> {
+pub struct MarginContainer<T: Widget + ?Sized> {
     child: Wrap<T>,
     pub margin: Margin,
     size: Size,
@@ -8,8 +8,9 @@ pub struct MarginContainer<T: Widget> {
     matrix: Matrix,
 }
 
-impl<T: Widget> MarginContainer<T> {
+impl<T: Widget + ?Sized> MarginContainer<T> {
     pub fn new(child: Wrap<T>, margin: Margin) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             margin,
@@ -21,7 +22,15 @@ impl<T: Widget> MarginContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for MarginContainer<T> {
+impl<T: Widget + ?Sized> Widget for MarginContainer<T> {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.child.load(stack);
+    }
+
+    fn update(&mut self, state: &mut WidgetState) {
+        self.child.update();
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         event
             .reverse_map_position(self.matrix)
@@ -51,14 +60,6 @@ impl<T: Widget> Widget for MarginContainer<T> {
         canvas.concat(&self.matrix);
         self.child.draw(canvas);
         canvas.restore();
-    }
-
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.child.load(stack);
-    }
-
-    fn update(&mut self, state: &mut WidgetState) {
-        self.child.update();
     }
 }
 

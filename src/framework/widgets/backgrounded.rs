@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub struct Backgrounded<B: Widget, F: Widget> {
+pub struct Backgrounded<B: Widget + ?Sized, F: Widget + ?Sized> {
     background: Wrap<B>,
     foreground: Wrap<F>,
     background_size: LayoutSize,
@@ -8,12 +8,13 @@ pub struct Backgrounded<B: Widget, F: Widget> {
     allow_background_input: bool,
 }
 
-impl<B: Widget, F: Widget> Backgrounded<B, F> {
+impl<B: Widget + ?Sized, F: Widget + ?Sized> Backgrounded<B, F> {
     pub fn new(
         background: Wrap<B>,
         foreground: Wrap<F>,
         allow_background_input: bool,
     ) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             background,
             foreground,
@@ -25,7 +26,7 @@ impl<B: Widget, F: Widget> Backgrounded<B, F> {
     }
 }
 
-impl<B: Widget, F: Widget> Widget for Backgrounded<B, F> {
+impl<B: Widget + ?Sized, F: Widget + ?Sized> Widget for Backgrounded<B, F> {
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         let b = self.allow_background_input
             && !event.is_consumable()

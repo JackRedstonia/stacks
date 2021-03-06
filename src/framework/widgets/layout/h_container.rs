@@ -2,15 +2,18 @@ use crate::prelude::*;
 
 use super::container::{ChildState, ContainerSize};
 
-pub struct HContainer<T: Widget> {
+pub struct HContainer<T: Widget + ?Sized> {
     children: Vec<(Wrap<T>, ChildState)>,
     size: ContainerSize,
     spacing: scalar,
     sizes_changed: bool,
 }
 
-impl<T: Widget> HContainer<T> {
+pub type HContainerDyn = HContainer<dyn Widget>;
+
+impl<T: Widget + ?Sized> HContainer<T> {
     pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             children: vec![],
             size,
@@ -51,9 +54,15 @@ impl<T: Widget> HContainer<T> {
             state.maybe_set_size(child, Size::new(width, height));
         }
     }
+
+    pub fn add_child(&mut self, child: Wrap<T>) -> &mut Self {
+        FrameworkState::request_load();
+        self.children.push((child, ChildState::new()));
+        self
+    }
 }
 
-impl<T: Widget> Widget for HContainer<T> {
+impl<T: Widget + ?Sized> Widget for HContainer<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         for (child, _) in &mut self.children {
             child.load(stack);

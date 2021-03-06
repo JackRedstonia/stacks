@@ -5,16 +5,14 @@ pub mod utils;
 pub use skulpin_renderer::skia_safe as skia;
 
 pub mod prelude {
-    pub use crate::framework::{
-        resource::{
-            ResourceHoster, ResourceStack, ResourceUsage, ResourceUsageMut,
-            ResourceUser,
-        },
-        widgets::{
-            LayoutDimension, LayoutSize, Widget, WidgetState, Wrap, Wrappable,
-        },
-        FrameworkState,
+    pub use crate::framework::resource::{
+        ResourceHoster, ResourceStack, ResourceUsage, ResourceUsageMut,
+        ResourceUser,
     };
+    pub use crate::framework::widgets::{
+        LayoutDimension, LayoutSize, Widget, WidgetState, Wrap, Wrappable,
+    };
+    pub use crate::framework::FrameworkState;
     pub use crate::game::{InputEvent, State};
     pub use crate::utils::*;
     pub use skia::{

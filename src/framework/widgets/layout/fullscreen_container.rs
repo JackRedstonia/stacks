@@ -1,13 +1,14 @@
 use crate::prelude::*;
 
-pub struct FullscreenContainer<T: Widget> {
+pub struct FullscreenContainer<T: Widget + ?Sized> {
     child: Wrap<T>,
     key: Keycode,
     lock: bool,
 }
 
-impl<T: Widget> FullscreenContainer<T> {
+impl<T: Widget + ?Sized> FullscreenContainer<T> {
     pub fn new(child: Wrap<T>) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             key: Keycode::F11,
@@ -17,7 +18,7 @@ impl<T: Widget> FullscreenContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for FullscreenContainer<T> {
+impl<T: Widget + ?Sized> Widget for FullscreenContainer<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }

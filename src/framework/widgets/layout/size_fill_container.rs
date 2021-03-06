@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub struct SizeFillContainer<T: Widget> {
+pub struct SizeFillContainer<T: Widget + ?Sized> {
     child: Wrap<T>,
     size: Size,
     child_size: LayoutSize,
@@ -8,8 +8,9 @@ pub struct SizeFillContainer<T: Widget> {
     matrix: Matrix,
 }
 
-impl<T: Widget> SizeFillContainer<T> {
+impl<T: Widget + ?Sized> SizeFillContainer<T> {
     pub fn new(child: Wrap<T>, target_size: Option<Size>) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             child,
             size: Size::default(),
@@ -21,7 +22,7 @@ impl<T: Widget> SizeFillContainer<T> {
     }
 }
 
-impl<T: Widget> Widget for SizeFillContainer<T> {
+impl<T: Widget + ?Sized> Widget for SizeFillContainer<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }

@@ -25,7 +25,7 @@ impl<T: StdError + Send + 'static> From<T> for FrameworkError {
     }
 }
 
-pub struct Framework<T: Widget> {
+pub struct Framework<T: Widget + ?Sized> {
     root: Wrap<T>,
     layout_size: LayoutSize,
     size: Size,

@@ -123,7 +123,7 @@ impl ChildState {
         }
     }
 
-    pub fn size<T: Widget>(
+    pub fn size<T: Widget + ?Sized>(
         &mut self,
         widget: &mut Wrap<T>,
     ) -> (LayoutSize, bool, bool) {
@@ -135,7 +135,7 @@ impl ChildState {
         (s, self.changed, c)
     }
 
-    pub fn maybe_set_size<T: Widget>(
+    pub fn maybe_set_size<T: Widget + ?Sized>(
         &mut self,
         widget: &mut Wrap<T>,
         size: Size,
