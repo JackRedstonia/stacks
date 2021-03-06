@@ -22,6 +22,10 @@ impl Throbber {
 }
 
 impl Widget for Throbber {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+
+    fn update(&mut self, state: &mut WidgetState) {}
+
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         self.take_input
             && event.position().map_or(false, |p| {

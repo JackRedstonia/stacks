@@ -1,13 +1,15 @@
 use crate::prelude::*;
 
-pub struct FullscreenContainer {
+pub struct FullscreenContainer<T: Widget> {
+    child: Wrap<T>,
     key: Keycode,
     lock: bool,
 }
 
-impl FullscreenContainer {
-    pub fn new() -> Wrap<Self> {
+impl<T: Widget> FullscreenContainer<T> {
+    pub fn new(child: Wrap<T>) -> Wrap<Self> {
         Self {
+            child,
             key: Keycode::F11,
             lock: false,
         }
@@ -15,7 +17,15 @@ impl FullscreenContainer {
     }
 }
 
-impl Widget for FullscreenContainer {
+impl<T: Widget> Widget for FullscreenContainer<T> {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.child.load(stack);
+    }
+
+    fn update(&mut self, state: &mut WidgetState) {
+        self.child.update();
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(k) if *k == self.key => {
@@ -29,23 +39,19 @@ impl Widget for FullscreenContainer {
                 self.lock = false;
                 true
             }
-            _ => state.child().map(|e| e.input(event)).unwrap_or(false),
+            _ => self.child.input(event),
         }
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        state.child().map(|e| e.size()).unwrap_or_default()
+        self.child.size()
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
-        if let Some(child) = state.child() {
-            child.set_size(size);
-        }
+        self.child.set_size(size);
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
-        if let Some(child) = state.child() {
-            child.draw(canvas);
-        }
+        self.child.draw(canvas);
     }
 }

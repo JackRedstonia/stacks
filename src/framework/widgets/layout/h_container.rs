@@ -1,24 +1,21 @@
-use crate::game::ID;
 use crate::prelude::*;
 
-use super::container::{ContainerSize, ContainerState};
+use super::container::{ChildState, ContainerSize};
 
-use std::collections::HashMap;
-
-pub struct HContainer {
+pub struct HContainer<T: Widget> {
+    children: Vec<(Wrap<T>, ChildState)>,
     size: ContainerSize,
     spacing: scalar,
-    states: HashMap<ID, ContainerState>,
     sizes_changed: bool,
 }
 
-impl HContainer {
+impl<T: Widget> HContainer<T> {
     pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
         Self {
-            states: HashMap::new(),
+            children: vec![],
+            size,
             spacing: spacing.unwrap_or(0.0),
             sizes_changed: false,
-            size,
         }
         .into()
     }
@@ -27,11 +24,10 @@ impl HContainer {
         let total_space = size.width;
 
         let mut min =
-            (state.children().len() as scalar - 1.0).max(0.0) * self.spacing;
+            (self.children.len() as scalar - 1.0).max(0.0) * self.spacing;
         let mut expand = 0.0f32;
 
-        for child in state.children() {
-            let state = self.states.get(&child.id()).unwrap();
+        for (child, state) in &self.children {
             min += state.layout_size.width.min;
             if let Some(e) = state.layout_size.width.expand {
                 expand += e;
@@ -40,8 +36,7 @@ impl HContainer {
 
         let space_left = (total_space - min).max(0.0);
         let mut offset = 0.0;
-        for child in state.children() {
-            let state = self.states.get_mut(&child.id()).unwrap();
+        for (child, state) in &mut self.children {
             let mut width = state.layout_size.width.min;
             if let Some(e) = state.layout_size.width.expand {
                 width += space_left * e / expand;
@@ -58,16 +53,27 @@ impl HContainer {
     }
 }
 
-impl Widget for HContainer {
+impl<T: Widget> Widget for HContainer<T> {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        for (child, _) in &mut self.children {
+            child.load(stack);
+        }
+    }
+
+    fn update(&mut self, state: &mut WidgetState) {
+        for (child, _) in &mut self.children {
+            child.update();
+        }
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        let c = event.consumable();
+        let c = event.is_consumable();
         let mut any = false;
-        for i in state.children().rev() {
-            let state = self.states.get(&i.id()).unwrap();
+        for (child, state) in self.children.iter_mut().rev() {
             if let Some(event) =
                 event.reverse_map_position(Matrix::translate(state.position))
             {
-                if i.input(&event) {
+                if child.input(&event) {
                     any = true;
                     if c {
                         break;
@@ -78,14 +84,6 @@ impl Widget for HContainer {
         any
     }
 
-    fn on_child_add(&mut self, child: &mut Wrap<dyn Widget>) {
-        self.states.insert(child.id(), ContainerState::new());
-    }
-
-    fn on_child_remove(&mut self, child: &mut Wrap<dyn Widget>) {
-        self.states.remove(&child.id());
-    }
-
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
         let mut width_min = 0.0f32;
         let mut height_min = 0.0f32;
@@ -93,9 +91,8 @@ impl Widget for HContainer {
         self.sizes_changed = false;
         let mut children_changed = false;
 
-        for i in state.children() {
-            let state = self.states.get_mut(&i.id()).unwrap();
-            let (size, s, c) = state.size(i);
+        for (child, state) in &mut self.children {
+            let (size, s, c) = state.size(child);
             self.sizes_changed |= s;
             children_changed |= c;
             width_min += size.width.min;
@@ -130,12 +127,11 @@ impl Widget for HContainer {
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        for i in state.children() {
-            let state = self.states.get(&i.id()).unwrap();
+        for (child, state) in &mut self.children {
             let m = Matrix::translate(state.position);
             canvas.save();
             canvas.concat(&m);
-            i.draw(canvas);
+            child.draw(canvas);
             canvas.restore();
         }
     }

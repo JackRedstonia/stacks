@@ -7,8 +7,9 @@ pub trait TimeReport: Widget {
 }
 
 // Transitions from one specific widget to its children permanently.
-pub struct AB<T: TimeReport + ?Sized> {
-    a: Option<(Wrap<T>, scalar)>,
+pub struct AB<A: TimeReport + ?Sized, B: Widget> {
+    a: Option<(Wrap<A>, scalar)>,
+    b: Wrap<B>,
     fade_time: Duration,
     running: Option<(Duration, Duration)>,
     just_switched: bool,
@@ -16,20 +17,22 @@ pub struct AB<T: TimeReport + ?Sized> {
     schedule_set_size: bool,
 }
 
-impl<T: TimeReport + 'static> AB<T> {
-    pub fn new(a: Wrap<T>, fade_time: Duration) -> Wrap<Self> {
-        Wrap::new(Self {
-            a: Some((a.clone(), 0.0)),
+impl<A: TimeReport, B: Widget> AB<A, B> {
+    pub fn new(a: Wrap<A>, b: Wrap<B>, fade_time: Duration) -> Wrap<Self> {
+        Self {
+            a: Some((a, 0.0)),
+            b,
             fade_time,
             running: None,
             just_switched: false,
             size: Size::default(),
             schedule_set_size: false,
-        })
+        }
+        .into()
     }
 }
 
-impl<T: TimeReport> AB<T> {
+impl<A: TimeReport, B: Widget> AB<A, B> {
     pub fn is_running(&self) -> bool {
         self.a.is_none() || self.running.is_some()
     }
@@ -67,31 +70,26 @@ impl<T: TimeReport> AB<T> {
     }
 }
 
-impl<T: TimeReport> Widget for AB<T> {
+impl<A: TimeReport, B: Widget> Widget for AB<A, B> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some((a, _)) = &mut self.a {
             a.load(stack);
         }
-        for i in state.children() {
-            i.load(stack);
-        }
+        self.b.load(stack);
     }
 
     fn update(&mut self, state: &mut WidgetState) {
         if let Some((a, _)) = &mut self.a {
             a.update();
         }
-        for i in state.children() {
-            i.update();
-        }
+        self.b.update();
     }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        if let Some((a, _)) = &mut self.a {
-            a.input(event)
-        } else {
-            state.child().map(|e| e.input(event)).unwrap_or(false)
-        }
+        self.a
+            .as_mut()
+            .map(|a| a.0.input(event))
+            .unwrap_or_else(|| self.b.input(event))
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
@@ -105,7 +103,7 @@ impl<T: TimeReport> Widget for AB<T> {
                 self.just_switched = false;
             }
         }
-        let (bs, bc) = state.child().map(|e| e.size()).unwrap_or_default();
+        let (bs, bc) = self.b.size();
         (bs, bc || changed)
     }
 
@@ -114,12 +112,10 @@ impl<T: TimeReport> Widget for AB<T> {
         if let Some((a, f)) = &mut self.a {
             a.set_size(size);
             if *f != 0.0 {
-                if let Some(b) = state.child() {
-                    b.set_size(size);
-                }
+                self.b.set_size(size);
             }
-        } else if let Some(b) = state.child() {
-            b.set_size(size);
+        } else {
+            self.b.set_size(size);
         }
     }
 
@@ -128,16 +124,12 @@ impl<T: TimeReport> Widget for AB<T> {
         self.just_switched |= t;
         if self.schedule_set_size {
             self.schedule_set_size = false;
-            if let Some(b) = state.child() {
-                b.set_size(self.size);
-            }
+            self.b.set_size(self.size);
         }
         match &mut self.a {
             Some((a, f)) => {
                 if *f != 0.0 {
-                    if let Some(b) = state.child() {
-                        b.draw(canvas);
-                    }
+                    self.b.draw(canvas);
                     let i = canvas
                         .save_layer_alpha(None, ((1.0 - *f) * 255.0) as _);
                     a.draw(canvas);
@@ -147,9 +139,7 @@ impl<T: TimeReport> Widget for AB<T> {
                 }
             }
             None => {
-                if let Some(b) = state.child() {
-                    b.draw(canvas);
-                }
+                self.b.draw(canvas);
             }
         }
     }

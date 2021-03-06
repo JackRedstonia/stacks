@@ -35,7 +35,7 @@ impl InputEvent {
         })
     }
 
-    pub fn consumable(&self) -> bool {
+    pub fn is_consumable(&self) -> bool {
         match self {
             InputEvent::MouseMove(_)
             | InputEvent::MouseUp(_, _)

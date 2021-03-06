@@ -219,4 +219,6 @@ impl Widget for AudioPlayer {
         path.close();
         canvas.draw_path(&path, &self.fft_paint);
     }
+
+    fn update(&mut self, state: &mut WidgetState) {}
 }

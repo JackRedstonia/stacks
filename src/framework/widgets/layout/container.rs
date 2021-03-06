@@ -104,7 +104,7 @@ impl From<LayoutDimension> for ContainerDimension {
     }
 }
 
-pub struct ContainerState {
+pub struct ChildState {
     pub layout_size: LayoutSize,
     pub position: Vector,
     size: Size,
@@ -112,7 +112,7 @@ pub struct ContainerState {
     children_changed: bool,
 }
 
-impl ContainerState {
+impl ChildState {
     pub fn new() -> Self {
         Self {
             layout_size: LayoutSize::ZERO,
@@ -123,9 +123,9 @@ impl ContainerState {
         }
     }
 
-    pub fn size(
+    pub fn size<T: Widget>(
         &mut self,
-        widget: &mut Wrap<dyn Widget>,
+        widget: &mut Wrap<T>,
     ) -> (LayoutSize, bool, bool) {
         let (s, c) = widget.size();
         self.changed = self.layout_size != s;
@@ -135,9 +135,9 @@ impl ContainerState {
         (s, self.changed, c)
     }
 
-    pub fn maybe_set_size(
+    pub fn maybe_set_size<T: Widget>(
         &mut self,
-        widget: &mut Wrap<dyn Widget>,
+        widget: &mut Wrap<T>,
         size: Size,
     ) {
         if self.changed || self.children_changed || size != self.size {

@@ -204,53 +204,45 @@ impl AudioResource {
     }
 }
 
-pub struct Audio {
+pub struct Audio<T: Widget> {
+    child: Wrap<T>,
     resource: ResourceHoster<AudioResource>,
 }
 
-impl Audio {
-    pub fn new() -> Result<Wrap<Self>, AudioError> {
+impl<T: Widget> Audio<T> {
+    pub fn new(child: Wrap<T>) -> Result<Wrap<Self>, AudioError> {
         Ok(Self {
+            child,
             resource: AudioResource::new()?,
         }
         .into())
     }
 }
 
-impl Widget for Audio {
+impl<T: Widget> Widget for Audio<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
-        for c in state.children() {
-            c.load(stack);
-        }
+        self.child.load(stack);
         stack.pop::<ResourceUser<AudioResource>>();
     }
 
+    fn update(&mut self, state: &mut WidgetState) {
+        self.child.update();
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        state
-            .children()
-            .next()
-            .map(|e| e.input(event))
-            .unwrap_or(false)
+        self.child.input(event)
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        state
-            .children()
-            .next()
-            .map(|e| e.size())
-            .unwrap_or_default()
+        self.child.size()
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
-        if let Some(child) = state.child() {
-            child.set_size(size);
-        }
+        self.child.set_size(size);
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(child) = state.child() {
-            child.draw(canvas);
-        }
+        self.child.draw(canvas);
     }
 }

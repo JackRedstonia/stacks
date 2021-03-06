@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
-pub struct ScrollContainer {
+pub struct ScrollContainer<T: Widget> {
+    child: Wrap<T>,
     offset: scalar,
     target_offset: scalar,
     size: Size,
@@ -10,9 +11,10 @@ pub struct ScrollContainer {
     matrix: Matrix,
 }
 
-impl ScrollContainer {
-    pub fn new(size: LayoutSize) -> Wrap<Self> {
+impl<T: Widget> ScrollContainer<T> {
+    pub fn new(child: Wrap<T>, size: LayoutSize) -> Wrap<Self> {
         Self {
+            child,
             offset: 0.0,
             target_offset: 0.0,
             size: Size::default(),
@@ -47,61 +49,56 @@ impl ScrollContainer {
     }
 }
 
-impl Widget for ScrollContainer {
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        if let Some(child) = state.child() {
-            if let Some(p) = event.position() {
-                if event.consumable() && !Rect::from_size(self.size).contains(p)
-                {
-                    return false;
-                }
-            }
+impl<T: Widget> Widget for ScrollContainer<T> {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.child.load(stack);
+    }
 
-            let taken = event
-                .reverse_map_position(self.matrix)
-                .map(|e| child.input(&e) && e.consumable())
-                .unwrap_or(false);
-            if !taken {
-                if let InputEvent::MouseScroll(i, _) = event {
-                    self.scroll(*i);
-                    return true;
-                }
+    fn update(&mut self, state: &mut WidgetState) {
+        self.child.update();
+    }
+
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        if let Some(p) = event.position() {
+            if event.is_consumable() && !Rect::from_size(self.size).contains(p)
+            {
+                return false;
             }
-            return taken;
         }
-        false
+
+        let taken = event
+            .reverse_map_position(self.matrix)
+            .map(|e| self.child.input(&e) && e.is_consumable())
+            .unwrap_or(false);
+        if !taken {
+            if let InputEvent::MouseScroll(i, _) = event {
+                self.scroll(*i);
+                return true;
+            }
+        }
+        taken
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        let changed = state
-            .child()
-            .map(|e| {
-                let s = e.size();
-                let changed = self.child_layout_size == s.0;
-                self.child_layout_size = s.0;
-                changed || s.1
-            })
-            .unwrap_or(false);
-        (self.layout_size, changed)
+        let s = self.child.size();
+        let changed = self.child_layout_size == s.0;
+        self.child_layout_size = s.0;
+        (self.layout_size, changed || s.1)
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         self.size = size;
-        if let Some(child) = state.child() {
-            self.child_size = self.child_layout_size.layout_one(size);
-            child.set_size(self.child_size);
-            self.rescroll();
-        }
+        self.child_size = self.child_layout_size.layout_one(size);
+        self.child.set_size(self.child_size);
+        self.rescroll();
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
         self.interpolate_scroll();
-        if let Some(child) = state.child() {
-            canvas.save();
-            canvas.clip_rect(Rect::from_size(self.size), None, true);
-            canvas.concat(&self.matrix);
-            child.draw(canvas);
-            canvas.restore();
-        }
+        canvas.save();
+        canvas.clip_rect(Rect::from_size(self.size), None, true);
+        canvas.concat(&self.matrix);
+        self.child.draw(canvas);
+        canvas.restore();
     }
 }

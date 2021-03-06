@@ -1,5 +1,4 @@
 use super::super::{
-    backgrounded::Backgrounded,
     layout::{Margin, MarginContainer},
     shapes::Rectangle,
     Font, FontStyle, Text, TextLayoutMode,
@@ -7,11 +6,12 @@ use super::super::{
 use crate::prelude::*;
 
 pub struct Button {
-    background: Wrap<Rectangle>,
-    label: Wrap<MarginContainer>,
+    rect: Wrap<Rectangle>,
+    label: Wrap<MarginContainer<ButtonLabel>>,
+    size: Size,
+
     glow: scalar,
     glow_paint: Paint,
-    size: Size,
 
     on_click_fns: Vec<Box<dyn FnMut()>>,
 }
@@ -23,15 +23,15 @@ impl Button {
         background: Paint,
         label_paint: Paint,
     ) -> Wrap<Self> {
-        let background = Rectangle::new(
+        let rect = Rectangle::new(
             LayoutSize::ZERO.expand_width().expand_height(),
             background,
         );
         let label_aa = label_paint.is_anti_alias();
         let label = ButtonLabel::new(label, label_size, label_paint);
-        let label = MarginContainer::new(Margin::all(15.0)).with_child(label);
+        let label = MarginContainer::new(label, Margin::all(15.0));
         Self {
-            background: background.clone(),
+            rect: rect.clone(),
             label: label.clone(),
             glow: 0.0,
             glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0)
@@ -40,9 +40,6 @@ impl Button {
             on_click_fns: vec![],
         }
         .wrap()
-        .with_child(
-            Backgrounded::new().with_child(background).with_child(label),
-        )
     }
 
     /// Adds a function that will be called whenever this button is pressed.
@@ -54,6 +51,10 @@ impl Button {
 }
 
 impl Widget for Button {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+
+    fn update(&mut self, state: &mut WidgetState) {}
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         let r = Rect::from_size(self.size);
         match event {
@@ -73,22 +74,21 @@ impl Widget for Button {
             }
             _ => {}
         }
-        state.child().map(|e| e.input(event)).unwrap_or(false)
+        false
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        state.child().map(|e| e.size()).unwrap_or_default()
+        self.label.size()
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         self.size = size;
-        if let Some(child) = state.child() {
-            child.set_size(size);
-        }
+        self.label.set_size(size);
+        self.rect.set_size(size);
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        self.background.draw(canvas);
+        self.rect.draw(canvas);
 
         let t = State::last_update_time_draw().as_secs_f32() * 4.0;
         self.glow = (self.glow - t).max(0.0);
@@ -118,23 +118,24 @@ impl ButtonLabel {
             label_size,
             label_paint,
         );
-        Self { label: l.clone() }.wrap().with_child(l)
+        Self { label: l }.wrap()
     }
 }
 
 impl Widget for ButtonLabel {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+
+    fn update(&mut self, state: &mut WidgetState) {}
+
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
+        self.label.size()
+    }
+
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.label.set_size(size)
     }
 
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        let s = self.label.inner().bounds().size();
-        (LayoutSize::min(s.width, s.height), false)
-    }
-
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(child) = state.child() {
-            child.draw(canvas);
-        }
+        self.label.draw(canvas);
     }
 }

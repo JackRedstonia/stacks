@@ -4,7 +4,6 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::mem::transmute;
 use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak};
-use std::slice::IterMut;
 
 use crate::game::{InputEvent, ID};
 use crate::skia::{Canvas, Size};
@@ -44,25 +43,6 @@ impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetBorrowMut<'a, T> {
     }
 }
 
-pub struct WidgetChildrenBorrow<'a, T: 'a + Widget + ?Sized> {
-    iter: IterMut<'a, Wrap<dyn Widget>>,
-    _ref: RefMut<'a, WrapInner<T>>,
-}
-
-impl<'a, T: 'a + Widget + ?Sized> Deref for WidgetChildrenBorrow<'a, T> {
-    type Target = IterMut<'a, Wrap<dyn Widget>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.iter
-    }
-}
-
-impl<'a, T: 'a + Widget + ?Sized> DerefMut for WidgetChildrenBorrow<'a, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.iter
-    }
-}
-
 pub struct Wrap<T: Widget + ?Sized> {
     inner: Rc<RefCell<WrapInner<T>>>,
 }
@@ -96,13 +76,6 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         // This is obviously fine, as `_ref` is never to be accessed.
         let b = unsafe { transmute(&mut r.inner) };
         WidgetBorrowMut { widget: b, _ref: r }
-    }
-
-    pub fn children(&'a mut self) -> WidgetChildrenBorrow<'a, T> {
-        let mut r = self.inner.borrow_mut();
-        // This is obviously fine, as `_ref` is never to be accessed.
-        let b = unsafe { transmute(r.state.children()) };
-        WidgetChildrenBorrow { iter: b, _ref: r }
     }
 
     pub fn downgrade(&self) -> WrapWeak<T> {
@@ -151,29 +124,6 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         let state = &mut s.state;
         let inner = &mut s.inner;
         state.draw(inner, canvas);
-    }
-
-    pub fn add_child<E: Widget + 'static>(&mut self, child: Wrap<E>) {
-        let s = &mut *self.inner.borrow_mut();
-        let mut child = child.to_dyn();
-        s.inner.on_child_add(&mut child);
-        s.state.add_child_dyn(child);
-    }
-
-    pub fn add_child_dyn(&mut self, mut child: Wrap<dyn Widget>) {
-        let s = &mut *self.inner.borrow_mut();
-        s.inner.on_child_add(&mut child);
-        s.state.add_child_dyn(child);
-    }
-
-    pub fn with_child<E: Widget + 'static>(mut self, child: Wrap<E>) -> Self {
-        self.add_child(child);
-        self
-    }
-
-    pub fn with_child_dyn(mut self, child: Wrap<dyn Widget>) -> Self {
-        self.add_child_dyn(child);
-        self
     }
 }
 
@@ -232,7 +182,6 @@ impl<T: Widget> WrapInner<T> {
 
 pub struct WidgetState {
     id: ID,
-    children: Vec<Wrap<dyn Widget>>,
     is_hovered: bool,
     was_hovered: bool,
 }
@@ -241,7 +190,6 @@ impl WidgetState {
     pub fn new() -> Self {
         Self {
             id: ID::next(),
-            children: vec![],
             is_hovered: false,
             was_hovered: false,
         }
@@ -253,14 +201,6 @@ impl WidgetState {
 
     pub fn is_hovered(&self) -> bool {
         self.is_hovered
-    }
-
-    pub fn children(&mut self) -> IterMut<Wrap<dyn Widget>> {
-        self.children.iter_mut()
-    }
-
-    pub fn child(&mut self) -> Option<&mut Wrap<dyn Widget>> {
-        self.children.first_mut()
     }
 
     pub fn load<T: Widget + ?Sized>(
@@ -345,15 +285,6 @@ impl WidgetState {
         FrameworkState::current_focus()
             .map(|id| self.id == id)
             .unwrap_or(false)
-    }
-
-    pub fn add_child<E: 'static + Widget>(&mut self, child: Wrap<E>) {
-        self.add_child_dyn(child.to_dyn());
-    }
-
-    pub fn add_child_dyn(&mut self, child: Wrap<dyn Widget>) {
-        self.children.push(child);
-        FrameworkState::request_load();
     }
 }
 

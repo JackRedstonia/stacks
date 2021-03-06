@@ -1,52 +1,47 @@
 use crate::prelude::*;
 
-pub struct Transform {
+pub struct Transform<T: Widget> {
+    child: Wrap<T>,
     pub matrix: Matrix,
 }
 
-impl Transform {
-    pub fn new(matrix: Matrix) -> Wrap<Self> {
-        Self { matrix }.into()
+impl<T: Widget> Transform<T> {
+    pub fn new(child: Wrap<T>, matrix: Matrix) -> Wrap<Self> {
+        Self { child, matrix }.into()
     }
 }
 
-impl Widget for Transform {
+impl<T: Widget> Widget for Transform<T> {
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.child.load(stack);
+    }
+
+    fn update(&mut self, state: &mut WidgetState) {
+        self.child.update();
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        state
-            .child()
-            .map(|child| {
-                event
-                    .reverse_map_position(self.matrix)
-                    .map_or(false, |event| child.input(&event))
-            })
-            .unwrap_or(false)
+        event
+            .reverse_map_position(self.matrix)
+            .map_or(false, |event| self.child.input(&event))
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        state
-            .child()
-            .map(|child| {
-                let s = child.size();
-                (s.0.map(self.matrix), s.1)
-            })
-            .unwrap_or_default()
+        let s = self.child.size();
+        (s.0.map(self.matrix), s.1)
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
         if let Some(m) = self.matrix.invert() {
-            if let Some(child) = state.child() {
-                let (rect, _) = m.map_rect(Rect::from_size(size));
-                child.set_size(rect.size());
-            }
+            let (rect, _) = m.map_rect(Rect::from_size(size));
+            self.child.set_size(rect.size());
         }
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(child) = state.child() {
-            canvas.save();
-            canvas.concat(&self.matrix);
-            child.draw(canvas);
-            canvas.restore();
-        }
+        canvas.save();
+        canvas.concat(&self.matrix);
+        self.child.draw(canvas);
+        canvas.restore();
     }
 }

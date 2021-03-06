@@ -22,34 +22,17 @@ use super::resource::ResourceStack;
 
 #[allow(unused_variables)]
 pub trait Widget {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
-        for i in state.children() {
-            i.load(stack);
-        }
-    }
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack);
 
-    fn update(&mut self, state: &mut WidgetState) {
-        for i in state.children() {
-            i.update();
-        }
-    }
+    fn update(&mut self, state: &mut WidgetState);
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        for i in state.children().rev() {
-            if i.input(event) {
-                return true;
-            }
-        }
         false
     }
 
     fn hover(&mut self, state: &mut WidgetState) {}
 
     fn hover_lost(&mut self, state: &mut WidgetState) {}
-
-    fn on_child_add(&mut self, child: &mut Wrap<dyn Widget>) {}
-
-    fn on_child_remove(&mut self, child: &mut Wrap<dyn Widget>) {}
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
         (LayoutSize::ZERO, false)

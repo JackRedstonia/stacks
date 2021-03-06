@@ -6,54 +6,44 @@ use std::mem::transmute;
 use skia::font_style::{Slant, Weight, Width};
 use skia::{Data, Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
 
-pub struct Fonts {
+pub struct Fonts<T: Widget> {
+    child: Wrap<T>,
     resource: ResourceHoster<FontResource>,
 }
 
-impl Fonts {
-    pub fn new() -> Wrap<Self> {
+impl<T: Widget> Fonts<T> {
+    pub fn new(child: Wrap<T>) -> Wrap<Self> {
         Self {
+            child,
             resource: FontResource::new(),
         }
         .into()
     }
 }
 
-impl Widget for Fonts {
+impl<T: Widget> Widget for Fonts<T> {
     fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
-        for i in state.children() {
-            i.load(stack);
-        }
+        self.child.load(stack);
         stack.pop::<ResourceUser<FontResource>>();
     }
 
+    fn update(&mut self, state: &mut WidgetState) {}
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        state
-            .children()
-            .next()
-            .map(|e| e.input(event))
-            .unwrap_or(false)
+        self.child.input(event)
     }
 
     fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
-        state
-            .children()
-            .next()
-            .map(|e| e.size())
-            .unwrap_or_default()
+        self.child.size()
     }
 
     fn set_size(&mut self, state: &mut WidgetState, size: Size) {
-        if let Some(child) = state.child() {
-            child.set_size(size);
-        }
+        self.child.set_size(size);
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
-        if let Some(child) = state.child() {
-            child.draw(canvas);
-        }
+        self.child.draw(canvas);
     }
 }
 
