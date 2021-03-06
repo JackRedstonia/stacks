@@ -99,6 +99,17 @@ impl Widget for Text {
             if let Some(f) = f.try_access() {
                 self.sk_font =
                     Some(f.resolve(self.font, self.style, self.font_size));
+                // Lay out text immediately if we don't care about layout sizes
+                if self.layout_mode == TextLayoutMode::OneLine {
+                    self.paragraph = Some(Paragraph::new(
+                        &self.text,
+                        self.sk_font.as_ref().unwrap(),
+                        None,
+                    ));
+                } else {
+                    // Invalidate old paragraphs
+                    self.paragraph = None;
+                }
             }
         }
     }
