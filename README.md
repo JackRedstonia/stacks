@@ -9,10 +9,14 @@ A few noteworthy features:
 - Separate threads for game logic and rendering
 - No sweeping garbage collector
 - Absolute memory safety
-- Short compile times (3-5 seconds on a modern Linux machine, using LLD linker)
+- Short compile times (1-5 seconds on a modern Linux machine, using LLD linker)
 
 ## Current state
-For graphics, Stacks utilises Skia with Vulkan. Audio is in a usable state, based on the SoLoud audio library.
+Stacks' is in an "experimental" phase, and as such its implementation and API rapidly change. ***Very*** big and ***very*** breaking changes are to be expected. Large portions of Stacks are not documented yet, but anywhere `unsafe` is used, at least a `SAFETY: ...` comment is expected.
+
+For graphics, Stacks utilises Skia with Vulkan. The Vulkan restriction may or may not be relaxed in the future, due to the Skulpin crate soon switching to a backend-agnostic renderer called Rafx.
+
+Audio is in a usable state, based on the SoLoud audio library, though it is planned to be replaced by a new audio library written in Rust in the future due to it being written in C++ and several showstopping bugs preventing production use. Once that happens, only `.ogg` files will have planned support.
 
 The repository currently contains a library and a few examples as demos. To run them, execute `cargo run --example <name> --release`.
 
@@ -37,7 +41,7 @@ A MSVC toolchain is required (solely to build `skia-bindings`). Follow the `sdl2
 MIT license. See the LICENSE file for more information.
 
 ## Contributing
-This repository is actively reviewing and accepting pull requests & issues, especially those that improve performance and code quality. When participating in this project, please follow the Code of Conduct, as specified by the [`CODE_OF_CONDUCT.md` file](CODE_OF_CONDUCT.md).
+This repository is actively reviewing and accepting pull requests & issues, especially those that add documentation, improve performance or code quality. When participating in this project, please follow the Code of Conduct, as specified by the [`CODE_OF_CONDUCT.md` file](CODE_OF_CONDUCT.md).
 
 Any code you contribute to this repository is to be under the MIT license.
 
