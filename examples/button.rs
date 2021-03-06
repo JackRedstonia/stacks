@@ -1,7 +1,7 @@
 use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
-        layout::{ContainerSize, Margin, MarginContainer, VContainer},
+        layout::{ContainerSize, Margin, MarginContainer, VContainerDyn},
         ui::Button,
         Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
@@ -45,14 +45,15 @@ fn main() {
             }
         });
 
-        let root =
-            VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0))
-                .with_child(text)
-                .with_child(button)
-                .with_child(player);
-        let root = MarginContainer::new(Margin::all(18.0)).with_child(root);
-        let root = Fonts::new().with_child(root);
-        let root = Audio::new()?.with_child(root);
+        let mut root =
+            VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
+        root.inner_mut()
+                .add_child(text.to_dyn())
+                .add_child(button.to_dyn())
+                .add_child(player.to_dyn());
+        let root = MarginContainer::new(root, Margin::all(18.0));
+        let root = Fonts::new(root);
+        let root = Audio::new(root)?;
         Ok(root)
     })
     .expect("Failed to run game");

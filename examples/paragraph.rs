@@ -1,7 +1,7 @@
 use stacks::framework::{
     widgets::{
         layout::{
-            ContainerSize, Margin, MarginContainer, ScrollContainer, VContainer,
+            ContainerSize, Margin, MarginContainer, ScrollContainer, VContainerDyn,
         },
         Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
@@ -25,11 +25,12 @@ fn main() {
             Some(24.0),
             paint,
         );
-        let text = ScrollContainer::new(LayoutSize::ZERO.expand_width().expand_height()).with_child(text);
+        let text = ScrollContainer::new(text, LayoutSize::ZERO.expand_width().expand_height());
 
-        let root = VContainer::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0)).with_child(header).with_child(text);
-        let root = MarginContainer::new(Margin::all(18.0)).with_child(root);
-        let root = Fonts::new().with_child(root);
+        let mut root = VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
+        root.inner_mut().add_child(header.to_dyn()).add_child(text.to_dyn());
+        let root = MarginContainer::new(root, Margin::all(18.0));
+        let root = Fonts::new(root);
         Ok(root)
     })
     .expect("Failed to run game");
