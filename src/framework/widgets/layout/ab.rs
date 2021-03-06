@@ -72,28 +72,28 @@ impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
 }
 
 impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some((a, _)) = &mut self.a {
             a.load(stack);
         }
         self.b.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         if let Some((a, _)) = &mut self.a {
             a.update();
         }
         self.b.update();
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         self.a
             .as_mut()
             .map(|a| a.0.input(event))
             .unwrap_or_else(|| self.b.input(event))
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let mut changed = false;
         if let Some((a, f)) = &mut self.a {
             if *f == 0.0 {
@@ -108,7 +108,7 @@ impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
         (bs, bc || changed)
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         if let Some((a, f)) = &mut self.a {
             a.set_size(size);
@@ -120,7 +120,7 @@ impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
         }
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         let t = self.tick_forward();
         self.just_switched |= t;
         if self.schedule_set_size {

@@ -51,17 +51,17 @@ impl Button {
 }
 
 impl Widget for Button {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.rect.load(stack);
         self.label.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.rect.update();
         self.label.update();
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         let r = Rect::from_size(self.size);
         match event {
             InputEvent::MouseDown(MouseButton::Left, position)
@@ -83,11 +83,11 @@ impl Widget for Button {
         false
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         self.label.size()
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         self.label.set_size(size);
         self.rect.set_size(size);
@@ -129,11 +129,11 @@ impl ButtonLabel {
 }
 
 impl Widget for ButtonLabel {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.label.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.label.update();
     }
 
@@ -145,7 +145,7 @@ impl Widget for ButtonLabel {
         self.label.set_size(size)
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.label.draw(canvas);
     }
 }

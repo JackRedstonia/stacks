@@ -23,27 +23,27 @@ impl<T: Widget + ?Sized> Fonts<T> {
 }
 
 impl<T: Widget + ?Sized> Widget for Fonts<T> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         stack.push(self.resource.new_user());
         self.child.load(stack);
         stack.pop::<ResourceUser<FontResource>>();
     }
 
-    fn update(&mut self, state: &mut WidgetState) {}
+    fn update(&mut self, _state: &mut WidgetState) {}
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         self.child.input(event)
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         self.child.size()
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.child.set_size(size);
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.child.draw(canvas);
     }
 }

@@ -21,28 +21,28 @@ impl<T: Widget + ?Sized> CenterContainer<T> {
 }
 
 impl<T: Widget + ?Sized> Widget for CenterContainer<T> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.child.update();
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         event
             .reverse_map_position(self.matrix)
             .map(|e| self.child.input(&e))
             .unwrap_or(false)
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let s = self.child.size();
         self.child_layout_size = s.0;
         s
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         let child_size = self.child_layout_size.layout_one(size);
         let offset = (size.bottom_right() - child_size.bottom_right()) * 0.5;
@@ -50,7 +50,7 @@ impl<T: Widget + ?Sized> Widget for CenterContainer<T> {
         self.child.set_size(child_size);
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
         canvas.save();
         canvas.concat(&self.matrix);
         self.child.draw(canvas);

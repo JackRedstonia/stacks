@@ -23,14 +23,14 @@ impl<T: Widget + ?Sized> HContainer<T> {
         .into()
     }
 
-    fn layout(&mut self, state: &mut WidgetState, size: Size) {
+    fn layout(&mut self, _state: &mut WidgetState, size: Size) {
         let total_space = size.width;
 
         let mut min =
             (self.children.len() as scalar - 1.0).max(0.0) * self.spacing;
         let mut expand = 0.0f32;
 
-        for (child, state) in &self.children {
+        for (_, state) in &self.children {
             min += state.layout_size.width.min;
             if let Some(e) = state.layout_size.width.expand {
                 expand += e;
@@ -63,19 +63,19 @@ impl<T: Widget + ?Sized> HContainer<T> {
 }
 
 impl<T: Widget + ?Sized> Widget for HContainer<T> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         for (child, _) in &mut self.children {
             child.load(stack);
         }
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         for (child, _) in &mut self.children {
             child.update();
         }
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         let c = event.is_consumable();
         let mut any = false;
         for (child, state) in self.children.iter_mut().rev() {
@@ -93,7 +93,7 @@ impl<T: Widget + ?Sized> Widget for HContainer<T> {
         any
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let mut width_min = 0.0f32;
         let mut height_min = 0.0f32;
 
@@ -135,7 +135,7 @@ impl<T: Widget + ?Sized> Widget for HContainer<T> {
         self.layout(state, size);
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         for (child, state) in &mut self.children {
             let m = Matrix::translate(state.position);
             canvas.save();

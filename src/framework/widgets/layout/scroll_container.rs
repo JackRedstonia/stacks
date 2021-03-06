@@ -51,15 +51,15 @@ impl<T: Widget + ?Sized> ScrollContainer<T> {
 }
 
 impl<T: Widget + ?Sized> Widget for ScrollContainer<T> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.child.update();
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         if let Some(p) = event.position() {
             if event.is_consumable() && !Rect::from_size(self.size).contains(p)
             {
@@ -80,21 +80,21 @@ impl<T: Widget + ?Sized> Widget for ScrollContainer<T> {
         taken
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let s = self.child.size();
         let changed = self.child_layout_size == s.0;
         self.child_layout_size = s.0;
         (self.layout_size, changed || s.1)
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         self.child_size = self.child_layout_size.layout_one(size);
         self.child.set_size(self.child_size);
         self.rescroll();
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
         self.interpolate_scroll();
         canvas.save();
         canvas.clip_rect(Rect::from_size(self.size), None, true);

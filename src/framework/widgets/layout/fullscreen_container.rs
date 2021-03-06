@@ -19,15 +19,15 @@ impl<T: Widget + ?Sized> FullscreenContainer<T> {
 }
 
 impl<T: Widget + ?Sized> Widget for FullscreenContainer<T> {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.child.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.child.update();
     }
 
-    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(k) if *k == self.key => {
                 if !self.lock {
@@ -44,15 +44,15 @@ impl<T: Widget + ?Sized> Widget for FullscreenContainer<T> {
         }
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         self.child.size()
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.child.set_size(size);
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut skia::Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
         self.child.draw(canvas);
     }
 }
