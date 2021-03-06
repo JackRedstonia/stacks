@@ -8,8 +8,8 @@ use crate::prelude::*;
 pub struct Button {
     rect: Wrap<Rectangle>,
     label: Wrap<MarginContainer<ButtonLabel>>,
-    size: Size,
 
+    size: Size,
     glow: scalar,
     glow_paint: Paint,
 
@@ -33,10 +33,10 @@ impl Button {
         Self {
             rect: rect.clone(),
             label: label.clone(),
+            size: Size::default(),
             glow: 0.0,
             glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0)
                 .with_anti_alias(label_aa),
-            size: Size::default(),
             on_click_fns: vec![],
         }
         .wrap()
@@ -51,9 +51,15 @@ impl Button {
 }
 
 impl Widget for Button {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.rect.load(stack);
+        self.label.load(stack);
+    }
 
-    fn update(&mut self, state: &mut WidgetState) {}
+    fn update(&mut self, state: &mut WidgetState) {
+        self.rect.update();
+        self.label.update();
+    }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         let r = Rect::from_size(self.size);
@@ -110,7 +116,7 @@ impl ButtonLabel {
         label_paint: Paint,
     ) -> Wrap<Self> {
         let l = Text::new(
-            LayoutSize::ZERO.expand_width().expand_height(),
+            LayoutSize::ZERO,
             Some(TextLayoutMode::OneLine),
             label,
             Font::Default,
@@ -123,9 +129,13 @@ impl ButtonLabel {
 }
 
 impl Widget for ButtonLabel {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {}
+    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+        self.label.load(stack);
+    }
 
-    fn update(&mut self, state: &mut WidgetState) {}
+    fn update(&mut self, state: &mut WidgetState) {
+        self.label.update();
+    }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         self.label.size()
