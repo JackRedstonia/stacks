@@ -74,7 +74,7 @@ impl<'a, T: Widget + 'a> Wrap<T> {
         }
     }
 
-    fn to_dyn(self) -> Wrap<dyn Widget + 'a> {
+    pub fn to_dyn(self) -> Wrap<dyn Widget + 'a> {
         Wrap { inner: self.inner }
     }
 }
