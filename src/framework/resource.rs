@@ -48,6 +48,42 @@ impl<T> ResourceHoster<T> {
             resource: Rc::downgrade(&self.resource),
         }
     }
+
+    /// Accesses the resource.
+    ///
+    /// # Panics
+    /// Panics if the resource is currently being mutably borrowed.
+    pub fn access(&self) -> ResourceUsage<T> {
+        let rc = self.resource.clone();
+        // SAFETY: Transmutation of `Ref` here is okay, as we are clinging onto
+        // the corresponding `Rc`, which means the data `Ref` is pointing to is
+        // valid for as long as we require it to.
+        unsafe {
+            let val: Ref<'_, ResourceWrapper<T>> = transmute(rc.borrow());
+            let usage = transmute(&val.deref().resource);
+            let r = ResourceRef { _val: val, _rc: rc };
+            ResourceUsage { usage, holder: r }
+        }
+    }
+
+    /// Mutably accesses the resource.
+    ///
+    /// # Panics
+    /// Panics if the resource is currently being borrowed, be it mutable or
+    /// not.
+    pub fn access_mut(&self) -> ResourceUsageMut<T> {
+        let rc = self.resource.clone();
+        // SAFETY: Transmutation of `RefMut` here is okay, as we are clinging
+        // onto the corresponding `Rc`, which means the data `Ref` is pointing
+        // to is valid for as long as we require it to.
+        unsafe {
+            let mut val: RefMut<'_, ResourceWrapper<T>> =
+                transmute(rc.borrow_mut());
+            let usage = transmute(&mut val.deref_mut().resource);
+            let r = ResourceRefMut { _val: val, _rc: rc };
+            ResourceUsageMut { usage, holder: r }
+        }
+    }
 }
 
 /// An user of a resource.
