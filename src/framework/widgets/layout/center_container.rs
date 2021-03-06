@@ -36,7 +36,7 @@ impl Widget for CenterContainer {
             .map(|child| {
                 let (child_size, changed) = child.size();
                 self.child_layout_size = child_size;
-                (child_size.expand_width().expand_height(), changed)
+                (child_size, changed)
             })
             .unwrap_or_default()
     }
