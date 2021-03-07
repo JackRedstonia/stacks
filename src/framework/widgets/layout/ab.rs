@@ -8,8 +8,9 @@ pub trait TimeReport: Widget {
 
 // Transitions from one specific widget to its children permanently.
 pub struct AB<A: TimeReport + ?Sized, B: Widget + ?Sized> {
-    a: Option<(Wrap<A>, scalar)>,
+    a: Option<(Wrap<A>, LayoutSize, scalar)>,
     b: Wrap<B>,
+    b_size: LayoutSize,
     fade_time: Duration,
     running: Option<(Duration, Duration)>,
     just_switched: bool,
@@ -21,8 +22,9 @@ impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
     pub fn new(a: Wrap<A>, b: Wrap<B>, fade_time: Duration) -> Wrap<Self> {
         FrameworkState::request_load();
         Self {
-            a: Some((a, 0.0)),
+            a: Some((a, LayoutSize::default(), 0.0)),
             b,
+            b_size: LayoutSize::default(),
             fade_time,
             running: None,
             just_switched: false,
@@ -54,10 +56,10 @@ impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
 
             f.0.inner_mut().time(delta_scaled.min(1.0));
             if delta_scaled >= 1.0 {
-                if f.1 == 0.0 {
+                if f.2 == 0.0 {
                     self.schedule_set_size = true;
                 }
-                f.1 = ((delta - du) / fade_time).min(1.0);
+                f.2 = ((delta - du) / fade_time).min(1.0);
             }
 
             let fin = delta > du + fade_time;
@@ -73,14 +75,14 @@ impl<A: TimeReport, B: Widget + ?Sized> AB<A, B> {
 
 impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        if let Some((a, _)) = &mut self.a {
+        if let Some((a, _, _)) = &mut self.a {
             a.load(stack);
         }
         self.b.load(stack);
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
-        if let Some((a, _)) = &mut self.a {
+        if let Some((a, _, _)) = &mut self.a {
             a.update();
         }
         self.b.update();
@@ -95,9 +97,11 @@ impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let mut changed = false;
-        if let Some((a, f)) = &mut self.a {
+        if let Some((a, s, f)) = &mut self.a {
             if *f == 0.0 {
-                return a.size();
+                let sz = a.size();
+                *s = sz.0;
+                return sz;
             }
             if self.just_switched {
                 changed = true;
@@ -105,18 +109,19 @@ impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
             }
         }
         let (bs, bc) = self.b.size();
+        self.b_size = bs;
         (bs, bc || changed)
     }
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
-        if let Some((a, f)) = &mut self.a {
-            a.set_size(size);
+        if let Some((a, s, f)) = &mut self.a {
+            a.set_size(s.layout_one(size));
             if *f != 0.0 {
-                self.b.set_size(size);
+                self.b.set_size(self.b_size.layout_one(size));
             }
         } else {
-            self.b.set_size(size);
+            self.b.set_size(self.b_size.layout_one(size));
         }
     }
 
@@ -128,7 +133,7 @@ impl<A: TimeReport, B: Widget + ?Sized> Widget for AB<A, B> {
             self.b.set_size(self.size);
         }
         match &mut self.a {
-            Some((a, f)) => {
+            Some((a, _, f)) => {
                 if *f != 0.0 {
                     self.b.draw(canvas);
                     let i = canvas
