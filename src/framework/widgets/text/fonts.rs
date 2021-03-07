@@ -29,7 +29,9 @@ impl<T: Widget + ?Sized> Widget for Fonts<T> {
         stack.pop::<ResourceUser<FontResource>>();
     }
 
-    fn update(&mut self, _state: &mut WidgetState) {}
+    fn update(&mut self, _state: &mut WidgetState) {
+        self.child.update();
+    }
 
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         self.child.input(event)
