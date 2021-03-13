@@ -64,7 +64,7 @@ impl AudioResource {
             SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
             SoloudBackend::Auto,
             48000,
-            860,
+            1024,
             2,
         )?;
         soloud.set_post_clip_scaler(2.0);
