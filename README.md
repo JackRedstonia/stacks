@@ -38,12 +38,10 @@ $ apt-get install libsdl2-dev
 A MSVC toolchain is required (solely to build `skia-bindings`). Follow the `sdl2` crate's instructions on how to install development dependencies.
 
 ## License
-MIT license. See the LICENSE file for more information.
+See the LICENSE file.
 
 ## Contributing
-This repository is actively reviewing and accepting pull requests & issues, especially those that add documentation, improve performance or code quality. When participating in this project, please follow the Code of Conduct, as specified by the [`CODE_OF_CONDUCT.md` file](CODE_OF_CONDUCT.md).
-
-Any code you contribute to this repository is to be under the MIT license.
+This repository is actively reviewing and accepting pull requests & issues, especially those that add documentation, improve performance or code quality. Any code you contribute to this repository is to be under the GNU Affero GPL license, no exceptions.
 
 ## Note for GitHub users
 This repository is mirrored from GitLab. Development and non-`master` branches appear over at https://gitlab.com/JackRedstonia/stacks.
