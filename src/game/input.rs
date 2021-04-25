@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::skia;
 use skia::{Matrix, Point, Size};
 use skulpin_renderer::LogicalSize;
-use skulpin_renderer_sdl2::sdl2::{
+use sdl2::{
     event::{Event as Sdl2Event, WindowEvent},
     keyboard::Keycode,
     mouse::MouseButton,

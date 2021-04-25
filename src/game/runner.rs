@@ -15,10 +15,8 @@ use sdl2::{
     event::Event as Sdl2Event,
     video::{FullscreenType, Window as Sdl2Window},
 };
-use skulpin_renderer::{
-    ash::vk::Result as VkResult, LogicalSize, Renderer, RendererBuilder,
-};
-use skulpin_renderer_sdl2::{sdl2, Sdl2Window as SkulpinWindow};
+use skulpin_renderer::{LogicalSize, Renderer, RendererBuilder};
+use skulpin_renderer::rafx::api::{RafxExtents2D, RafxError};
 
 enum Event {
     CanvasReady,
@@ -35,7 +33,7 @@ enum FeedbackEvent<T> {
 
 #[derive(Debug)]
 pub enum Error {
-    RendererError(VkResult),
+    RendererError(RafxError),
     FullscreenError(String),
 }
 
@@ -57,8 +55,8 @@ impl StdError for Error {
     }
 }
 
-impl From<VkResult> for Error {
-    fn from(result: VkResult) -> Self {
+impl From<RafxError> for Error {
+    fn from(result: RafxError) -> Self {
         Error::RendererError(result)
     }
 }
@@ -177,9 +175,15 @@ impl Runner {
 
         let mut win = sdl_video
             .window(title, size.width, size.height)
+            .allow_highdpi()
             .resizable()
             .build()
             .expect("Failed to create game window");
+        
+        let (width, height) = win.vulkan_drawable_size();
+        let extents = RafxExtents2D {
+            width, height
+        };
 
         // Buffer size is 1 for pictures, we need pressure to immediately push
         // back at the game thread if we're overloading the swapchain with too
@@ -220,7 +224,7 @@ impl Runner {
         });
 
         let mut renderer = renderer_builder
-            .build(&SkulpinWindow::new(&win))
+            .build(&win, extents)
             .expect("Failed to create renderer");
 
         let mut event_pump =
@@ -302,8 +306,11 @@ impl Runner {
     ) -> bool {
         match pic_rx.try_recv() {
             Ok(pic) => {
-                let skulpin_window = SkulpinWindow::new(&win);
-                if let Err(e) = renderer.draw(&skulpin_window, |canvas, _| {
+                let (width, height) = win.vulkan_drawable_size();
+                let extents = RafxExtents2D {
+                    width, height
+                };
+                if let Err(e) = renderer.draw(extents, 1.0, |canvas, _| {
                     canvas.clear(Self::BACKGROUND);
                     canvas.draw_picture(pic, None, None);
                 }) {

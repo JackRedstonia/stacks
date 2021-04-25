@@ -1,5 +1,5 @@
 use skulpin_renderer::{
-    CoordinateSystem, LogicalSize, PresentMode, RendererBuilder,
+    CoordinateSystem, LogicalSize, RendererBuilder,
 };
 
 use super::{runner::Runner, Game};
@@ -22,8 +22,7 @@ impl<'a> Builder<'a> {
         Self {
             inner_size: LogicalSize::new(1280, 720),
             window_title: "Stacks",
-            renderer_builder: RendererBuilder::new()
-                .use_vulkan_debug_layer(false),
+            renderer_builder: RendererBuilder::new(),
         }
     }
 
@@ -36,14 +35,6 @@ impl<'a> Builder<'a> {
     /// Specifies the title that the window will be created with
     pub fn window_title(mut self, title: &'a str) -> Self {
         self.window_title = title;
-        self
-    }
-
-    /// Name of the app. This is passed into the vulkan layer. I believe it can hint things to the
-    /// vulkan driver, but it's unlikely this makes a real difference. Still a good idea to set this
-    /// to something meaningful though.
-    pub fn app_name(mut self, app_name: std::ffi::CString) -> Self {
-        self.renderer_builder = self.renderer_builder.app_name(app_name);
         self
     }
 
@@ -69,8 +60,7 @@ impl<'a> Builder<'a> {
             game,
             self.inner_size,
             self.window_title,
-            self.renderer_builder
-                .present_mode_priority(vec![PresentMode::Mailbox]),
+            self.renderer_builder.vsync_enabled(false),
         )
     }
 }

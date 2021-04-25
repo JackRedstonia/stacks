@@ -19,7 +19,7 @@ pub mod prelude {
         scalar, Canvas, Contains, Matrix, Paint, Rect, Size, Vector,
     };
     pub use skulpin_renderer::skia_safe as skia;
-    pub use skulpin_renderer_sdl2::sdl2::{
+    pub use sdl2::{
         keyboard::Keycode, mouse::MouseButton,
     };
     pub use soloud;

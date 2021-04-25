@@ -2,7 +2,6 @@ pub mod resource;
 pub mod widgets;
 
 use std::cell::RefCell;
-use std::ffi::{CString, NulError};
 
 use std::error::Error as StdError;
 use std::fmt::Debug;
@@ -15,7 +14,6 @@ use widgets::{LayoutSize, Widget, Wrap};
 
 #[derive(Debug)]
 pub enum FrameworkError {
-    CStringError(NulError),
     WidgetCreationError(Box<dyn StdError + Send + 'static>),
 }
 
@@ -40,7 +38,6 @@ impl<T: Widget> Framework<T> {
         F: 'static + Send + FnOnce() -> Result<Wrap<T>, FrameworkError>,
     {
         Builder::new()
-            .app_name(CString::new(name).map_err(FrameworkError::CStringError)?)
             .window_title(name)
             .run(|| {
                 FrameworkState::initialize();
