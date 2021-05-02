@@ -131,10 +131,10 @@ macro_rules! font_bytes {
 
 impl FontSet {
     fn new() -> Self {
-        let regular = unsafe { Data::new_bytes(font_bytes!("Medium")) };
-        let bold = unsafe { Data::new_bytes(font_bytes!("Bold")) };
-        let italic = unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
-        let bold_italic = unsafe { Data::new_bytes(font_bytes!("BoldItalic")) };
+        let regular = unsafe { Data::new_bytes(font_bytes!("Regular")) };
+        let bold = unsafe { Data::new_bytes(font_bytes!("Medium")) };
+        let italic = unsafe { Data::new_bytes(font_bytes!("Italic")) };
+        let bold_italic = unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
         Self {
             regular: Typeface::from_data(regular, None).unwrap(),
             bold: Typeface::from_data(bold, None).unwrap(),
@@ -176,7 +176,7 @@ impl FontSet {
                 FontStyle::Italic => &self.italic,
                 FontStyle::BoldItalic => &self.bold_italic,
             },
-            size.unwrap_or(16.0),
+            size.unwrap_or(13.5),
         )
     }
 }
