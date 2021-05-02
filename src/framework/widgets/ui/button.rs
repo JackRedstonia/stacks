@@ -29,7 +29,7 @@ impl Button {
         );
         let label_aa = label_paint.is_anti_alias();
         let label = ButtonLabel::new(label, label_size, label_paint);
-        let label = MarginContainer::new(label, Margin::all(15.0));
+        let label = MarginContainer::new(label, Margin::all(10.0));
         Self {
             rect: rect.clone(),
             label: label.clone(),
