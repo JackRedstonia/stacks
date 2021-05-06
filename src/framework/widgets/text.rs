@@ -247,7 +247,7 @@ impl Paragraph {
                 let word = &s[prev..end_index];
                 prev = end_index;
                 let pb = prev_break;
-                prev_break = matches!(break_op, BreakOpportunity::Mandatory);
+                prev_break = break_op == BreakOpportunity::Mandatory;
                 let word = if prev_break {
                     word.trim_end_matches('\n')
                 } else {
@@ -261,7 +261,7 @@ impl Paragraph {
         let mut s = Self {
             words,
             bounds: Rect::new_empty(),
-            line_height: font[0].metrics().0,
+            line_height: font[0].metrics().0.ceil(),
         };
         s.rerun_with_width(width);
         s
