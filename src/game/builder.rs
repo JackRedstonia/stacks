@@ -1,6 +1,4 @@
-use skulpin_renderer::{
-    CoordinateSystem, LogicalSize, RendererBuilder,
-};
+use skulpin_renderer::{CoordinateSystem, LogicalSize, RendererBuilder};
 
 use super::{runner::Runner, Game};
 

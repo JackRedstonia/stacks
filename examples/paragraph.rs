@@ -1,7 +1,8 @@
 use stacks::framework::{
     widgets::{
         layout::{
-            ContainerSize, Margin, MarginContainer, ScrollContainer, VContainerDyn,
+            ContainerSize, Margin, MarginContainer, ScrollContainer,
+            VContainerDyn,
         },
         Font, FontStyle, Fonts, Text, TextLayoutMode,
     },

@@ -37,13 +37,11 @@ impl<T: Widget> Framework<T> {
     where
         F: 'static + Send + FnOnce() -> Result<Wrap<T>, FrameworkError>,
     {
-        Builder::new()
-            .window_title(name)
-            .run(|| {
-                FrameworkState::initialize();
-                let root = root()?;
-                Ok(Self::new(root))
-            })
+        Builder::new().window_title(name).run(|| {
+            FrameworkState::initialize();
+            let root = root()?;
+            Ok(Self::new(root))
+        })
     }
 
     pub fn new(root: Wrap<T>) -> Self {

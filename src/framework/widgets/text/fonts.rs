@@ -134,7 +134,8 @@ impl FontSet {
         let regular = unsafe { Data::new_bytes(font_bytes!("Regular")) };
         let bold = unsafe { Data::new_bytes(font_bytes!("Medium")) };
         let italic = unsafe { Data::new_bytes(font_bytes!("Italic")) };
-        let bold_italic = unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
+        let bold_italic =
+            unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
         Self {
             regular: Typeface::from_data(regular, None).unwrap(),
             bold: Typeface::from_data(bold, None).unwrap(),
