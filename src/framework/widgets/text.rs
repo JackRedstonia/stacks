@@ -5,7 +5,7 @@ pub use fonts::{FontResource, Fonts};
 use std::mem::MaybeUninit;
 
 use crate::prelude::*;
-use skia::{Canvas, Font as SkFont, GlyphId, Path};
+use skia::{Canvas, Font as SkFont, GlyphId, Path, RoundOut};
 
 use unicode_linebreak::{linebreaks, BreakOpportunity};
 
@@ -88,7 +88,7 @@ impl Text {
     pub fn bounds(&self) -> Rect {
         self.paragraph
             .as_ref()
-            .map(|blob| blob.bounds)
+            .map(|blob| blob.bounds.round_out())
             .unwrap_or_default()
     }
 }
