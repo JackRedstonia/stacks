@@ -211,7 +211,9 @@ impl Widget for AudioPlayer {
                 let height = self.size.height
                     - Self::curve_fft_height(i / 16.0) * self.size.height;
                 let mid = (height + prev) / 2.0;
-                path.quad_to((n - quad_spacing, prev), (n, mid));
+                if n != 0.0 {
+                    path.quad_to((n - quad_spacing, prev), (n, mid));
+                }
                 path.quad_to((n + quad_spacing, height), (n + spacing, height));
                 path.line_to((n + width - spacing, height));
                 (n + width, height)
