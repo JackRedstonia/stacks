@@ -114,6 +114,11 @@ impl Widget for AudioPlayer {
         }
     }
 
+    fn update(&mut self, _state: &mut WidgetState) {
+        let factor = (State::last_update_time().as_secs_f32() * 16.0).min(1.0);
+        self.refresh_fft(factor);
+    }
+
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
             InputEvent::KeyDown(Keycode::Space) => {
@@ -194,9 +199,6 @@ impl Widget for AudioPlayer {
         }
 
         // Draw visualizations
-        let factor =
-            (State::last_update_time_draw().as_secs_f32() * 16.0).min(1.0);
-        self.refresh_fft(factor);
         let fft = &self.fft[..180];
         let width = self.size.width / fft.len() as f32;
         let mut path = skia::Path::new();
@@ -219,6 +221,4 @@ impl Widget for AudioPlayer {
         path.close();
         canvas.draw_path(&path, &self.fft_paint);
     }
-
-    fn update(&mut self, _state: &mut WidgetState) {}
 }
