@@ -2,8 +2,9 @@ use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
         layout::{ContainerSize, Margin, MarginContainer, VContainerDyn},
+        shapes::Rectangle,
         ui::Button,
-        Font, FontStyle, Fonts, Text, TextLayoutMode,
+        Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
 };
@@ -22,11 +23,11 @@ fn main() {
             text_paint.clone(),
         );
 
-        let background = Paint::new_color4f(0.2, 0.4, 0.6, 1.0).anti_alias();
+        let btn_bg = Paint::new_color4f(0.2, 0.4, 0.6, 1.0).anti_alias();
         let mut button = Button::new(
             "click to seek music player to 25%".to_owned(),
             None,
-            background,
+            btn_bg,
             text_paint,
         );
 
@@ -45,6 +46,9 @@ fn main() {
             }
         });
 
+        let bg_paint = Paint::new_color4f(0.1, 0.1, 0.1, 1.0).anti_alias();
+        let bg = Rectangle::new(LayoutSize::ZERO.expand_width().expand_height(), bg_paint);
+
         let mut root =
             VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
         root.inner_mut()
@@ -52,6 +56,7 @@ fn main() {
                 .add_child(button.to_dyn())
                 .add_child(player.to_dyn());
         let root = MarginContainer::new(root, Margin::all(18.0));
+        let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);
         let root = Audio::new(root)?;
         Ok(root)

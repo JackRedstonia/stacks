@@ -4,7 +4,8 @@ use stacks::framework::{
             ContainerSize, Margin, MarginContainer, ScrollContainer,
             VContainerDyn,
         },
-        Font, FontStyle, Fonts, Text, TextLayoutMode,
+        shapes::Rectangle,
+        Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
 };
@@ -28,9 +29,13 @@ fn main() {
         );
         let text = ScrollContainer::new(text, LayoutSize::ZERO.expand_width().expand_height());
 
+        let bg_paint = Paint::new_color4f(0.1, 0.1, 0.1, 1.0).anti_alias();
+        let bg = Rectangle::new(LayoutSize::ZERO.expand_width().expand_height(), bg_paint);
+
         let mut root = VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
         root.inner_mut().add_child(header.to_dyn()).add_child(text.to_dyn());
         let root = MarginContainer::new(root, Margin::all(18.0));
+        let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);
         Ok(root)
     })
