@@ -147,9 +147,8 @@ impl Runner {
         renderer_builder: RendererBuilder,
     ) -> Result<(), E>
     where
-        F: 'static + Send + FnOnce() -> Result<T, E>,
-        T: Game,
-        E: Send + 'static,
+        F: FnOnce() -> Result<T, E>,
+        T: Game
     {
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
         let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");

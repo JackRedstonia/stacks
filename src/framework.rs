@@ -13,11 +13,11 @@ use skia::{Canvas, Size};
 use widgets::{LayoutSize, Widget, Wrap};
 
 #[derive(Debug)]
-pub enum FrameworkError {
-    WidgetCreationError(Box<dyn StdError + Send + 'static>),
+pub enum FrameworkError<'a> {
+    WidgetCreationError(Box<dyn StdError + 'a>),
 }
 
-impl<T: StdError + Send + 'static> From<T> for FrameworkError {
+impl<'a, T: 'a + StdError> From<T> for FrameworkError<'a> {
     fn from(err: T) -> Self {
         Self::WidgetCreationError(Box::new(err))
     }
@@ -33,9 +33,9 @@ pub struct Framework<T: Widget + ?Sized> {
 }
 
 impl<T: Widget> Framework<T> {
-    pub fn run<F>(name: &str, root: F) -> Result<(), FrameworkError>
+    pub fn run<'a, F>(name: &'a str, root: F) -> Result<(), FrameworkError>
     where
-        F: 'static + Send + FnOnce() -> Result<Wrap<T>, FrameworkError>,
+        F: FnOnce() -> Result<Wrap<T>, FrameworkError<'a>>,
     {
         Builder::new().window_title(name).run(|| {
             FrameworkState::initialize();
