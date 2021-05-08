@@ -18,7 +18,7 @@ unicode-linebreak = "0.1"
 unicode-segmentation = "1.7"
 
 [dependencies.skulpin-renderer]
-version = "0.13.1"
+git = "https://gitlab.com/JackRedstonia/skulpin"
 default-features = false
 features = ["svg"]
 

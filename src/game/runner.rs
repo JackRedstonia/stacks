@@ -1,11 +1,10 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
+use std::cell::RefCell;
 use std::error::Error as StdError;
-use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError, TrySendError};
-use std::thread::{sleep, spawn};
-use std::time::{Duration, Instant};
-use std::{cell::RefCell, sync::mpsc::Receiver};
+use std::thread::sleep;
+use std::time::Duration;
 
-use crate::skia::{Color, Picture, PictureRecorder, Point, Rect, Size};
+use crate::skia::{Color, Point, Size};
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
@@ -15,21 +14,8 @@ use sdl2::{
     event::Event as Sdl2Event,
     video::{FullscreenType, Window as Sdl2Window},
 };
-use skulpin_renderer::{LogicalSize, Renderer, RendererBuilder};
-use skulpin_renderer::rafx::api::{RafxExtents2D, RafxError};
-
-enum Event {
-    CanvasReady,
-    RefreshRateChange(i32),
-    Sdl2(Sdl2Event),
-    Crash(Error),
-}
-
-enum FeedbackEvent<T> {
-    GameError(T),
-    Exit,
-    SetFullscreen(bool),
-}
+use skulpin_renderer::rafx::api::{RafxError, RafxExtents2D};
+use skulpin_renderer::{LogicalSize, RendererBuilder};
 
 #[derive(Debug)]
 pub enum Error {
@@ -152,11 +138,6 @@ impl State {
 pub struct Runner;
 
 impl Runner {
-    const EVENT_QUEUE_SIZE: usize = 8;
-    const FEEDBACK_QUEUE_SIZE: usize = 1;
-
-    const MAIN_THREAD_SLEEP_DURATION: Duration = Duration::from_millis(1);
-
     const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
 
     pub fn run<F, T, E>(
@@ -179,49 +160,29 @@ impl Runner {
             .resizable()
             .build()
             .expect("Failed to create game window");
-        
+
         let (width, height) = win.vulkan_drawable_size();
-        let extents = RafxExtents2D {
-            width, height
-        };
+        let extents = RafxExtents2D { width, height };
 
-        // Buffer size is 1 for pictures, we need pressure to immediately push
-        // back at the game thread if we're overloading the swapchain with too
-        // many frames.
-        let (pic_tx, pic_rx) = sync_channel(1);
-        let (event_tx, event_rx) = sync_channel(Self::EVENT_QUEUE_SIZE);
-        let (feedback_tx, feedback_rx) =
-            sync_channel(Self::FEEDBACK_QUEUE_SIZE);
-
-        spawn(move || {
-            let input_state = InputState::new(size);
-            let time_state = TimeState::new();
-            let time_state_draw = TimeState::new();
-            State::STATE.with(|x| {
-                *x.borrow_mut() = Some(State {
-                    input_state,
-                    time_state,
-                    time_state_draw,
-                    was_fullscreen: false,
-                    is_fullscreen: false,
-                    id_keeper: 0,
-                });
+        let input_state = InputState::new(size);
+        let time_state = TimeState::new();
+        let time_state_draw = TimeState::new();
+        State::STATE.with(|x| {
+            *x.borrow_mut() = Some(State {
+                input_state,
+                time_state,
+                time_state_draw,
+                was_fullscreen: false,
+                is_fullscreen: false,
+                id_keeper: 0,
             });
-
-            let mut game = match game() {
-                Ok(g) => g,
-                Err(e) => {
-                    feedback_tx
-                        .send(FeedbackEvent::GameError(e))
-                        .expect("Failed to send GameError to main thread");
-                    return;
-                }
-            };
-            game.set_size(State::STATE.with(|x| {
-                x.borrow().as_ref().unwrap().input_state.window_size
-            }));
-            Self::game_thread(game, event_rx, pic_tx, feedback_tx);
         });
+
+        let mut game = game()?;
+        game.set_size(
+            State::STATE
+                .with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
+        );
 
         let mut renderer = renderer_builder
             .build(&win, extents)
@@ -230,200 +191,50 @@ impl Runner {
         let mut event_pump =
             sdl.event_pump().expect("Failed to create SDL2 event pump");
 
-        let _ = event_tx.send(Event::CanvasReady);
+        let target_update_time = Duration::from_millis(5); // 200 fps
 
-        let mut current_refresh_rate = 60;
+        let (width, height) = win.vulkan_drawable_size();
+        let extents = RafxExtents2D { width, height };
+        let _ = renderer.draw(extents, 1.0, |_, _| {});
 
         'events: loop {
-            match feedback_rx.try_recv() {
-                Ok(event) => {
-                    if Self::handle_feedback(event, &mut win, &event_tx)? {
-                        break 'events;
-                    }
+            game.update();
+
+            for event in event_pump.poll_iter() {
+                if Self::game_handle_event(&mut game, event) {
+                    break 'events;
                 }
-                Err(e) => match e {
-                    TryRecvError::Empty => {
-                        for event in event_pump.poll_iter() {
-                            if event_tx.send(Event::Sdl2(event)).is_err() {
-                                break 'events;
-                            }
-                        }
-                        if Self::handle_pic(
-                            &pic_rx,
-                            &mut win,
-                            &mut renderer,
-                            &event_tx,
-                            &mut current_refresh_rate,
-                        ) {
-                            break 'events;
-                        }
-                    }
-                    TryRecvError::Disconnected => break 'events,
-                },
             }
-        }
 
-        Ok(())
-    }
-
-    fn handle_feedback<E>(
-        event: FeedbackEvent<E>,
-        win: &mut Sdl2Window,
-        event_tx: &SyncSender<Event>,
-    ) -> Result<bool, E> {
-        match event {
-            FeedbackEvent::GameError(err) => Err(err),
-            FeedbackEvent::Exit => Ok(true),
-            FeedbackEvent::SetFullscreen(enable) => {
-                Ok(Self::set_fullscreen(enable, win, event_tx))
+            if let Some(s) = State::with_mut(|x| {
+                if x.is_fullscreen != x.was_fullscreen {
+                    x.was_fullscreen = x.is_fullscreen;
+                    Some(x.is_fullscreen)
+                } else {
+                    None
+                }
+            }) {
+                if let Err(why) = Self::set_fullscreen(s, &mut win) {
+                    game.crash(Error::FullscreenError(why));
+                    break;
+                }
             }
-        }
-    }
 
-    fn set_fullscreen(
-        enable: bool,
-        win: &mut Sdl2Window,
-        event_tx: &SyncSender<Event>,
-    ) -> bool {
-        let kind = if enable {
-            FullscreenType::Desktop
-        } else {
-            FullscreenType::Off
-        };
-        if let Err(e) = win.set_fullscreen(kind) {
-            let _ = event_tx.send(Event::Crash(Error::FullscreenError(e)));
-            return true;
-        }
-        return false;
-    }
-
-    fn handle_pic(
-        pic_rx: &Receiver<Picture>,
-        win: &mut Sdl2Window,
-        renderer: &mut Renderer,
-        event_tx: &SyncSender<Event>,
-        current_refresh_rate: &mut i32,
-    ) -> bool {
-        match pic_rx.try_recv() {
-            Ok(pic) => {
+            let mut is_redraw = false;
+            // TODO: limit this calling to 3x refresh rate. this is overcalling
+            // it a bit imo.
+            if renderer.swapchain_helper.can_draw_without_blocking() {
+                is_redraw = true;
                 let (width, height) = win.vulkan_drawable_size();
-                let extents = RafxExtents2D {
-                    width, height
-                };
+                let extents = RafxExtents2D { width, height };
                 if let Err(e) = renderer.draw(extents, 1.0, |canvas, _| {
                     canvas.clear(Self::BACKGROUND);
-                    canvas.draw_picture(pic, None, None);
+                    game.draw(canvas);
                 }) {
-                    let _ = event_tx.send(Event::Crash(e.into()));
-                    return true;
+                    game.crash(e.into());
+                    break;
                 }
-            }
-            Err(e) => match e {
-                TryRecvError::Empty => {
-                    if let Ok(mode) = win.display_mode() {
-                        let rr = mode.refresh_rate;
-                        if rr != *current_refresh_rate {
-                            if event_tx
-                                .send(Event::RefreshRateChange(rr))
-                                .is_err()
-                            {
-                                return true;
-                            }
-                            *current_refresh_rate = rr;
-                        }
-                    }
-                    sleep(Self::MAIN_THREAD_SLEEP_DURATION);
-                }
-                TryRecvError::Disconnected => return true,
-            },
-        }
-        return false;
-    }
-
-    fn calc_target_frame_time(framerate: f64) -> Duration {
-        Duration::from_secs_f64(1.0 / framerate)
-    }
-
-    fn game_thread<E>(
-        mut game: impl Game,
-        event_rx: Receiver<Event>,
-        pic_tx: SyncSender<Picture>,
-        feedback_tx: SyncSender<FeedbackEvent<E>>,
-    ) {
-        let target_update_time = Duration::from_millis(1); // 1000 fps
-
-        let mut canvas_ready = false;
-        let mut target_frame_time = Self::calc_target_frame_time(60.0);
-        let mut last_frame = Instant::now();
-
-        loop {
-            game.update();
-            let mut is_redraw = false;
-            loop {
-                match event_rx.try_recv() {
-                    Ok(event) => {
-                        if Self::game_handle_event(
-                            &mut game,
-                            event,
-                            &feedback_tx,
-                            &mut canvas_ready,
-                            &mut target_frame_time,
-                        ) {
-                            return;
-                        }
-                    }
-                    Err(e) => match e {
-                        TryRecvError::Empty => break,
-                        TryRecvError::Disconnected => return,
-                    },
-                }
-            }
-            let frame_time = last_frame.elapsed();
-            if frame_time > target_frame_time {
-                last_frame = Instant::now() - (frame_time - target_frame_time);
-                // This is a rather cruddy way of detecting if we're sending
-                // too many frames, but it works rather well.
-                // We simply skip this frame if so. (but continue the clock)
-                if frame_time < target_frame_time * 3 / 2 {
-                    is_redraw = true;
-                    if canvas_ready {
-                        let mut rec = PictureRecorder::new();
-                        let bounds = Rect::from_size(State::with(|x| {
-                            let w = x.input_state.window_size;
-                            (w.width, w.height)
-                        }));
-                        let canvas = rec.begin_recording(bounds, None);
-                        game.draw(canvas);
-                        if let Err(why) = pic_tx.try_send(
-                            rec.finish_recording_as_picture(None)
-                                .expect("Failed to finish recording picture while rendering"),
-                        ) {
-                            match why {
-                                // Skip any unsent frames, just in case the renderer
-                                // fails to catch up, and to prevent lockups.
-                                TrySendError::Full(_) => {}
-                                TrySendError::Disconnected(_) => {
-                                    panic!(
-                                        "Failed to send canvas to draw thread (disconnected channel)"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    if let Some(s) = State::with_mut(|x| {
-                        if x.is_fullscreen != x.was_fullscreen {
-                            x.was_fullscreen = x.is_fullscreen;
-                            Some(x.is_fullscreen)
-                        } else {
-                            None
-                        }
-                    }) {
-                        feedback_tx.send(FeedbackEvent::SetFullscreen(s)).expect(
-                            "Failed to send set fullscreen event to main thread",
-                        );
-                    }
-                    State::with_mut(|x| x.time_state_draw.update());
-                }
+                State::with_mut(|x| x.time_state_draw.update());
             }
             State::with_mut(|state| {
                 if !is_redraw {
@@ -435,47 +246,34 @@ impl Runner {
                 state.time_state.update();
             });
         }
+
+        Ok(())
     }
 
-    fn game_handle_event<E>(
-        game: &mut impl Game,
-        event: Event,
-        feedback_tx: &SyncSender<FeedbackEvent<E>>,
-        canvas_ready: &mut bool,
-        target_frame_time: &mut Duration,
-    ) -> bool {
-        match event {
-            Event::CanvasReady => {
-                *canvas_ready = true;
-            }
-            Event::RefreshRateChange(rr) => {
-                *target_frame_time = Self::calc_target_frame_time(rr as f64);
-            }
-            Event::Sdl2(event) => {
-                if let Some(r) =
-                    State::with_mut(|x| x.input_state.handle_event(&event))
-                {
-                    match r {
-                        EventHandleResult::Input(event) => game.input(event),
-                        EventHandleResult::Resized(size) => {
-                            game.set_size(Size::new(size.width, size.height))
-                        }
-                        EventHandleResult::Exit => {
-                            game.close();
-                            feedback_tx.send(FeedbackEvent::Exit).expect(
-                                "Failed to send feedback event to draw thread",
-                            );
-                            return true;
-                        }
-                    }
+    fn set_fullscreen(
+        enable: bool,
+        win: &mut Sdl2Window,
+    ) -> Result<(), String> {
+        win.set_fullscreen(if enable {
+            FullscreenType::Desktop
+        } else {
+            FullscreenType::Off
+        })?;
+        Ok(())
+    }
+
+    fn game_handle_event(game: &mut impl Game, event: Sdl2Event) -> bool {
+        if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event))
+        {
+            match r {
+                EventHandleResult::Input(event) => game.input(event),
+                EventHandleResult::Resized(size) => {
+                    game.set_size(Size::new(size.width, size.height))
                 }
-            }
-            Event::Crash(e) => {
-                game.crash(e);
-                feedback_tx
-                    .send(FeedbackEvent::Exit)
-                    .expect("Failed to send feedback event to draw thread");
-                return true;
+                EventHandleResult::Exit => {
+                    game.close();
+                    return true;
+                }
             }
         }
 
