@@ -6,7 +6,7 @@ It adopts a model similar to osu!framework and Flutter, where widgets parent oth
 
 A few noteworthy features:
 - Lazy layout and sizing
-- Separate threads for game logic and rendering
+- Non-blocking rendering
 - No sweeping garbage collector
 - Absolute memory safety
 - Short compile times (1-5 seconds on a modern Linux machine, using LLD linker)
@@ -14,7 +14,7 @@ A few noteworthy features:
 ## Current state
 Stacks' is in an "experimental" phase, and as such its implementation and API rapidly change. ***Very*** big and ***very*** breaking changes are to be expected. Large portions of Stacks are not documented yet, but anywhere `unsafe` is used, at least a `SAFETY: ...` comment is expected.
 
-For graphics, Stacks utilises Skia with Vulkan. The Vulkan restriction may or may not be relaxed in the future, due to the Skulpin crate soon switching to a backend-agnostic renderer called Rafx.
+For graphics, Stacks utilises Skia with Vulkan. The Vulkan restriction may or may not be relaxed in the future.
 
 Audio is in a usable state, based on the SoLoud audio library, though it is planned to be replaced by a new audio library written in Rust in the future due to it being written in C++ and several showstopping bugs preventing production use. Once that happens, only `.ogg` files will have planned support.
 
