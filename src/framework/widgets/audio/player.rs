@@ -115,7 +115,7 @@ impl Widget for AudioPlayer {
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
-        let factor = (State::last_update_time().as_secs_f32() * 16.0).min(1.0);
+        let factor = (State::last_update_time().as_secs_f32() * 24.0).min(1.0);
         self.refresh_fft(factor);
     }
 
