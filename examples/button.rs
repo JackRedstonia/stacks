@@ -3,7 +3,7 @@ use stacks::framework::{
         audio::{Audio, AudioPlayer},
         layout::{ContainerSize, Margin, MarginContainer, VContainerDyn},
         shapes::Rectangle,
-        ui::Button,
+        ui::{Button, Slider},
         Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
@@ -27,9 +27,13 @@ fn main() {
         let mut button = Button::new(
             "click to seek music player to 25%".to_owned(),
             None,
-            btn_bg,
-            text_paint,
+            btn_bg.clone(),
+            text_paint.clone(),
         );
+
+        let slider_btn_bg = Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias();
+        let mut slider = Slider::new("slider hehe".to_owned(), None, LayoutDimension::min(500.0), btn_bg, slider_btn_bg, text_paint);
+        slider.inner_mut().on_change(|v| println!("slider value changed to {}", v));
 
         let player = AudioPlayer::new(
             "resources/sound.ogg",
@@ -54,6 +58,7 @@ fn main() {
         root.inner_mut()
                 .add_child(text.to_dyn())
                 .add_child(button.to_dyn())
+                .add_child(slider.to_dyn())
                 .add_child(player.to_dyn());
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
