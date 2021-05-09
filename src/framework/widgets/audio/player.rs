@@ -12,6 +12,7 @@ pub struct AudioPlayer {
     pub foreground: Paint,
     pub background: Paint,
     pub fft_paint: Paint,
+    pub interpolation_factor: f32,
     sound: Sound<WavStream>,
     instance: Option<SoundInstance>,
     seek_preview_percentage: Option<f32>,
@@ -35,6 +36,7 @@ impl AudioPlayer {
             foreground,
             background,
             fft_paint: fft,
+            interpolation_factor: 24.0,
             seek_preview_percentage: None,
             sound,
             instance: None,
@@ -115,7 +117,7 @@ impl Widget for AudioPlayer {
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
-        let factor = (State::last_update_time().as_secs_f32() * 24.0).min(1.0);
+        let factor = (State::last_update_time().as_secs_f32() * self.interpolation_factor).min(1.0);
         self.refresh_fft(factor);
     }
 
