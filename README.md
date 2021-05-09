@@ -21,7 +21,7 @@ Audio is in a usable state, based on the SoLoud audio library, though it is plan
 The repository currently contains a library and a few examples as demos. To run them, execute `cargo run --example <name> --release`.
 
 Currently, the available demos are:
-- `button`: features the `Button` widget.
+- `ui`: features the `Button` and `Slider` widget.
 - `paragraph`: features the `Text` widget, used for basic text layout.
 - `stacks_demo`: The legacy demo ported to current codebase, kept for nostalgia.
 
