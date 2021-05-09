@@ -16,7 +16,7 @@ fn main() {
         let text = Text::new(
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
-            "This demo features Button along with AudioPlayer. Press the Space key to play/pause music, or click the blue button below to seek to 25%.",
+            "This demo features Button, Slider and AudioPlayer. Press the Space key to play/pause music, click the blue button to seek to 25%, or change how fast the audio player's visualisations can move with the slider.",
             Font::Default,
             FontStyle::Regular,
             None,
@@ -25,16 +25,13 @@ fn main() {
 
         let btn_bg = Paint::new_color4f(0.2, 0.4, 0.6, 1.0).anti_alias();
         let mut button = Button::new(
-            "click to seek music player to 25%".to_owned(),
+            "Seek to 25%".to_owned(),
             None,
             btn_bg.clone(),
             text_paint.clone(),
         );
 
-        let slider_btn_bg = Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias();
-        let mut slider = Slider::new("slider hehe".to_owned(), None, LayoutDimension::min(500.0), btn_bg, slider_btn_bg, text_paint);
-        slider.inner_mut().on_change(|v| println!("slider value changed to {}", v));
-
+        
         let player = AudioPlayer::new(
             "resources/sound.ogg",
             LayoutSize::min(500.0, 200.0).expand_width(),
@@ -42,6 +39,18 @@ fn main() {
             Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
             Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
         )?;
+        
+        let player_weak = player.downgrade();
+        let slider_btn_bg = Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias();
+        let mut slider = Slider::new("FFT display interpolation factor".to_owned(), None, LayoutDimension::min(500.0), btn_bg, slider_btn_bg, text_paint);
+        slider.inner_mut().on_change(move |v| {
+            if let Some(mut player) = player_weak.upgrade() {
+                player.inner_mut().interpolation_factor = v * 19.0 + 5.0;
+            }
+        });
+        slider.inner_mut().set_formatter(|label, v| {
+            format!("{}: {}", label, v * 19.0 + 5.0)
+        });
 
         let player_weak = player.downgrade();
         button.inner_mut().on_click(move || {
