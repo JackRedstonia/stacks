@@ -56,6 +56,7 @@ pub struct Text {
     size: Size,
     text: String,
     paragraph: Option<Paragraph>,
+    just_changed: bool,
 }
 
 impl Text {
@@ -81,6 +82,7 @@ impl Text {
             size: Size::new_empty(),
             text: text.to_owned(),
             paragraph: None,
+            just_changed: false,
         }
         .into()
     }
@@ -90,6 +92,36 @@ impl Text {
             .as_ref()
             .map(|blob| blob.bounds.round_out())
             .unwrap_or_default()
+    }
+
+    pub fn set_text(&mut self, text: String) {
+        self.text = text;
+        self.just_changed = true;
+        self.paragraph = None;
+    }
+
+    pub fn force_build_paragraph(&mut self) {
+        match self.layout_mode {
+            TextLayoutMode::Static | TextLayoutMode::MinHeight => {
+                if let Some(p) = &mut self.paragraph {
+                    p.rerun_with_width(Some(self.size.width));
+                } else if let Some(f) = &self.sk_font {
+                    self.paragraph = Some(Paragraph::new(
+                        &self.text,
+                        f,
+                        Some(self.size.width),
+                    ));
+                }
+            }
+            TextLayoutMode::OneLine => {
+                if self.paragraph.is_none() {
+                    if let Some(f) = &self.sk_font {
+                        self.paragraph =
+                            Some(Paragraph::new(&self.text, f, None));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -124,15 +156,17 @@ impl Widget for Text {
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
+        let just_changed = self.just_changed;
+        self.just_changed = false;
         match self.layout_mode {
-            TextLayoutMode::Static => (self.layout_size, false),
+            TextLayoutMode::Static => (self.layout_size, just_changed),
             TextLayoutMode::OneLine => {
                 let b = self.bounds();
                 let w = b.width();
                 let h = b.height();
                 (
                     LayoutSize::min(w, h).with_expand_from(&self.layout_size),
-                    false,
+                    just_changed,
                 )
             }
             TextLayoutMode::MinHeight => {
@@ -140,31 +174,14 @@ impl Widget for Text {
                 let h = b.height();
                 let mut size = self.layout_size;
                 size.height.min = h;
-                (size, false)
+                (size, just_changed)
             }
         }
     }
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
-        match self.layout_mode {
-            TextLayoutMode::Static | TextLayoutMode::MinHeight => {
-                if let Some(p) = &mut self.paragraph {
-                    p.rerun_with_width(Some(size.width));
-                } else if let Some(f) = &self.sk_font {
-                    self.paragraph =
-                        Some(Paragraph::new(&self.text, f, Some(size.width)));
-                }
-            }
-            TextLayoutMode::OneLine => {
-                if self.paragraph.is_none() {
-                    if let Some(f) = &self.sk_font {
-                        self.paragraph =
-                            Some(Paragraph::new(&self.text, f, None));
-                    }
-                }
-            }
-        }
+        self.force_build_paragraph();
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
