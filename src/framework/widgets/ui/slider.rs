@@ -97,6 +97,7 @@ impl Slider {
         f: F,
     ) {
         self.formatter = Box::new(f);
+        self.slide_to_val(self.value);
     }
 
     fn slide_to(&mut self, pos: Vector) {
@@ -107,16 +108,20 @@ impl Slider {
         // want strict comparison here.
         #[allow(clippy::float_cmp)]
         if self.value != pos {
-            for f in &mut self.on_change_fns {
-                f(pos);
-            }
-            self.label_inner
-                .inner_mut()
-                .set_text(self.formatter.as_mut()(&self.label_text, pos));
-            self.label_inner.inner_mut().force_build_paragraph();
-            self.value = pos;
+            self.slide_to_val(pos);
             self.button_offset = x.round();
         }
+    }
+
+    fn slide_to_val(&mut self, val: scalar) {
+        for f in &mut self.on_change_fns {
+            f(val);
+        }
+        self.label_inner
+            .inner_mut()
+            .set_text(self.formatter.as_mut()(&self.label_text, val));
+        self.label_inner.inner_mut().force_build_paragraph();
+        self.value = val;
     }
 }
 
@@ -125,6 +130,7 @@ impl Widget for Slider {
         self.background.load(stack);
         self.button.load(stack);
         self.label.load(stack);
+        self.slide_to_val(self.value);
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
