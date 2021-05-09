@@ -16,7 +16,7 @@ fn main() {
         let text = Text::new(
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
-            "This demo features Button, Slider and AudioPlayer. Press the Space key to play/pause music, click the blue button to seek to 25%, or change how fast the audio player's visualisations can move with the slider.",
+            "This demonstration features the Button and Slider widgets, along with an audio player. You can press the Space key to play/pause audio, click the blue button to seek to 25%, or change how fast the audio player's visualisations can move with the slider.",
             Font::Default,
             FontStyle::Regular,
             None,
