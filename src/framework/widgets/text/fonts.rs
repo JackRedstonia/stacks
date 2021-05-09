@@ -75,7 +75,7 @@ impl FontResource {
         );
         let ja = ja
             .map(|e| e.family_name())
-            .unwrap_or("Noto Sans".to_owned());
+            .unwrap_or_else(|| "Noto Sans".to_owned());
 
         let vn = unsafe { transmute('ố') };
         let vn = mgr.match_family_style_character(
@@ -86,7 +86,7 @@ impl FontResource {
         );
         let vn = vn
             .map(|e| e.family_name())
-            .unwrap_or("Noto Sans".to_owned());
+            .unwrap_or_else(|| "Noto Sans".to_owned());
 
         ResourceHoster::new(Self {
             default: FontSet::new(),

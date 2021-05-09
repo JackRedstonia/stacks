@@ -39,8 +39,8 @@ impl Button {
         );
         let label = MarginContainer::new(label, Margin::all(10.0));
         Self {
-            rect: rect.clone(),
-            label: label.clone(),
+            rect,
+            label,
             size: Size::default(),
             glow: 0.0,
             glow_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0)

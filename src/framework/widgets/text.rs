@@ -238,7 +238,7 @@ impl Word {
         font.get_widths(&glyphs, &mut widths);
         for (&glyph, &width) in glyphs.iter().zip(widths.iter()) {
             if let Some(glyph_path) = font.get_path(glyph) {
-                let mut glb = glyph_path.bounds().clone();
+                let mut glb = *glyph_path.bounds();
                 glb.right = glb.right.max(width);
                 combine(bounds, &glb.with_offset(*offset));
                 path.add_path(&glyph_path, *offset, None);
@@ -271,6 +271,10 @@ impl Paragraph {
                     word
                 };
                 (Word::new(word, font), pb, unsafe {
+                    // SAFETY / LINT SUPPRESION: this is fine, we do know that
+                    // Skia will initialize this after, thanks to the call to
+                    // `rerun_with_width`
+                    #[allow(clippy::uninit_assumed_init)]
                     MaybeUninit::uninit().assume_init()
                 })
             })

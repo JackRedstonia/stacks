@@ -7,11 +7,11 @@ use crate::prelude::*;
 
 type SliderLabelFormatter = dyn for<'r> FnMut(&'r str, scalar) -> String;
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
-pub enum SliderChangeTrigger {
-    OnMove,
-    OnRelease,
-}
+// #[derive(Clone, Copy, Hash, PartialEq, Eq)]
+// pub enum SliderChangeTrigger {
+//     OnMove,
+//     OnRelease,
+// }
 
 pub struct Slider {
     background: Wrap<Rectangle>,
@@ -28,7 +28,6 @@ pub struct Slider {
     size: Size,
 
     on_change_fns: Vec<Box<dyn FnMut(scalar)>>,
-    trigger: SliderChangeTrigger,
     formatter: Box<SliderLabelFormatter>,
 
     value: scalar,
@@ -82,7 +81,6 @@ impl Slider {
             layout_width,
             size: Size::default(),
             on_change_fns: vec![],
-            trigger: SliderChangeTrigger::OnMove,
             formatter,
             value: 0.0,
             button_offset: 0.0,
@@ -105,16 +103,16 @@ impl Slider {
         let width = self.size.width - self.button_size.width;
         let x = (pos.x - self.button_size.width * 0.5).clamp(0.0, width);
         let pos = x / width;
+        // LINT SUPPRESSION: For the sake of absolute correctness, we do indeed
+        // want strict comparison here.
+        #[allow(clippy::float_cmp)]
         if self.value != pos {
             for f in &mut self.on_change_fns {
                 f(pos);
             }
-            self.label_inner.inner_mut().set_text(self
-                .formatter
-                .as_mut()(
-                &self.label_text,
-                pos,
-            ));
+            self.label_inner
+                .inner_mut()
+                .set_text(self.formatter.as_mut()(&self.label_text, pos));
             self.label_inner.inner_mut().force_build_paragraph();
             self.value = pos;
             self.button_offset = x.round();
@@ -123,13 +121,13 @@ impl Slider {
 }
 
 impl Widget for Slider {
-    fn load(&mut self, state: &mut WidgetState, stack: &mut ResourceStack) {
+    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.background.load(stack);
         self.button.load(stack);
         self.label.load(stack);
     }
 
-    fn update(&mut self, state: &mut WidgetState) {
+    fn update(&mut self, _state: &mut WidgetState) {
         self.background.update();
         self.button.update();
         self.label.update();
@@ -162,7 +160,7 @@ impl Widget for Slider {
         }
     }
 
-    fn size(&mut self, state: &mut WidgetState) -> (LayoutSize, bool) {
+    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let (bgz, a) = self.background.size();
         let ac = self.background_size == bgz;
         self.background_size = bgz;
@@ -177,7 +175,7 @@ impl Widget for Slider {
         (lz, a || ac || b || bc || c || cc)
     }
 
-    fn set_size(&mut self, state: &mut WidgetState, size: Size) {
+    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.background
             .set_size(self.background_size.layout_one(size));
         let button_size = self.button_layout_size.layout_one(size);
@@ -188,7 +186,7 @@ impl Widget for Slider {
         self.size = size;
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.background.draw(canvas);
         canvas.save();
         canvas.translate((self.button_offset, 0.0));

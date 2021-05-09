@@ -46,7 +46,7 @@ impl<T: Widget> Framework<T> {
 
     pub fn new(root: Wrap<T>) -> Self {
         Self {
-            root: root.into(),
+            root,
             layout_size: LayoutSize::ZERO,
             size: Size::new_empty(),
             schedule_set_size: false,

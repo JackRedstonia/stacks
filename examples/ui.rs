@@ -31,7 +31,6 @@ fn main() {
             text_paint.clone(),
         );
 
-        
         let player = AudioPlayer::new(
             "resources/sound.ogg",
             LayoutSize::min(500.0, 200.0).expand_width(),
@@ -39,7 +38,7 @@ fn main() {
             Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
             Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
         )?;
-        
+
         let player_weak = player.downgrade();
         let slider_btn_bg = Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias();
         let mut slider = Slider::new("FFT display interpolation factor".to_owned(), None, LayoutDimension::min(500.0), btn_bg, slider_btn_bg, text_paint);

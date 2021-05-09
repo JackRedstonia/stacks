@@ -45,7 +45,8 @@ impl<T: Widget + ?Sized> Widget for CenterContainer<T> {
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         let child_size = self.child_layout_size.layout_one(size);
-        let mut offset = (size.bottom_right() - child_size.bottom_right()) * 0.5;
+        let mut offset =
+            (size.bottom_right() - child_size.bottom_right()) * 0.5;
         offset.x = offset.x.round();
         offset.y = offset.y.round();
         self.matrix = Matrix::translate(offset);
