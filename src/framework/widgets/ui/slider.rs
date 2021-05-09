@@ -31,8 +31,8 @@ pub struct Slider {
     trigger: SliderChangeTrigger,
     formatter: Box<SliderLabelFormatter>,
 
-    is_held: bool,
     value: scalar,
+    button_offset: scalar,
 }
 
 impl Slider {
@@ -84,8 +84,8 @@ impl Slider {
             on_change_fns: vec![],
             trigger: SliderChangeTrigger::OnMove,
             formatter,
-            is_held: false,
             value: 0.0,
+            button_offset: 0.0,
         }
         .wrap()
     }
@@ -99,6 +99,26 @@ impl Slider {
         f: F,
     ) {
         self.formatter = Box::new(f);
+    }
+
+    fn slide_to(&mut self, pos: Vector) {
+        let width = self.size.width - self.button_size.width;
+        let x = (pos.x - self.button_size.width * 0.5).clamp(0.0, width);
+        let pos = x / width;
+        if self.value != pos {
+            for f in &mut self.on_change_fns {
+                f(pos);
+            }
+            self.label_inner.inner_mut().set_text(self
+                .formatter
+                .as_mut()(
+                &self.label_text,
+                pos,
+            ));
+            self.label_inner.inner_mut().force_build_paragraph();
+            self.value = pos;
+            self.button_offset = x;
+        }
     }
 }
 
@@ -120,7 +140,7 @@ impl Widget for Slider {
             InputEvent::MouseUp(MouseButton::Left, pos) => {
                 if state.is_focused() {
                     state.release_focus();
-                    // emit value set
+                    self.slide_to(*pos);
                 }
                 Rect::from_size(self.size).contains(*pos)
             }
@@ -128,33 +148,13 @@ impl Widget for Slider {
                 let c = Rect::from_size(self.size).contains(*pos);
                 if c {
                     state.grab_focus();
-                    let pos = (pos.x / self.size.width).clamp_unit();
-                    for f in &mut self.on_change_fns {
-                        f(pos);
-                    }
-                    self.label_inner.inner_mut().set_text(self
-                        .formatter
-                        .as_mut()(
-                        &self.label_text,
-                        pos,
-                    ));
-                    self.label_inner.inner_mut().force_build_paragraph();
+                    self.slide_to(*pos);
                 }
                 c
             }
             InputEvent::MouseMove(pos) => {
                 if state.is_focused() {
-                    let pos = (pos.x / self.size.width).clamp_unit();
-                    for f in &mut self.on_change_fns {
-                        f(pos);
-                    }
-                    self.label_inner.inner_mut().set_text(self
-                        .formatter
-                        .as_mut()(
-                        &self.label_text,
-                        pos,
-                    ));
-                    self.label_inner.inner_mut().force_build_paragraph();
+                    self.slide_to(*pos);
                 }
                 Rect::from_size(self.size).contains(*pos)
             }
@@ -190,7 +190,10 @@ impl Widget for Slider {
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
         self.background.draw(canvas);
+        canvas.save();
+        canvas.translate((self.button_offset, 0.0));
         self.button.draw(canvas);
+        canvas.restore();
         self.label.draw(canvas);
     }
 }
