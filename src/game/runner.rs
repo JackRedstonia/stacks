@@ -148,7 +148,7 @@ impl Runner {
     ) -> Result<(), E>
     where
         F: FnOnce() -> Result<T, E>,
-        T: Game
+        T: Game,
     {
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
         let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");

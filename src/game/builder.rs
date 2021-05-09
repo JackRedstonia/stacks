@@ -51,7 +51,7 @@ impl<'a> Builder<'a> {
     pub fn run<F, T, E>(self, game: F) -> Result<(), E>
     where
         F: FnOnce() -> Result<T, E>,
-        T: Game
+        T: Game,
     {
         Runner::run(
             game,
