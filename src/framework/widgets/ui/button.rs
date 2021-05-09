@@ -7,7 +7,7 @@ use crate::prelude::*;
 
 pub struct Button {
     rect: Wrap<Rectangle>,
-    label: Wrap<MarginContainer<ButtonLabel>>,
+    label: Wrap<MarginContainer<Text>>,
 
     size: Size,
     glow: scalar,
@@ -28,7 +28,15 @@ impl Button {
             background,
         );
         let label_aa = label_paint.is_anti_alias();
-        let label = ButtonLabel::new(label, label_size, label_paint);
+        let label = Text::new(
+            LayoutSize::ZERO,
+            Some(TextLayoutMode::OneLine),
+            label,
+            Font::Default,
+            FontStyle::Regular,
+            label_size,
+            label_paint,
+        );
         let label = MarginContainer::new(label, Margin::all(10.0));
         Self {
             rect: rect.clone(),
@@ -101,51 +109,6 @@ impl Widget for Button {
         self.glow_paint.set_alpha_f(self.glow * 0.25);
         canvas.draw_rect(Rect::from_size(self.size), &self.glow_paint);
 
-        self.label.draw(canvas);
-    }
-}
-
-struct ButtonLabel {
-    label: Wrap<Text>,
-}
-
-impl ButtonLabel {
-    fn new(
-        label: String,
-        label_size: Option<scalar>,
-        label_paint: Paint,
-    ) -> Wrap<Self> {
-        let l = Text::new(
-            LayoutSize::ZERO,
-            Some(TextLayoutMode::OneLine),
-            label,
-            Font::Default,
-            FontStyle::Regular,
-            label_size,
-            label_paint,
-        );
-        Self { label: l }.wrap()
-    }
-}
-
-impl Widget for ButtonLabel {
-    fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        self.label.load(stack);
-    }
-
-    fn update(&mut self, _state: &mut WidgetState) {
-        self.label.update();
-    }
-
-    fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        self.label.size()
-    }
-
-    fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
-        self.label.set_size(size)
-    }
-
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.label.draw(canvas);
     }
 }
