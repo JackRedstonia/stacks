@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::skia::{Color, Point, Size};
 
@@ -47,7 +47,7 @@ impl From<RafxError> for Error {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct ID(u64);
 
 impl ID {
@@ -57,12 +57,6 @@ impl ID {
             x.id_keeper += 1;
             id
         }))
-    }
-}
-
-impl std::hash::Hash for ID {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u64(self.0);
     }
 }
 
@@ -192,9 +186,10 @@ impl Runner {
 
         let target_update_time = Duration::from_millis(5); // 200 fps
 
-        let (width, height) = win.vulkan_drawable_size();
-        let extents = RafxExtents2D { width, height };
-        let _ = renderer.draw(extents, 1.0, |_, _| {});
+        let mut last_draw = Instant::now();
+        let mut refresh_rate = 60;
+        let mut no_draw_time =
+            Duration::from_secs_f64(0.75 / refresh_rate as f64);
 
         'events: loop {
             game.update();
@@ -220,9 +215,19 @@ impl Runner {
             }
 
             let mut is_redraw = false;
-            // TODO: limit this calling to 3x refresh rate. this is overcalling
-            // it a bit imo.
-            if renderer.swapchain_helper.can_draw_without_blocking() {
+            let new_refresh_rate = win
+                .display_mode()
+                .map(|e| e.refresh_rate as u32)
+                .unwrap_or(60);
+            if new_refresh_rate != refresh_rate {
+                refresh_rate = new_refresh_rate;
+                no_draw_time =
+                    Duration::from_secs_f64(0.75 / refresh_rate as f64);
+            }
+            if last_draw.elapsed() > no_draw_time
+                && renderer.swapchain_helper.can_draw_without_blocking()
+            {
+                last_draw = Instant::now();
                 is_redraw = true;
                 let (width, height) = win.vulkan_drawable_size();
                 let extents = RafxExtents2D { width, height };
