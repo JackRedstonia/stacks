@@ -117,7 +117,7 @@ impl Slider {
             ));
             self.label_inner.inner_mut().force_build_paragraph();
             self.value = pos;
-            self.button_offset = x;
+            self.button_offset = x.round();
         }
     }
 }
