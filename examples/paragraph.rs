@@ -1,8 +1,8 @@
 use stacks::framework::{
     widgets::{
         layout::{
-            ContainerSize, Margin, MarginContainer, ScrollContainer,
-            VContainerDyn,
+            ContainerSize, FullscreenContainer, Margin, MarginContainer,
+            ScrollContainer, VContainerDyn,
         },
         shapes::Rectangle,
         Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
@@ -37,6 +37,7 @@ fn main() {
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);
+        let root = FullscreenContainer::new(root);
         Ok(root)
     })
     .expect("Failed to run game");
