@@ -9,9 +9,6 @@ exclude = ["./examples"]
 readme = "../README.md"
 license = "MIT"
 
-[profile.release]
-lto = "thin"
-
 [dependencies]
 unsafe-any = "*"
 unicode-linebreak = "0.1"
