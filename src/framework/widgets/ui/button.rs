@@ -17,6 +17,10 @@ pub struct Button {
 }
 
 impl Button {
+    const HOVER_GLOW: scalar = 0.3;
+    const FULL_GLOW: scalar = 1.0;
+    const GLOW_TO_ALPHA_MUL: scalar = 0.25;
+
     pub fn new(
         label: String,
         label_size: Option<scalar>,
@@ -72,6 +76,9 @@ impl Widget for Button {
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
         let r = Rect::from_size(self.size);
         match event {
+            InputEvent::MouseMove(position) if r.contains(*position) => {
+                return true;
+            }
             InputEvent::MouseDown(MouseButton::Left, position)
                 if r.contains(*position) =>
             {
@@ -79,7 +86,7 @@ impl Widget for Button {
             }
             InputEvent::MouseUp(MouseButton::Left, position) => {
                 if r.contains(*position) {
-                    self.glow = 1.0;
+                    self.glow = Self::FULL_GLOW;
                     for f in &mut self.on_click_fns {
                         f();
                     }
@@ -101,12 +108,21 @@ impl Widget for Button {
         self.rect.set_size(size);
     }
 
-    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
         self.rect.draw(canvas);
 
         let t = State::last_update_time_draw().as_secs_f32() * 4.0;
-        self.glow = (self.glow - t).max(0.0);
-        self.glow_paint.set_alpha_f(self.glow * 0.25);
+        if state.is_hovered() {
+            if self.glow > Self::HOVER_GLOW {
+                self.glow = (self.glow - t).max(Self::HOVER_GLOW);
+            } else {
+                self.glow = (self.glow + t).min(Self::HOVER_GLOW);
+            }
+        } else {
+            self.glow = (self.glow - t).max(0.0);
+        }
+        self.glow_paint
+            .set_alpha_f(self.glow * Self::GLOW_TO_ALPHA_MUL);
         canvas.draw_rect(Rect::from_size(self.size), &self.glow_paint);
 
         self.label.draw(canvas);
