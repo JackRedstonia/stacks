@@ -87,13 +87,6 @@ impl Text {
         .into()
     }
 
-    pub fn bounds(&self) -> Rect {
-        self.paragraph
-            .as_ref()
-            .map(|blob| blob.bounds.round_out())
-            .unwrap_or_default()
-    }
-
     pub fn set_text(&mut self, text: String) {
         self.text = text;
         self.just_changed = true;
@@ -122,6 +115,20 @@ impl Text {
                 }
             }
         }
+    }
+
+    fn bounds(&self) -> Rect {
+        self.paragraph
+            .as_ref()
+            .map(|blob| blob.bounds.round_out())
+            .unwrap_or_default()
+    }
+
+    fn height(&self) -> scalar {
+        self.paragraph
+            .as_ref()
+            .map(|e| e.total_height.ceil())
+            .unwrap_or(0.0)
     }
 }
 
@@ -161,19 +168,16 @@ impl Widget for Text {
         match self.layout_mode {
             TextLayoutMode::Static => (self.layout_size, just_changed),
             TextLayoutMode::OneLine => {
-                let b = self.bounds();
-                let w = b.width();
-                let h = b.height();
+                let w = self.bounds().width();
+                let h = self.height();
                 (
                     LayoutSize::min(w, h).with_expand_from(&self.layout_size),
                     just_changed,
                 )
             }
             TextLayoutMode::MinHeight => {
-                let b = self.bounds();
-                let h = b.height();
                 let mut size = self.layout_size;
-                size.height.min = h;
+                size.height.min = self.height();
                 (size, just_changed)
             }
         }
@@ -251,7 +255,10 @@ impl Word {
 struct Paragraph {
     words: Vec<(Word, bool, Vector)>,
     bounds: Rect,
-    line_height: scalar,
+    line_spacing: scalar,
+    ascent: scalar,
+    descent: scalar,
+    total_height: scalar,
 }
 
 impl Paragraph {
@@ -279,23 +286,29 @@ impl Paragraph {
                 })
             })
             .collect();
-        let mut s = Self {
+        let (line_height, metrics) = font[0].metrics();
+        let mut q = Self {
             words,
             bounds: Rect::new_empty(),
-            line_height: font[0].metrics().0.ceil(),
+            line_spacing: line_height.ceil(),
+            ascent: metrics.ascent.ceil(),
+            descent: metrics.descent.ceil(),
+            total_height: 0.0,
         };
-        s.rerun_with_width(width);
-        s
+        q.rerun_with_width(width);
+        q
     }
 
     fn rerun_with_width(&mut self, width: Option<scalar>) {
         self.bounds = Rect::new_empty();
         let mut offset = Vector::default();
+        self.total_height = -self.ascent + self.descent;
         for (word, must_break, word_offset) in &mut self.words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if let Some(width) = width {
                 if *must_break || (nx >= width && offset.x != 0.0) {
-                    offset = Vector::new(0.0, offset.y + self.line_height);
+                    offset = Vector::new(0.0, offset.y + self.line_spacing);
+                    self.total_height += self.line_spacing;
                 }
             }
             let b = word.bounds.with_offset(offset);
@@ -307,7 +320,7 @@ impl Paragraph {
 
     fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
         canvas.save();
-        canvas.translate((-self.bounds.left, -self.bounds.top));
+        canvas.translate((0.0, -self.ascent));
         for (word, _, position) in &self.words {
             canvas.save();
             canvas.translate(*position);
