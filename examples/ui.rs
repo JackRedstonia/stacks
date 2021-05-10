@@ -1,7 +1,10 @@
 use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
-        layout::{ContainerSize, Margin, MarginContainer, VContainerDyn},
+        layout::{
+            ContainerSize, FullscreenContainer, Margin, MarginContainer,
+            VContainerDyn,
+        },
         shapes::Rectangle,
         ui::{Button, Slider},
         Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
@@ -71,6 +74,7 @@ fn main() {
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);
+        let root = FullscreenContainer::new(root);
         let root = Audio::new(root)?;
         Ok(root)
     })
