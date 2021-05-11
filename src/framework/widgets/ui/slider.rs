@@ -126,7 +126,6 @@ impl Slider {
         } else {
             pos
         };
-        
         // start..=end
         let pos = pos + self.value_range.start();
 
