@@ -5,6 +5,8 @@ use super::super::{
 };
 use crate::prelude::*;
 
+use std::ops::RangeInclusive;
+
 type SliderLabelFormatter = dyn for<'r> FnMut(&'r str, scalar) -> String;
 
 // #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -30,6 +32,8 @@ pub struct Slider {
     on_change_fns: Vec<Box<dyn FnMut(scalar)>>,
     formatter: Box<SliderLabelFormatter>,
 
+    value_range: RangeInclusive<scalar>,
+    value_precision: Option<scalar>,
     value: scalar,
     button_offset: scalar,
 }
@@ -38,6 +42,8 @@ impl Slider {
     pub fn new(
         label: String,
         label_size: Option<scalar>,
+        value_range: RangeInclusive<scalar>,
+        value_precision: Option<scalar>,
         layout_width: LayoutDimension,
         background: Paint,
         button_paint: Paint,
@@ -82,7 +88,9 @@ impl Slider {
             size: Size::default(),
             on_change_fns: vec![],
             formatter,
-            value: 0.0,
+            value: *value_range.start(),
+            value_range,
+            value_precision,
             button_offset: 0.0,
         }
         .wrap()
@@ -103,7 +111,29 @@ impl Slider {
     fn slide_to(&mut self, pos: Vector) {
         let width = self.size.width - self.button_size.width;
         let x = (pos.x - self.button_size.width * 0.5).clamp(0.0, width);
+
+        // 0..=1
         let pos = x / width;
+        // 0..=delta
+        let pos = pos * (self.value_range.end() - self.value_range.start());
+        // snapped
+        let pos = if let Some(precision) = self.value_precision {
+            let intervals = (pos / precision).floor();
+            let a = intervals * precision;
+            let aq = a % precision;
+            let b = intervals / (1.0 / precision);
+            let bq = b % precision;
+            if aq > bq {
+                a
+            } else {
+                b
+            }
+        } else {
+            pos
+        };
+        // start..=end
+        let pos = pos + self.value_range.start();
+
         // LINT SUPPRESSION: For the sake of absolute correctness, we do indeed
         // want strict comparison here.
         #[allow(clippy::float_cmp)]
