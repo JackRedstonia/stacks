@@ -115,22 +115,18 @@ impl Slider {
         // 0..=1
         let pos = x / width;
         // 0..=delta
-        let pos = pos * (self.value_range.end() - self.value_range.start());
+        let delta = self.value_range.end() - self.value_range.start();
+        let pos = pos * delta;
         // snapped
         let pos = if let Some(precision) = self.value_precision {
-            let intervals = (pos / precision).floor();
-            let a = intervals * precision;
-            let aq = a % precision;
-            let b = intervals / (1.0 / precision);
-            let bq = b % precision;
-            if aq > bq {
-                a
-            } else {
-                b
-            }
+            let max_intervals = (delta / precision).floor();
+            let max_value = Self::snap_value(max_intervals, precision);
+            let intervals = (pos / precision).round();
+            Self::snap_value(intervals, precision).min(max_value)
         } else {
             pos
         };
+        
         // start..=end
         let pos = pos + self.value_range.start();
 
@@ -139,7 +135,7 @@ impl Slider {
         #[allow(clippy::float_cmp)]
         if self.value != pos {
             self.slide_to_val(pos);
-            self.button_offset = x.round();
+            self.move_button();
         }
     }
 
@@ -152,6 +148,26 @@ impl Slider {
             .set_text(self.formatter.as_mut()(&self.label_text, val));
         self.label_inner.inner_mut().force_build_paragraph();
         self.value = val;
+    }
+
+    fn move_button(&mut self) {
+        let width = self.size.width - self.button_size.width;
+        let delta = self.value_range.end() - self.value_range.start();
+        let pos = self.value - self.value_range.start();
+        let button_offset = pos / delta * width;
+        self.button_offset = button_offset.round();
+    }
+
+    fn snap_value(intervals: scalar, precision: scalar) -> scalar {
+        let a = intervals * precision;
+        let aq = a % precision;
+        let b = intervals / (1.0 / precision);
+        let bq = b % precision;
+        if aq > bq {
+            a
+        } else {
+            b
+        }
     }
 }
 
@@ -220,6 +236,7 @@ impl Widget for Slider {
         self.label.set_size(self.label_size.layout_one(size));
 
         self.size = size;
+        self.move_button();
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
