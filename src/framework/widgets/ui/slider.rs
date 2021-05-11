@@ -119,10 +119,13 @@ impl Slider {
         let pos = pos * delta;
         // snapped
         let pos = if let Some(precision) = self.value_precision {
-            let max_intervals = (delta / precision).floor();
-            let max_value = Self::snap_value(max_intervals, precision);
             let intervals = (pos / precision).round();
-            Self::snap_value(intervals, precision).min(max_value)
+            let pos = Self::snap_value(intervals, precision);
+            if pos > delta {
+                Self::snap_value(intervals - 1.0, precision)
+            } else {
+                pos
+            }
         } else {
             pos
         };
@@ -158,15 +161,7 @@ impl Slider {
     }
 
     fn snap_value(intervals: scalar, precision: scalar) -> scalar {
-        let a = intervals * precision;
-        let aq = a % precision;
-        let b = intervals / (1.0 / precision);
-        let bq = b % precision;
-        if aq > bq {
-            a
-        } else {
-            b
-        }
+        intervals / (1.0 / precision)
     }
 }
 
