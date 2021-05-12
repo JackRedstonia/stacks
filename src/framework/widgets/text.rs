@@ -190,31 +190,46 @@ impl Widget for Text {
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         if let Some(p) = &self.paragraph {
+            canvas.save();
+            canvas.translate((0.0, -p.ascent));
             p.draw(canvas, &self.paint);
+            if let Some(pos) = p.byte_position(2) {
+                canvas.draw_rect(
+                    Rect::new(-1.0, p.ascent, 1.0, p.descent)
+                        .with_offset(pos),
+                    &Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
+                );
+            }
+            canvas.restore();
         }
     }
 }
 
 struct Word {
+    string_length: usize,
     path: Path,
     bounds: Rect,
+    grapheme_positions: Vec<(usize, Vector)>,
 }
 
 impl Word {
-    fn new(s: &str, font: &[SkFont]) -> Self {
-        assert!(!font.is_empty());
+    fn new(s: &str, fonts: &[SkFont]) -> Self {
+        assert!(!fonts.is_empty());
         let mut bounds = Rect::new_empty();
         let mut path = Path::new();
         let mut offset = Vector::default();
         use unicode_segmentation::UnicodeSegmentation;
+        let mut l = 0;
+        let mut grapheme_positions = vec![];
         for chs in s.graphemes(true) {
+            grapheme_positions.push((l, offset));
             let mut p = 0;
-            while p < font.len() {
-                let glyphs = font[p].str_to_glyphs_vec(&*chs);
-                if p == font.len() - 1 || glyphs.iter().all(|e| *e != 0) {
+            while p < fonts.len() {
+                let glyphs = fonts[p].str_to_glyphs_vec(&*chs);
+                if p == fonts.len() - 1 || glyphs.iter().all(|e| *e != 0) {
                     Self::make_char(
                         &glyphs,
-                        &font[p],
+                        &fonts[p],
                         &mut bounds,
                         &mut offset,
                         &mut path,
@@ -224,8 +239,14 @@ impl Word {
 
                 p += 1;
             }
+            l += chs.len();
         }
-        Self { path, bounds }
+        Self {
+            string_length: s.len(),
+            path,
+            bounds,
+            grapheme_positions,
+        }
     }
 
     fn make_char(
@@ -253,7 +274,7 @@ impl Word {
 }
 
 struct Paragraph {
-    words: Vec<(Word, bool, Vector)>,
+    words: Vec<(Word, usize, bool, Vector)>,
     bounds: Rect,
     line_spacing: scalar,
     ascent: scalar,
@@ -269,6 +290,7 @@ impl Paragraph {
         let words = linebreaks(s)
             .map(|(end_index, break_op)| {
                 let word = &s[prev..end_index];
+                let prev_index = prev;
                 prev = end_index;
                 let pb = prev_break;
                 prev_break = break_op == BreakOpportunity::Mandatory;
@@ -277,9 +299,9 @@ impl Paragraph {
                 } else {
                     word
                 };
-                (Word::new(word, font), pb, unsafe {
+                (Word::new(word, font), prev_index, pb, unsafe {
                     // SAFETY / LINT SUPPRESSION: this is fine, we do know that
-                    // `rerun_with_width` will initialize this after. 
+                    // `rerun_with_width` will initialize this after.
                     #[allow(clippy::uninit_assumed_init)]
                     MaybeUninit::uninit().assume_init()
                 })
@@ -302,7 +324,7 @@ impl Paragraph {
         self.bounds = Rect::new_empty();
         let mut offset = Vector::default();
         self.total_height = -self.ascent + self.descent;
-        for (word, must_break, word_offset) in &mut self.words {
+        for (word, _, must_break, word_offset) in &mut self.words {
             let nx = offset.x + word.bounds.right - word.bounds.left;
             if let Some(width) = width {
                 if *must_break || (nx >= width && offset.x != 0.0) {
@@ -318,15 +340,31 @@ impl Paragraph {
     }
 
     fn draw(&self, canvas: &mut Canvas, paint: &Paint) {
-        canvas.save();
-        canvas.translate((0.0, -self.ascent));
-        for (word, _, position) in &self.words {
+        for (word, _, _, position) in &self.words {
             canvas.save();
             canvas.translate(*position);
             canvas.draw_path(&word.path, &paint);
             canvas.restore();
         }
-        canvas.restore();
+    }
+
+    fn byte_position(&self, pos: usize) -> Option<Vector> {
+        if let Some((word, byte_offset, _, word_offset)) =
+            self.words.iter().find(|(word, byte_offset, ..)| {
+                (*byte_offset..*byte_offset + word.string_length).contains(&pos)
+            })
+        {
+            let pos = pos - byte_offset;
+            if let Some(pos) =
+                word.grapheme_positions.iter().position(|(b, _)| pos < *b)
+            {
+                return word
+                    .grapheme_positions
+                    .get(pos - 1)
+                    .map(|(_, p)| *p + *word_offset);
+            }
+        }
+        None
     }
 }
 
