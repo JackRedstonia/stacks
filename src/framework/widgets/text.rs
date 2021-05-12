@@ -279,8 +279,7 @@ impl Paragraph {
                 };
                 (Word::new(word, font), pb, unsafe {
                     // SAFETY / LINT SUPPRESSION: this is fine, we do know that
-                    // Skia will initialize this after, thanks to the call to
-                    // `rerun_with_width`
+                    // `rerun_with_width` will initialize this after. 
                     #[allow(clippy::uninit_assumed_init)]
                     MaybeUninit::uninit().assume_init()
                 })
