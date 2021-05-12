@@ -193,11 +193,16 @@ impl Widget for Text {
             canvas.save();
             canvas.translate((0.0, -p.ascent));
             p.draw(canvas, &self.paint);
-            if let Some(pos) = p.byte_position(2) {
+            if let Some(pos) = p.byte_position(156) {
                 canvas.draw_rect(
-                    Rect::new(-1.0, p.ascent, 1.0, p.descent)
-                        .with_offset(pos),
+                    Rect::new(-1.0, p.ascent, 1.0, p.descent).with_offset(pos),
                     &Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
+                );
+            }
+            if let Some(pos) = p.byte_position(174) {
+                canvas.draw_rect(
+                    Rect::new(-1.0, p.ascent, 1.0, p.descent).with_offset(pos),
+                    &Paint::new_color4f(1.0, 0.0, 0.0, 1.0),
                 );
             }
             canvas.restore();
@@ -210,6 +215,7 @@ struct Word {
     path: Path,
     bounds: Rect,
     grapheme_positions: Vec<(usize, Vector)>,
+    last_position: Vector,
 }
 
 impl Word {
@@ -246,6 +252,7 @@ impl Word {
             path,
             bounds,
             grapheme_positions,
+            last_position: offset,
         }
     }
 
@@ -325,7 +332,8 @@ impl Paragraph {
         let mut offset = Vector::default();
         self.total_height = -self.ascent + self.descent;
         for (word, _, must_break, word_offset) in &mut self.words {
-            let nx = offset.x + word.bounds.right - word.bounds.left;
+            let word_width = word.bounds.right - word.bounds.left;
+            let nx = offset.x + word_width;
             if let Some(width) = width {
                 if *must_break || (nx >= width && offset.x != 0.0) {
                     offset = Vector::new(0.0, offset.y + self.line_spacing);
@@ -335,7 +343,7 @@ impl Paragraph {
             let b = word.bounds.with_offset(offset);
             combine(&mut self.bounds, &b);
             *word_offset = offset;
-            offset.x += b.right - b.left;
+            offset.x += word_width;
         }
     }
 
@@ -349,19 +357,31 @@ impl Paragraph {
     }
 
     fn byte_position(&self, pos: usize) -> Option<Vector> {
-        if let Some((word, byte_offset, _, word_offset)) =
-            self.words.iter().find(|(word, byte_offset, ..)| {
-                (*byte_offset..*byte_offset + word.string_length).contains(&pos)
-            })
-        {
-            let pos = pos - byte_offset;
-            if let Some(pos) =
-                word.grapheme_positions.iter().position(|(b, _)| pos < *b)
-            {
-                return word
-                    .grapheme_positions
-                    .get(pos - 1)
-                    .map(|(_, p)| *p + *word_offset);
+        for (word, byte_offset, _, word_offset) in &self.words {
+            let to = *byte_offset + word.string_length;
+            if pos == to {
+                return Some(word.last_position + *word_offset);
+            }
+            if (*byte_offset..to).contains(&pos) {
+                let pos = pos - byte_offset;
+                let mut prev_offset = Vector::default();
+                for &(b, p) in &word.grapheme_positions {
+                    if pos == b {
+                        return Some(p + *word_offset);
+                    }
+                    if pos < b {
+                        return Some(prev_offset + *word_offset);
+                    }
+                    prev_offset = p;
+                }
+                if let Some(pos) =
+                    word.grapheme_positions.iter().position(|(b, _)| pos < *b)
+                {
+                    return word
+                        .grapheme_positions
+                        .get(pos - 1)
+                        .map(|(_, p)| *p + *word_offset);
+                }
             }
         }
         None
