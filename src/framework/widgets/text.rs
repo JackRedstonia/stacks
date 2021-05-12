@@ -193,18 +193,6 @@ impl Widget for Text {
             canvas.save();
             canvas.translate((0.0, -p.ascent));
             p.draw(canvas, &self.paint);
-            if let Some(pos) = p.byte_position(156) {
-                canvas.draw_rect(
-                    Rect::new(-1.0, p.ascent, 1.0, p.descent).with_offset(pos),
-                    &Paint::new_color4f(1.0, 1.0, 1.0, 1.0),
-                );
-            }
-            if let Some(pos) = p.byte_position(174) {
-                canvas.draw_rect(
-                    Rect::new(-1.0, p.ascent, 1.0, p.descent).with_offset(pos),
-                    &Paint::new_color4f(1.0, 0.0, 0.0, 1.0),
-                );
-            }
             canvas.restore();
         }
     }
