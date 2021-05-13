@@ -19,6 +19,7 @@ pub enum InputEvent {
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
     MouseScroll(i32, Point),
+    TextInput(String),
     Focused(ID, Box<Self>),
     RemoveHoverExcept(ID),
 }
@@ -44,7 +45,8 @@ impl InputEvent {
             | InputEvent::Focused(..) => false,
             InputEvent::KeyDown(_)
             | InputEvent::MouseDown(_, _)
-            | InputEvent::MouseScroll(_, _) => true,
+            | InputEvent::MouseScroll(_, _)
+            | InputEvent::TextInput(_) => true,
         }
     }
 
@@ -100,7 +102,7 @@ impl InputState {
 
     pub fn handle_event(
         &mut self,
-        event: &Sdl2Event,
+        event: Sdl2Event,
     ) -> Option<EventHandleResult> {
         match event {
             Sdl2Event::Quit { .. } => return Some(EventHandleResult::Exit),
@@ -108,8 +110,8 @@ impl InputState {
                 WindowEvent::Close => return Some(EventHandleResult::Exit),
                 WindowEvent::Resized(width, height) => {
                     return Some(EventHandleResult::Resized(Size::new(
-                        *width as _,
-                        *height as _,
+                        width as _,
+                        height as _,
                     )));
                 }
                 _ => {}
@@ -117,35 +119,35 @@ impl InputState {
             Sdl2Event::KeyDown {
                 keycode: Some(k), ..
             } => {
-                self.keys.insert(*k);
-                return Some(EventHandleResult::Input(InputEvent::KeyDown(*k)));
+                self.keys.insert(k);
+                return Some(EventHandleResult::Input(InputEvent::KeyDown(k)));
             }
             Sdl2Event::KeyUp {
                 keycode: Some(k), ..
             } => {
-                self.keys.remove(k);
-                return Some(EventHandleResult::Input(InputEvent::KeyUp(*k)));
+                self.keys.remove(&k);
+                return Some(EventHandleResult::Input(InputEvent::KeyUp(k)));
             }
             Sdl2Event::MouseButtonDown {
                 mouse_btn, x, y, ..
             } => {
-                self.mouse_buttons.insert(*mouse_btn);
-                let p = Point::new(*x as _, *y as _);
+                self.mouse_buttons.insert(mouse_btn);
+                let p = Point::new(x as _, y as _);
                 return Some(EventHandleResult::Input(InputEvent::MouseDown(
-                    *mouse_btn, p,
+                    mouse_btn, p,
                 )));
             }
             Sdl2Event::MouseButtonUp {
                 mouse_btn, x, y, ..
             } => {
-                self.mouse_buttons.remove(mouse_btn);
-                let p = Point::new(*x as _, *y as _);
+                self.mouse_buttons.remove(&mouse_btn);
+                let p = Point::new(x as _, y as _);
                 return Some(EventHandleResult::Input(InputEvent::MouseUp(
-                    *mouse_btn, p,
+                    mouse_btn, p,
                 )));
             }
             Sdl2Event::MouseMotion { x, y, .. } => {
-                let p = Point::new(*x as _, *y as _);
+                let p = Point::new(x as _, y as _);
                 self.mouse_position = p;
                 return Some(EventHandleResult::Input(InputEvent::MouseMove(
                     p,
@@ -153,7 +155,12 @@ impl InputState {
             }
             Sdl2Event::MouseWheel { y, .. } => {
                 return Some(EventHandleResult::Input(
-                    InputEvent::MouseScroll(*y, self.mouse_position),
+                    InputEvent::MouseScroll(y, self.mouse_position),
+                ));
+            }
+            Sdl2Event::TextInput { text, .. } => {
+                return Some(EventHandleResult::Input(
+                    InputEvent::TextInput(text),
                 ));
             }
             _ => {}
@@ -166,7 +173,7 @@ impl InputState {
     }
 
     /// Returns whether the given key is down
-    pub fn is_key_down(&self, key: &Keycode) -> bool {
+    pub fn is_key_down(&self, key: Keycode) -> bool {
         self.keys.contains(&key)
     }
 

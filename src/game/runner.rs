@@ -12,6 +12,8 @@ use super::Game;
 
 use sdl2::{
     event::Event as Sdl2Event,
+    keyboard::Keycode,
+    mouse::MouseButton,
     video::{FullscreenType, Window as Sdl2Window},
 };
 use skulpin_renderer::rafx::api::{RafxError, RafxExtents2D};
@@ -126,6 +128,14 @@ impl State {
 
     pub fn mouse_position() -> Point {
         Self::with(|x| x.input_state.mouse_position())
+    }
+
+    pub fn is_key_down(key: Keycode) -> bool {
+        Self::with(|x| x.input_state.is_key_down(key))
+    }
+
+    pub fn is_mouse_down(button: MouseButton) -> bool {
+        Self::with(|x| x.input_state.is_mouse_down(button))
     }
 }
 
@@ -267,7 +277,7 @@ impl Runner {
     }
 
     fn game_handle_event(game: &mut impl Game, event: Sdl2Event) -> bool {
-        if let Some(r) = State::with_mut(|x| x.input_state.handle_event(&event))
+        if let Some(r) = State::with_mut(|x| x.input_state.handle_event(event))
         {
             match r {
                 EventHandleResult::Input(event) => game.input(event),
