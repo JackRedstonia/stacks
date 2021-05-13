@@ -33,7 +33,7 @@ fn main() {
         let bg = Rectangle::new(LayoutSize::ZERO.expand_width().expand_height(), bg_paint);
 
         let mut root = VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
-        root.inner_mut().add_child(header.to_dyn()).add_child(text.to_dyn());
+        root.inner_mut().add_child(header.into()).add_child(text.into());
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);

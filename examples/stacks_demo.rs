@@ -2,7 +2,7 @@ use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
         layout::{
-            ContainerSize, FullscreenContainer, SizeFillContainer, VContainer,
+            ContainerSize, FullscreenContainer, SizeFillContainer, VContainerDyn,
         },
         shapes::{Rectangle, Throbber},
         Transform,
@@ -13,7 +13,7 @@ use stacks::prelude::*;
 
 fn main() {
     Framework::run("Stacks", || {
-        let mut root = VContainer::new(
+        let mut root = VContainerDyn::new(
             ContainerSize::ZERO.expand_width().expand_height(),
             None,
         );
@@ -25,14 +25,14 @@ fn main() {
                         .expand_height(),
                     Paint::new_color4f(0.2, 0.8, 0.0, 0.3),
                 )
-                .to_dyn(),
+                .into(),
             )
             .add_child(
                 Rectangle::new(
                     LayoutSize::min(100.0, 100.0).expand_height_by(3.0),
                     Paint::new_color4f(0.7, 0.1, 0.2, 0.3).anti_alias(),
                 )
-                .to_dyn(),
+                .into(),
             )
             .add_child(
                 Transform::new(
@@ -42,7 +42,7 @@ fn main() {
                     ),
                     Matrix::scale((1.5, 1.7)),
                 )
-                .to_dyn(),
+                .into(),
             )
             .add_child(
                 Throbber::new(
@@ -52,7 +52,7 @@ fn main() {
                         .anti_alias()
                         .stroke(),
                 )
-                .to_dyn(),
+                .into(),
             )
             .add_child(
                 AudioPlayer::new(
@@ -62,7 +62,7 @@ fn main() {
                     Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias(),
                     Paint::new_color4f(1.0, 1.0, 1.0, 0.4).anti_alias(),
                 )?
-                .to_dyn(),
+                .into(),
             );
         let root = SizeFillContainer::new(root, Some(Size::new(1366.0, 768.0)));
         let root = FullscreenContainer::new(root);

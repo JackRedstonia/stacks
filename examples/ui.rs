@@ -72,10 +72,10 @@ fn main() {
         let mut root =
             VContainerDyn::new(ContainerSize::ZERO.expand_width().expand_height(), Some(18.0));
         root.inner_mut()
-                .add_child(text.to_dyn())
-                .add_child(button.to_dyn())
-                .add_child(slider.to_dyn())
-                .add_child(player.to_dyn());
+                .add_child(text.into())
+                .add_child(button.into())
+                .add_child(slider.into())
+                .add_child(player.into());
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
         let root = Fonts::new(root);

@@ -54,8 +54,22 @@ impl<'a, T: Widget + 'a> Wrap<T> {
         }
     }
 
+    /// Convenience function for the lazy.
+    /// Most clients should use the much nicer-looking `From<Wrap<T>>`'s
+    /// `into` method instead.
+    #[allow(clippy::wrong_self_convention)]
+    #[deprecated(
+        since = "0.0.1",
+        note = "Use `From<Wrap<T>>` with `into()` instead"
+    )]
     pub fn to_dyn(self) -> Wrap<dyn Widget + 'a> {
         Wrap { inner: self.inner }
+    }
+}
+
+impl<'a, T: Widget + 'a> From<Wrap<T>> for Wrap<dyn Widget + 'a> {
+    fn from(wrap: Wrap<T>) -> Self {
+        Wrap { inner: wrap.inner }
     }
 }
 
