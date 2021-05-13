@@ -6,7 +6,7 @@ use stacks::framework::{
             VContainerDyn,
         },
         shapes::Rectangle,
-        ui::{Button, Slider},
+        ui::{Button, Slider, ValueRange},
         Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
@@ -47,8 +47,7 @@ fn main() {
         let mut slider = Slider::new(
             "FFT display interpolation factor".to_owned(),
             None,
-            5.0..=24.0,
-            Some(1.0),
+            ValueRange::new(5.0..=24.0).precise_to(1.0),
             LayoutDimension::min(500.0),
             btn_bg,
             slider_btn_bg,

@@ -60,7 +60,7 @@ impl<T: Widget> Framework<T> {
                 x.just_grabbed_focus = false;
                 return Some(x.current_focused_id.expect("Framework state's current focused widget ID is None despite focus just being grabbed"));
             }
-            return None;
+            None
         });
         if let Some(id) = remove_hover {
             self.root.input(&InputEvent::RemoveHoverExcept(id));

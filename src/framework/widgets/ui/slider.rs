@@ -9,6 +9,38 @@ use std::ops::RangeInclusive;
 
 type SliderLabelFormatter = dyn for<'r> FnMut(&'r str, scalar) -> String;
 
+pub struct ValueRange {
+    range: RangeInclusive<scalar>,
+    precision: Option<scalar>,
+}
+
+impl ValueRange {
+    pub fn new(range: RangeInclusive<scalar>) -> Self {
+        Self {
+            range,
+            precision: None,
+        }
+    }
+
+    pub fn precise_to(self, precision: scalar) -> Self {
+        Self {
+            precision: Some(precision),
+            ..self
+        }
+    }
+
+    pub fn no_precision(self) -> Self {
+        Self {
+            precision: None,
+            ..self
+        }
+    }
+
+    pub fn with_precision(self, precision: Option<scalar>) -> Self {
+        Self { precision, ..self }
+    }
+}
+
 // #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 // pub enum SliderChangeTrigger {
 //     OnMove,
@@ -32,8 +64,7 @@ pub struct Slider {
     on_change_fns: Vec<Box<dyn FnMut(scalar)>>,
     formatter: Box<SliderLabelFormatter>,
 
-    value_range: RangeInclusive<scalar>,
-    value_precision: Option<scalar>,
+    value_range: ValueRange,
     value: scalar,
     button_offset: scalar,
 }
@@ -42,8 +73,7 @@ impl Slider {
     pub fn new(
         label: String,
         label_size: Option<scalar>,
-        value_range: RangeInclusive<scalar>,
-        value_precision: Option<scalar>,
+        value_range: ValueRange,
         layout_width: LayoutDimension,
         background: Paint,
         button_paint: Paint,
@@ -88,9 +118,8 @@ impl Slider {
             size: Size::default(),
             on_change_fns: vec![],
             formatter,
-            value: *value_range.start(),
+            value: *value_range.range.start(),
             value_range,
-            value_precision,
             button_offset: 0.0,
         }
         .wrap()
@@ -109,16 +138,18 @@ impl Slider {
     }
 
     fn slide_to(&mut self, pos: Vector) {
+        let range = &self.value_range.range;
+        let precision = &self.value_range.precision;
         let width = self.size.width - self.button_size.width;
         let x = (pos.x - self.button_size.width * 0.5).clamp(0.0, width);
 
         // 0..=1
         let pos = x / width;
         // 0..=delta
-        let delta = self.value_range.end() - self.value_range.start();
+        let delta = range.end() - range.start();
         let pos = pos * delta;
         // snapped
-        let pos = if let Some(precision) = self.value_precision {
+        let pos = if let Some(precision) = *precision {
             let intervals = (pos / precision).round();
             let pos = Self::snap_value(intervals, precision);
             if pos > delta {
@@ -130,7 +161,7 @@ impl Slider {
             pos
         };
         // start..=end
-        let pos = pos + self.value_range.start();
+        let pos = pos + range.start();
 
         // LINT SUPPRESSION: For the sake of absolute correctness, we do indeed
         // want strict comparison here.
@@ -153,9 +184,10 @@ impl Slider {
     }
 
     fn move_button(&mut self) {
+        let range = &self.value_range.range;
         let width = self.size.width - self.button_size.width;
-        let delta = self.value_range.end() - self.value_range.start();
-        let pos = self.value - self.value_range.start();
+        let delta = range.end() - range.start();
+        let pos = self.value - range.start();
         let button_offset = pos / delta * width;
         self.button_offset = button_offset.round();
     }

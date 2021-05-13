@@ -3,5 +3,6 @@ mod slider;
 mod textedit;
 
 pub use button::Button;
-pub use slider::Slider;
+pub use slider::{Slider, ValueRange};
 pub use textedit::TextEdit;
+
