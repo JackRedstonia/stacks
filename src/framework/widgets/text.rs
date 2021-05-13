@@ -88,7 +88,7 @@ impl Text {
         .into()
     }
 
-    pub fn get_text(&self) -> &str {
+    pub fn get_text(&self) -> &String {
         &self.text
     }
 
