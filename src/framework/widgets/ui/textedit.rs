@@ -202,7 +202,14 @@ impl Widget for TextCursors {
             canvas.draw_rect(
                 Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent)
                     .with_offset(self.cursor.position),
-                &Paint::new_color4f(1.0, 1.0, 1.0, (State::elapsed_draw().as_secs_f32() * 6.0).sin() * 0.5 + 0.5).anti_alias(),
+                &Paint::new_color4f(
+                    1.0,
+                    1.0,
+                    1.0,
+                    (State::elapsed_draw().as_secs_f32() * 6.0).sin() * 0.5
+                        + 0.5,
+                )
+                .anti_alias(),
             );
         }
     }

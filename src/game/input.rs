@@ -159,9 +159,9 @@ impl InputState {
                 ));
             }
             Sdl2Event::TextInput { text, .. } => {
-                return Some(EventHandleResult::Input(
-                    InputEvent::TextInput(text),
-                ));
+                return Some(EventHandleResult::Input(InputEvent::TextInput(
+                    text,
+                )));
             }
             _ => {}
         };
