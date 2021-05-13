@@ -127,17 +127,17 @@ impl LayoutDimension {
         Self { min, expand: None }
     }
 
-    pub fn with_expand(mut self, expand: scalar) -> Self {
+    pub fn expand_by(mut self, expand: scalar) -> Self {
         self.expand = Some(expand);
         self
     }
 
-    pub fn with_expand_one(mut self) -> Self {
+    pub fn expand(mut self) -> Self {
         self.expand = Some(1.0);
         self
     }
 
-    pub fn with_no_expand(mut self) -> Self {
+    pub fn no_expand(mut self) -> Self {
         self.expand = None;
         self
     }
