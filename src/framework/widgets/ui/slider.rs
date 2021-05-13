@@ -214,7 +214,7 @@ impl Widget for Slider {
         let (bz, b) = self.button.size();
         let bc = self.button_layout_size != bz;
         self.button_layout_size = bz;
-        
+
         let (mut lz, c) = self.label.size();
         lz.width = self.layout_width;
         let cc = self.label_size != lz;
