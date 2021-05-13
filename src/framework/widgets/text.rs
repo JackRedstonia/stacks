@@ -98,6 +98,12 @@ impl Text {
         self.paragraph = None;
     }
 
+    pub fn mutate_text<F: FnMut(&mut String)>(&mut self, mut f: F) {
+        f(&mut self.text);
+        self.just_changed = true;
+        self.paragraph = None;
+    }
+
     pub fn force_build_paragraph(&mut self) {
         match self.layout_mode {
             TextLayoutMode::Static | TextLayoutMode::MinHeight => {
@@ -380,6 +386,9 @@ impl Paragraph {
     }
 
     fn grapheme_position(&self, pos: usize) -> Option<Vector> {
+        if self.words.is_empty() && pos == 0 {
+            return Some(Vector::default());
+        }
         for (word, byte_offset, _, word_offset) in &self.words {
             let to = *byte_offset + word.string_length;
             if pos == to {
