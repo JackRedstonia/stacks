@@ -106,7 +106,7 @@ impl Widget for TextEdit {
                     let c = t.get_text()[..b].chars().rev().next();
                     drop(t);
                     if let Some(c) = c {
-                        text.text.inner_mut().mutate_text(|tx| {
+                        text.mutate(|tx| {
                             tx.remove(b - c.len_utf8());
                         });
                         text.cursor.byte_offset -= c.len_utf8();
@@ -117,7 +117,7 @@ impl Widget for TextEdit {
                     let c = t.get_text()[b..].chars().next();
                     drop(t);
                     if c.is_some() {
-                        text.text.inner_mut().mutate_text(|tx| {
+                        text.mutate(|tx| {
                             tx.remove(b);
                         });
                     }
@@ -126,7 +126,7 @@ impl Widget for TextEdit {
             InputEvent::TextInput(s) => {
                 let mut text = self.text_inner.inner_mut();
                 let b = text.cursor.byte_offset;
-                text.text.inner_mut().mutate_text(|tx| {
+                text.mutate(|tx| {
                     tx.insert_str(b, &s);
                 });
                 text.cursor.byte_offset += s.len();
@@ -187,6 +187,15 @@ impl TextCursors {
             focused: false,
         }
         .into()
+    }
+
+    fn mutate<F: for<'r> FnMut(&'r mut String)>(
+        &mut self,
+        f: F,
+    ) {
+        let mut t = self.text.inner_mut();
+        t.mutate_text(f);
+        t.force_build_paragraph();
     }
 
     fn update_cursors(&mut self) {
