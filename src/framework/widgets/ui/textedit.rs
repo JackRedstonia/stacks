@@ -7,8 +7,7 @@ use crate::prelude::*;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TextEdit {
-    text: Wrap<MarginContainer<TextCursors>>,
-    text_inner: Wrap<TextCursors>,
+    text: Wrap<TextCursors>,
     text_size: LayoutSize,
 
     size: Size,
@@ -25,11 +24,8 @@ impl TextEdit {
         text_paint: Paint,
     ) -> Wrap<Self> {
         let text = TextCursors::new(text_size, text_paint);
-        let text_inner = text.clone();
-        let text = MarginContainer::new(text, Margin::vertical(10.0));
         Self {
             text,
-            text_inner,
             text_size: LayoutSize::default(),
             size: Size::default(),
             layout_width,
@@ -43,7 +39,7 @@ impl TextEdit {
     }
 
     fn insert_text(&mut self, s: &str) {
-        let mut text = self.text_inner.inner_mut();
+        let mut text = self.text.inner_mut();
         let b = text.cursor.byte_offset;
         text.mutate(|tx| {
             tx.insert_str(b, s);
@@ -52,7 +48,7 @@ impl TextEdit {
     }
 
     fn go_left(&mut self) {
-        let mut cursor = self.text_inner.inner_mut();
+        let mut cursor = self.text.inner_mut();
         let mut chk = || {
             let b = cursor.cursor.byte_offset;
             let text = cursor.text.inner_mut();
@@ -68,7 +64,7 @@ impl TextEdit {
     }
 
     fn go_right(&mut self) {
-        let mut cursor = self.text_inner.inner_mut();
+        let mut cursor = self.text.inner_mut();
         let mut chk = || {
             let b = cursor.cursor.byte_offset;
             let text = cursor.text.inner_mut();
@@ -84,7 +80,7 @@ impl TextEdit {
     }
 
     fn backspace(&mut self) {
-        let mut text = self.text_inner.inner_mut();
+        let mut text = self.text.inner_mut();
         let b = text.cursor.byte_offset;
         let t = text.text.inner_mut();
         let c = t.get_text()[..b].chars().rev().next();
@@ -98,7 +94,7 @@ impl TextEdit {
     }
 
     fn delete(&mut self) {
-        let mut text = self.text_inner.inner_mut();
+        let mut text = self.text.inner_mut();
         let b = text.cursor.byte_offset;
         let t = text.text.inner_mut();
         let c = t.get_text()[b..].chars().next();
@@ -116,7 +112,7 @@ impl TextEdit {
         if is_shift {
             self.insert_text("\n");
         } else {
-            let mut text = self.text_inner.inner_mut();
+            let mut text = self.text.inner_mut();
             for i in &mut self.on_commit_fns {
                 i(text.text.inner_mut().get_text());
             }
@@ -140,7 +136,7 @@ impl Widget for TextEdit {
                     if Rect::from_size(self.size).contains(*pos) =>
                 {
                     state.grab_focus();
-                    self.text_inner.inner_mut().focused = true;
+                    self.text.inner_mut().focused = true;
                     return true;
                 }
                 _ => return false,
@@ -151,7 +147,7 @@ impl Widget for TextEdit {
                 if !Rect::from_size(self.size).contains(*pos) =>
             {
                 state.release_focus();
-                self.text_inner.inner_mut().focused = false;
+                self.text.inner_mut().focused = false;
             }
             InputEvent::KeyDown(k) => match k {
                 Keycode::Left => {
