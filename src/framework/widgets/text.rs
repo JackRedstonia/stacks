@@ -5,9 +5,10 @@ pub use fonts::{FontResource, Fonts};
 use std::mem::MaybeUninit;
 
 use crate::prelude::*;
-use skia::{Canvas, Font as SkFont, GlyphId, Path, RoundOut};
+use skia::{Canvas, Font as SkFont, FontMetrics, GlyphId, Path, RoundOut};
 
 use unicode_linebreak::{linebreaks, BreakOpportunity};
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum Font {
@@ -49,7 +50,7 @@ pub struct Text {
     layout_size: LayoutSize,
     layout_mode: TextLayoutMode,
     paint: Paint,
-    sk_font: Option<Vec<SkFont>>,
+    sk_font: Option<(Vec<SkFont>, scalar, FontMetrics)>,
     font: Font,
     style: FontStyle,
     font_size: Option<scalar>,
@@ -87,6 +88,10 @@ impl Text {
         .into()
     }
 
+    pub fn get_text(&self) -> &str {
+        &self.text
+    }
+
     pub fn set_text(&mut self, text: String) {
         self.text = text;
         self.just_changed = true;
@@ -98,23 +103,46 @@ impl Text {
             TextLayoutMode::Static | TextLayoutMode::MinHeight => {
                 if let Some(p) = &mut self.paragraph {
                     p.rerun_with_width(Some(self.size.width));
-                } else if let Some(f) = &self.sk_font {
+                } else if let Some((f, l, m)) = &self.sk_font {
                     self.paragraph = Some(Paragraph::new(
                         &self.text,
                         f,
+                        *l,
+                        m,
                         Some(self.size.width),
                     ));
                 }
             }
             TextLayoutMode::OneLine => {
                 if self.paragraph.is_none() {
-                    if let Some(f) = &self.sk_font {
+                    if let Some((f, l, m)) = &self.sk_font {
                         self.paragraph =
-                            Some(Paragraph::new(&self.text, f, None));
+                            Some(Paragraph::new(&self.text, f, *l, m, None));
                     }
                 }
             }
         }
+    }
+
+    pub fn grapheme_position(&self, byte_offset: usize) -> Option<Vector> {
+        self.paragraph
+            .as_ref()
+            .map(|e| {
+                e.grapheme_position(byte_offset)
+                    .map(|e| e + self.draw_offset())
+            })
+            .flatten()
+    }
+
+    pub fn metrics(&self) -> Option<(scalar, &FontMetrics)> {
+        self.sk_font.as_ref().map(|(_, l, m)| (*l, m))
+    }
+
+    fn draw_offset(&self) -> Vector {
+        self.paragraph
+            .as_ref()
+            .map(|p| Vector::new(0.0, -p.ascent))
+            .unwrap_or_default()
     }
 
     fn bounds(&self) -> Rect {
@@ -136,19 +164,22 @@ impl Widget for Text {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(f) = stack.get::<ResourceUser<FontResource>>() {
             if let Some(f) = f.try_access() {
-                self.sk_font =
-                    Some(f.resolve(self.font, self.style, self.font_size));
+                let font = f.resolve(self.font, self.style, self.font_size);
+                let (line_height, metrics) = font[0].metrics();
                 // Lay out text immediately if we don't care about layout sizes
                 if self.layout_mode == TextLayoutMode::OneLine {
                     self.paragraph = Some(Paragraph::new(
                         &self.text,
-                        self.sk_font.as_ref().unwrap(),
+                        &font,
+                        line_height,
+                        &metrics,
                         None,
                     ));
                 } else {
                     // Invalidate old paragraphs
                     self.paragraph = None;
                 }
+                self.sk_font = Some((font, line_height, metrics));
             }
         }
     }
@@ -191,7 +222,7 @@ impl Widget for Text {
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         if let Some(p) = &self.paragraph {
             canvas.save();
-            canvas.translate((0.0, -p.ascent));
+            canvas.translate(self.draw_offset());
             p.draw(canvas, &self.paint);
             canvas.restore();
         }
@@ -212,7 +243,6 @@ impl Word {
         let mut bounds = Rect::new_empty();
         let mut path = Path::new();
         let mut offset = Vector::default();
-        use unicode_segmentation::UnicodeSegmentation;
         let mut l = 0;
         let mut grapheme_positions = vec![];
         for chs in s.graphemes(true) {
@@ -278,7 +308,13 @@ struct Paragraph {
 }
 
 impl Paragraph {
-    fn new(s: &str, font: &[SkFont], width: Option<scalar>) -> Self {
+    fn new(
+        s: &str,
+        font: &[SkFont],
+        line_height: scalar,
+        metrics: &FontMetrics,
+        width: Option<scalar>,
+    ) -> Self {
         assert!(!font.is_empty());
         let mut prev = 0;
         let mut prev_break = false;
@@ -302,7 +338,6 @@ impl Paragraph {
                 })
             })
             .collect();
-        let (line_height, metrics) = font[0].metrics();
         let mut q = Self {
             words,
             bounds: Rect::new_empty(),
@@ -344,7 +379,7 @@ impl Paragraph {
         }
     }
 
-    fn byte_position(&self, pos: usize) -> Option<Vector> {
+    fn grapheme_position(&self, pos: usize) -> Option<Vector> {
         for (word, byte_offset, _, word_offset) in &self.words {
             let to = *byte_offset + word.string_length;
             if pos == to {
