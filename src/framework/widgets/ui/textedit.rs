@@ -45,8 +45,27 @@ impl Widget for TextEdit {
         self.text.update();
     }
 
-    fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
+    fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
+        if !state.is_focused() {
+            match event {
+                InputEvent::MouseDown(MouseButton::Left, pos)
+                    if Rect::from_size(self.size).contains(*pos) =>
+                {
+                    state.grab_focus();
+                    self.text_inner.inner_mut().focused = true;
+                    return true;
+                }
+                _ => return false,
+            }
+        }
         match event {
+            InputEvent::MouseDown(MouseButton::Left, pos)
+                if !Rect::from_size(self.size).contains(*pos) =>
+            {
+                state.release_focus();
+                self.text_inner.inner_mut().focused = false;
+                return true;
+            }
             InputEvent::KeyDown(Keycode::Left) => {
                 let mut cursor = self.text_inner.inner_mut();
                 let mut chk = || {
@@ -145,6 +164,7 @@ struct Cursor {
 struct TextCursors {
     text: Wrap<Text>,
     cursor: Cursor,
+    focused: bool,
 }
 
 impl TextCursors {
@@ -152,7 +172,7 @@ impl TextCursors {
         let text = Text::new(
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
-            "some example text for you to cursor around, haha",
+            "",
             Font::Default,
             FontStyle::Regular,
             text_size,
@@ -164,6 +184,7 @@ impl TextCursors {
                 byte_offset: 0,
                 position: Vector::default(),
             },
+            focused: false,
         }
         .into()
     }
@@ -198,19 +219,16 @@ impl Widget for TextCursors {
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.text.draw(canvas);
-        if let Some((_, metrics)) = self.text.inner_mut().metrics() {
-            canvas.draw_rect(
-                Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent)
-                    .with_offset(self.cursor.position),
-                &Paint::new_color4f(
-                    1.0,
-                    1.0,
-                    1.0,
-                    (State::elapsed_draw().as_secs_f32() * 6.0).sin() * 0.5
-                        + 0.5,
-                )
-                .anti_alias(),
-            );
+        if self.focused {
+            if let Some((_, metrics)) = self.text.inner_mut().metrics() {
+                let a = State::elapsed_draw().as_secs_f32() * 8.0;
+                canvas.draw_rect(
+                    Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent)
+                        .with_offset(self.cursor.position),
+                    &Paint::new_color4f(1.0, 1.0, 1.0, a.sin() * 0.5 + 0.5)
+                        .anti_alias(),
+                );
+            }
         }
     }
 }
