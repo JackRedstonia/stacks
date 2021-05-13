@@ -55,13 +55,16 @@ impl<T: Widget> Framework<T> {
     }
 
     fn focus_aware_input(&mut self, event: InputEvent) {
-        FrameworkState::with_mut(|x| {
+        let remove_hover = FrameworkState::with_mut(|x| {
             if x.just_grabbed_focus {
                 x.just_grabbed_focus = false;
-                let id = x.current_focused_id.expect("Framework state's current focused widget ID is None despite focus just being grabbed");
-                self.root.input(&InputEvent::RemoveHoverExcept(id));
+                return Some(x.current_focused_id.expect("Framework state's current focused widget ID is None despite focus just being grabbed"));
             }
+            return None;
         });
+        if let Some(id) = remove_hover {
+            self.root.input(&InputEvent::RemoveHoverExcept(id));
+        }
         if let Some(id) = FrameworkState::current_focus() {
             self.root.input(&InputEvent::Focused(id, Box::new(event)));
         } else {
