@@ -208,14 +208,16 @@ impl Widget for Slider {
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
         let (bgz, a) = self.background.size();
-        let ac = self.background_size == bgz;
+        let ac = self.background_size != bgz;
         self.background_size = bgz;
+
         let (bz, b) = self.button.size();
-        let bc = self.button_layout_size == bz;
+        let bc = self.button_layout_size != bz;
         self.button_layout_size = bz;
+        
         let (mut lz, c) = self.label.size();
         lz.width = self.layout_width;
-        let cc = self.label_size == lz;
+        let cc = self.label_size != lz;
         self.label_size = lz;
 
         (lz, a || ac || b || bc || c || cc)
