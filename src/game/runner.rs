@@ -196,11 +196,6 @@ impl Runner {
 
         let target_update_time = Duration::from_millis(5); // 200 fps
 
-        let mut last_draw = Instant::now();
-        let mut refresh_rate = 60;
-        let mut no_draw_time =
-            Duration::from_secs_f64(0.75 / refresh_rate as f64);
-
         'events: loop {
             game.update();
 
@@ -224,21 +219,7 @@ impl Runner {
                 }
             }
 
-            let mut is_redraw = false;
-            let new_refresh_rate = win
-                .display_mode()
-                .map(|e| e.refresh_rate as u32)
-                .unwrap_or(60);
-            if new_refresh_rate != refresh_rate {
-                refresh_rate = new_refresh_rate;
-                no_draw_time =
-                    Duration::from_secs_f64(0.75 / refresh_rate as f64);
-            }
-            if last_draw.elapsed() > no_draw_time
-                && renderer.swapchain_helper.can_draw_without_blocking()
-            {
-                last_draw = Instant::now();
-                is_redraw = true;
+            if renderer.swapchain_helper.can_draw_without_blocking() {
                 let (width, height) = win.vulkan_drawable_size();
                 let extents = RafxExtents2D { width, height };
                 if let Err(e) = renderer.draw(extents, 1.0, |canvas, _| {
@@ -251,11 +232,9 @@ impl Runner {
                 State::with_mut(|x| x.time_state_draw.update());
             }
             State::with_mut(|state| {
-                if !is_redraw {
-                    let update_time = state.time_state.last_update().elapsed();
-                    if target_update_time > update_time {
-                        sleep(target_update_time - update_time);
-                    }
+                let update_time = state.time_state.last_update().elapsed();
+                if target_update_time > update_time {
+                    sleep(target_update_time - update_time);
                 }
                 state.time_state.update();
             });
