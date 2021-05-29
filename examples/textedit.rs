@@ -3,7 +3,7 @@ use stacks::framework::{
         layout::{FullscreenContainer, Margin, MarginContainer},
         shapes::Rectangle,
         ui::TextEdit,
-        Backgrounded, Fonts,
+        Backgrounded, Fonts, TextLayoutMode,
     },
     Framework,
 };
@@ -13,6 +13,7 @@ fn main() {
     Framework::run("Stacks", || {
         let root = TextEdit::new(
             LayoutDimension::ZERO.expand(),
+            Some(TextLayoutMode::MinHeight),
             Some(48.0),
             Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias(),
         );

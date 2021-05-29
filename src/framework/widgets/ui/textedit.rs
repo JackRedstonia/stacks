@@ -21,12 +21,13 @@ pub struct TextEdit {
 impl TextEdit {
     pub fn new(
         layout_width: LayoutDimension,
+        layout_mode: Option<TextLayoutMode>,
         text_size: Option<scalar>,
         text_paint: Paint,
     ) -> Wrap<Self> {
         let text = Text::new(
             LayoutSize::ZERO.expand_width(),
-            Some(TextLayoutMode::MinHeight),
+            layout_mode,
             "",
             Font::Default,
             FontStyle::Regular,
