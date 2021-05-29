@@ -4,8 +4,15 @@ use crate::prelude::*;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TextEdit {
+    font: Font,
+    font_style: FontStyle,
+    text_size: Option<f32>,
+    text_paint: Paint,
+
     text: Wrap<Text>,
-    text_size: LayoutSize,
+    text_layout_size: LayoutSize,
+    text_editing: Option<Wrap<Text>>,
+    text_editing_layout_size: LayoutSize,
 
     size: Size,
 
@@ -25,18 +32,27 @@ impl TextEdit {
         text_size: Option<scalar>,
         text_paint: Paint,
     ) -> Wrap<Self> {
+        let font = Font::Default;
+        let font_style = FontStyle::Regular;
         let text = Text::new(
             LayoutSize::ZERO.expand_width(),
             layout_mode,
             "",
-            Font::Default,
-            FontStyle::Regular,
+            font,
+            font_style,
             text_size,
-            text_paint,
+            text_paint.clone(),
         );
         Self {
+            font,
+            font_style,
+            text_size,
+            text_paint,
+
             text,
-            text_size: LayoutSize::default(),
+            text_layout_size: LayoutSize::default(),
+            text_editing: None,
+            text_editing_layout_size: LayoutSize::default(),
             size: Size::default(),
             layout_width,
             cursor: Cursor {
@@ -60,7 +76,7 @@ impl TextEdit {
             tx.insert_str(b, s);
         });
         self.cursor.byte_offset += s.len();
-        self.invalidate_cursors();
+        self.invalidate_cursor();
     }
 
     fn go_left(&mut self) {
@@ -83,7 +99,7 @@ impl TextEdit {
         }
         drop(text);
         if ic {
-            self.invalidate_cursors();
+            self.invalidate_cursor();
         }
     }
 
@@ -107,7 +123,7 @@ impl TextEdit {
         }
         drop(text);
         if ic {
-            self.invalidate_cursors();
+            self.invalidate_cursor();
         }
     }
 
@@ -123,7 +139,7 @@ impl TextEdit {
                 tx.replace_range(pos..b, "");
             });
             self.cursor.byte_offset = pos;
-            self.invalidate_cursors();
+            self.invalidate_cursor();
         } else {
             // Delete one Unicode character.
             let c = s.chars().rev().next();
@@ -133,7 +149,7 @@ impl TextEdit {
                     tx.remove(b - c.len_utf8());
                 });
                 self.cursor.byte_offset -= c.len_utf8();
-                self.invalidate_cursors();
+                self.invalidate_cursor();
             }
         }
     }
@@ -177,11 +193,11 @@ impl TextEdit {
         t.force_build_paragraph();
     }
 
-    fn invalidate_cursors(&mut self) {
+    fn invalidate_cursor(&mut self) {
         self.cursor.position = None;
     }
 
-    fn update_cursors(&mut self) -> Option<Vector> {
+    fn update_cursor(&mut self) -> Option<Vector> {
         if self.cursor.position.is_none() {
             if let Some(pos) =
                 self.text.inner().grapheme_position(self.cursor.byte_offset)
@@ -227,15 +243,21 @@ fn pseudoword_start_from_end(s: &str) -> usize {
 
 impl Widget for TextEdit {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
+        if let Some(text_editing) = self.text_editing.as_mut() {
+            text_editing.load(stack);
+        }
         self.text.load(stack);
         if let Some((_, metrics)) = self.text.inner().metrics() {
             self.cursor_rect =
                 Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent);
         }
-        self.invalidate_cursors();
+        self.invalidate_cursor();
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
+        if let Some(text_editing) = self.text_editing.as_mut() {
+            text_editing.update();
+        }
         self.text.update();
     }
 
@@ -275,7 +297,28 @@ impl Widget for TextEdit {
                 }
                 _ => return false,
             },
+            InputEvent::TextEditing(s) if !(is_ctrl() || is_alt()) => {
+                if let Some(text_editing) = self.text_editing.as_mut() {
+                    text_editing.inner_mut().mutate_text(|tx| {
+                        *tx = s.clone();
+                    });
+                } else {
+                    self.text_editing = Some(Text::new(
+                        LayoutSize::ZERO.expand_width(),
+                        Some(TextLayoutMode::OneLine),
+                        s,
+                        self.font,
+                        self.font_style,
+                        self.text_size,
+                        self.text_paint
+                            .clone()
+                            .with_alpha(self.text_paint.alpha_f() * 0.3),
+                    ));
+                    FrameworkState::request_load();
+                }
+            }
             InputEvent::TextInput(s) if !(is_ctrl() || is_alt()) => {
+                self.text_editing = None;
                 self.insert_text(s);
             }
             _ => return false,
@@ -284,18 +327,31 @@ impl Widget for TextEdit {
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
+        let mut ea = false;
+        if let Some(text_editing) = self.text_editing.as_mut() {
+            let (s, a) = text_editing.size();
+            self.text_editing_layout_size = s;
+            ea = a;
+        }
+
         let (mut tz, a) = self.text.size();
         tz.width = self.layout_width;
-        let aa = self.text_size != tz;
-        self.text_size = tz;
+        let aa = self.text_layout_size != tz;
+        self.text_layout_size = tz;
 
-        (tz, a || aa)
+        (tz, a || aa || ea)
     }
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
+        if let Some(text_editing) = self.text_editing.as_mut() {
+            text_editing.set_size(
+                self.text_editing_layout_size.layout_one(Size::default()),
+            );
+        }
+
         self.size = size;
-        self.text.set_size(self.text_size.layout_one(size));
-        self.invalidate_cursors();
+        self.text.set_size(self.text_layout_size.layout_one(size));
+        self.invalidate_cursor();
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
@@ -303,12 +359,20 @@ impl Widget for TextEdit {
         if state.is_focused() {
             let t = State::elapsed_draw().as_secs_f32();
             self.cursor_paint.set_alpha_f((t * 8.0).sin() * 0.5 + 0.5);
-            if let Some(pos) = self.update_cursors() {
+            if let Some(pos) = self.update_cursor() {
                 canvas.draw_rect(
                     self.cursor_rect.with_offset(pos),
                     &self.cursor_paint,
                 );
             }
+        }
+        if let Some(text_editing) = self.text_editing.as_mut() {
+            canvas.save();
+            if let Some(pos) = self.cursor.position {
+                canvas.translate(pos - text_editing.inner().draw_offset());
+            }
+            text_editing.draw(canvas);
+            canvas.restore();
         }
     }
 }

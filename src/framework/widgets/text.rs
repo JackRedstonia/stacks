@@ -144,7 +144,7 @@ impl Text {
         self.sk_font.as_ref().map(|(_, l, m)| (*l, m))
     }
 
-    fn draw_offset(&self) -> Vector {
+    pub fn draw_offset(&self) -> Vector {
         self.paragraph
             .as_ref()
             .map(|p| Vector::new(0.0, -p.ascent))

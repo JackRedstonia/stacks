@@ -19,6 +19,7 @@ pub enum InputEvent {
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
     MouseScroll(i32, Point),
+    TextEditing(String),
     TextInput(String),
     Focused(ID, Box<Self>),
     RemoveHoverExcept(ID),
@@ -46,6 +47,7 @@ impl InputEvent {
             InputEvent::KeyDown(_)
             | InputEvent::MouseDown(_, _)
             | InputEvent::MouseScroll(_, _)
+            | InputEvent::TextEditing(_)
             | InputEvent::TextInput(_) => true,
         }
     }
@@ -156,6 +158,11 @@ impl InputState {
             Sdl2Event::MouseWheel { y, .. } => {
                 return Some(EventHandleResult::Input(
                     InputEvent::MouseScroll(y, self.mouse_position),
+                ));
+            }
+            Sdl2Event::TextEditing { text, .. } => {
+                return Some(EventHandleResult::Input(
+                    InputEvent::TextEditing(text),
                 ));
             }
             Sdl2Event::TextInput { text, .. } => {
