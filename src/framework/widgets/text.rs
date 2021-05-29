@@ -323,27 +323,45 @@ impl Paragraph {
     ) -> Self {
         assert!(!font.is_empty());
         let mut prev = 0;
+        let mut visual_prev = 0;
         let mut prev_break = false;
-        let words = linebreaks(s)
-            .map(|(end_index, break_op)| {
-                let word = &s[prev..end_index];
-                let prev_index = prev;
-                prev = end_index;
-                let pb = prev_break;
-                prev_break = break_op == BreakOpportunity::Mandatory;
-                let word = if prev_break {
-                    word.trim_end_matches('\n')
-                } else {
-                    word
-                };
-                (Word::new(word, font), prev_index, pb, unsafe {
-                    // SAFETY / LINT SUPPRESSION: this is fine, we do know that
-                    // `rerun_with_width` will initialize this after.
-                    #[allow(clippy::uninit_assumed_init)]
-                    MaybeUninit::uninit().assume_init()
-                })
-            })
-            .collect();
+
+        let words_iter = linebreaks(s);
+        let mut words = words_iter
+            .size_hint()
+            .1
+            .map(|s| Vec::with_capacity(s + 1))
+            .unwrap_or_else(|| Vec::new());
+
+        for (end_index, break_op) in words_iter {
+            let word = &s[prev..end_index];
+            let prev_index = prev;
+            prev = end_index;
+            let pb = prev_break;
+            prev_break = break_op == BreakOpportunity::Mandatory;
+            let word = if prev_break {
+                let w = word.trim_end_matches('\n');
+                visual_prev = prev_index + w.len();
+                w
+            } else {
+                visual_prev = end_index;
+                word
+            };
+            // SAFETY: this is fine, we do know that `rerun_with_width` will
+            // initialize this after.
+            words.push((Word::new(word, font), prev_index, pb, unsafe {
+                uninit_point()
+            }));
+        }
+
+        if visual_prev != s.len() {
+            // SAFETY: same as before, this is fine. we do know that
+            // `rerun_with_width` will initialize this after.
+            words.push((Word::new("", font), prev, true, unsafe {
+                uninit_point()
+            }))
+        }
+
         let mut q = Self {
             words,
             bounds: Rect::new_empty(),
@@ -426,4 +444,12 @@ fn combine(a: &mut Rect, b: &Rect) {
     a.right = a.right.max(b.right);
     a.top = a.top.min(b.top);
     a.bottom = a.bottom.max(b.bottom);
+}
+
+unsafe fn uninit_point() -> Vector {
+    // LINT SUPPRESSION: this is fine, really.
+    // We're not getting bitten by calling deconstructors or anything,
+    // Vector is just a Copy struct with 2 f32 fields.
+    #[allow(clippy::uninit_assumed_init)]
+    MaybeUninit::uninit().assume_init()
 }
