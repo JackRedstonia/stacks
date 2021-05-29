@@ -194,7 +194,7 @@ impl Runner {
         let mut event_pump =
             sdl.event_pump().expect("Failed to create SDL2 event pump");
 
-        let target_update_time = Duration::from_millis(5); // 200 fps
+        let target_update_time = Duration::from_millis(1); // 1000 fps
 
         'events: loop {
             game.update();
