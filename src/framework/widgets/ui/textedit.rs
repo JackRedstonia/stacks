@@ -40,7 +40,7 @@ impl TextEdit {
             layout_width,
             cursor: Cursor {
                 byte_offset: 0,
-                position: Vector::default(),
+                position: None,
             },
             cursor_rect: Rect::default(),
             cursor_paint: Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias(),
@@ -59,30 +59,55 @@ impl TextEdit {
             tx.insert_str(b, s);
         });
         self.cursor.byte_offset += s.len();
+        self.invalidate_cursors();
     }
 
     fn go_left(&mut self) {
         let b = self.cursor.byte_offset;
         let text = self.text.inner_mut();
         let s = &text.get_text()[..b];
-        let next_gr = s.grapheme_indices(true).rev().next();
-        if let Some((q, _)) = next_gr {
-            self.cursor.byte_offset = q;
+        let mut ic = false;
+        if is_ctrl() {
+            let p = pseudoword_start_from_end(s);
+            if p != b {
+                self.cursor.byte_offset = p;
+                ic = true;
+            }
+        } else {
+            let next_gr = s.grapheme_indices(true).rev().next();
+            if let Some((q, _)) = next_gr {
+                self.cursor.byte_offset = q;
+                ic = true;
+            }
         }
         drop(text);
-        self.update_cursors();
+        if ic {
+            self.invalidate_cursors();
+        }
     }
 
     fn go_right(&mut self) {
         let b = self.cursor.byte_offset;
         let text = self.text.inner_mut();
         let s = &text.get_text()[b..];
-        let next_gr = s.grapheme_indices(true).next();
-        if let Some((_, s)) = next_gr {
-            self.cursor.byte_offset = b + s.len();
+        let mut ic = false;
+        if is_ctrl() {
+            let p = pseudoword_start_from_start(s);
+            if p != b {
+                self.cursor.byte_offset = b + p;
+                ic = true;
+            }
+        } else {
+            let next_gr = s.grapheme_indices(true).next();
+            ic = next_gr.is_some();
+            if let Some((_, s)) = next_gr {
+                self.cursor.byte_offset = b + s.len();
+            }
         }
         drop(text);
-        self.update_cursors();
+        if ic {
+            self.invalidate_cursors();
+        }
     }
 
     fn backspace(&mut self) {
@@ -97,6 +122,7 @@ impl TextEdit {
                 tx.replace_range(pos..b, "");
             });
             self.cursor.byte_offset = pos;
+            self.invalidate_cursors();
         } else {
             // Delete one Unicode character.
             let c = s.chars().rev().next();
@@ -106,6 +132,7 @@ impl TextEdit {
                     tx.remove(b - c.len_utf8());
                 });
                 self.cursor.byte_offset -= c.len_utf8();
+                self.invalidate_cursors();
             }
         }
     }
@@ -118,7 +145,7 @@ impl TextEdit {
             let pos = pseudoword_start_from_start(s);
             drop(t);
             self.mutate_text(|tx| {
-                tx.replace_range(b..pos, "");
+                tx.replace_range(b..(b + pos), "");
             })
         } else {
             let c = s.chars().next();
@@ -149,12 +176,21 @@ impl TextEdit {
         t.force_build_paragraph();
     }
 
-    fn update_cursors(&mut self) {
-        if let Some(pos) =
-            self.text.inner().grapheme_position(self.cursor.byte_offset)
-        {
-            self.cursor.position = pos;
+    fn invalidate_cursors(&mut self) {
+        self.cursor.position = None;
+    }
+
+    fn update_cursors(&mut self) -> Option<Vector> {
+        if self.cursor.position.is_none() {
+            if let Some(pos) =
+                self.text.inner().grapheme_position(self.cursor.byte_offset)
+            {
+                self.cursor.position = Some(pos);
+                return self.cursor.position;
+            }
+            return None;
         }
+        return self.cursor.position;
     }
 }
 
@@ -195,7 +231,7 @@ impl Widget for TextEdit {
             self.cursor_rect =
                 Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent);
         }
-        self.update_cursors();
+        self.invalidate_cursors();
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
@@ -258,7 +294,7 @@ impl Widget for TextEdit {
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
         self.size = size;
         self.text.set_size(self.text_size.layout_one(size));
-        self.update_cursors();
+        self.invalidate_cursors();
     }
 
     fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
@@ -266,15 +302,17 @@ impl Widget for TextEdit {
         if state.is_focused() {
             let t = State::elapsed_draw().as_secs_f32();
             self.cursor_paint.set_alpha_f((t * 8.0).sin() * 0.5 + 0.5);
-            canvas.draw_rect(
-                self.cursor_rect.with_offset(self.cursor.position),
-                &self.cursor_paint,
-            );
+            if let Some(pos) = self.update_cursors() {
+                canvas.draw_rect(
+                    self.cursor_rect.with_offset(pos),
+                    &self.cursor_paint,
+                );
+            }
         }
     }
 }
 
 struct Cursor {
     byte_offset: usize,
-    position: Vector,
+    position: Option<Vector>,
 }
