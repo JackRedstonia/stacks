@@ -86,12 +86,10 @@ impl TextEdit {
     }
 
     fn backspace(&mut self) {
-        let is_ctrl = State::is_key_down(Keycode::LCtrl)
-            || State::is_key_down(Keycode::RCtrl);
         let b = self.cursor.byte_offset;
         let t = self.text.inner_mut();
         let s = &t.get_text()[..b];
-        if is_ctrl {
+        if is_ctrl() {
             // Delete one Unicode word.
             let pos = pseudoword_start_from_end(s);
             drop(t);
@@ -113,12 +111,10 @@ impl TextEdit {
     }
 
     fn delete(&mut self) {
-        let is_ctrl = State::is_key_down(Keycode::LCtrl)
-            || State::is_key_down(Keycode::RCtrl);
         let b = self.cursor.byte_offset;
         let t = self.text.inner_mut();
         let s = &t.get_text()[b..];
-        if is_ctrl {
+        if is_ctrl() {
             let pos = pseudoword_start_from_start(s);
             drop(t);
             self.mutate_text(|tx| {
@@ -136,9 +132,7 @@ impl TextEdit {
     }
 
     fn enter(&mut self) {
-        let is_shift = State::is_key_down(Keycode::LShift)
-            || State::is_key_down(Keycode::RShift);
-        if is_shift {
+        if is_shift() {
             self.insert_text("\n");
         } else {
             let text = self.text.inner_mut();
@@ -162,6 +156,18 @@ impl TextEdit {
             self.cursor.position = pos;
         }
     }
+}
+
+fn is_ctrl() -> bool {
+    State::is_key_down(Keycode::LCtrl) || State::is_key_down(Keycode::RCtrl)
+}
+
+fn is_shift() -> bool {
+    State::is_key_down(Keycode::LShift) || State::is_key_down(Keycode::RShift)
+}
+
+fn is_alt() -> bool {
+    State::is_key_down(Keycode::LAlt) || State::is_key_down(Keycode::RAlt)
 }
 
 fn pseudoword_start_from_start(s: &str) -> usize {
@@ -232,7 +238,7 @@ impl Widget for TextEdit {
                 }
                 _ => return false,
             },
-            InputEvent::TextInput(s) => {
+            InputEvent::TextInput(s) if !(is_ctrl() || is_alt()) => {
                 self.insert_text(s);
             }
             _ => return false,
