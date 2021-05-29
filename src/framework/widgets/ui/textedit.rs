@@ -86,27 +86,52 @@ impl TextEdit {
     }
 
     fn backspace(&mut self) {
+        let is_ctrl = State::is_key_down(Keycode::LCtrl)
+            || State::is_key_down(Keycode::RCtrl);
         let b = self.cursor.byte_offset;
         let t = self.text.inner_mut();
-        let c = t.get_text()[..b].chars().rev().next();
-        drop(t);
-        if let Some(c) = c {
+        let s = &t.get_text()[..b];
+        if is_ctrl {
+            // Delete one Unicode word.
+            let pos = pseudoword_start_from_end(s);
+            drop(t);
             self.mutate_text(|tx| {
-                tx.remove(b - c.len_utf8());
+                tx.replace_range(pos..b, "");
             });
-            self.cursor.byte_offset -= c.len_utf8();
+            self.cursor.byte_offset = pos;
+        } else {
+            // Delete one Unicode character.
+            let c = s.chars().rev().next();
+            drop(t);
+            if let Some(c) = c {
+                self.mutate_text(|tx| {
+                    tx.remove(b - c.len_utf8());
+                });
+                self.cursor.byte_offset -= c.len_utf8();
+            }
         }
     }
 
     fn delete(&mut self) {
+        let is_ctrl = State::is_key_down(Keycode::LCtrl)
+            || State::is_key_down(Keycode::RCtrl);
         let b = self.cursor.byte_offset;
         let t = self.text.inner_mut();
-        let c = t.get_text()[b..].chars().next();
-        drop(t);
-        if c.is_some() {
+        let s = &t.get_text()[b..];
+        if is_ctrl {
+            let pos = pseudoword_start_from_start(s);
+            drop(t);
             self.mutate_text(|tx| {
-                tx.remove(b);
-            });
+                tx.replace_range(b..pos, "");
+            })
+        } else {
+            let c = s.chars().next();
+            drop(t);
+            if c.is_some() {
+                self.mutate_text(|tx| {
+                    tx.remove(b);
+                });
+            }
         }
     }
 
@@ -137,6 +162,24 @@ impl TextEdit {
             self.cursor.position = pos;
         }
     }
+}
+
+fn pseudoword_start_from_start(s: &str) -> usize {
+    for (pos, st) in s.split_word_bound_indices() {
+        if st.chars().any(|c| c.is_alphabetic()) {
+            return pos + st.len();
+        }
+    }
+    return s.len();
+}
+
+fn pseudoword_start_from_end(s: &str) -> usize {
+    for (pos, st) in s.split_word_bound_indices().rev() {
+        if st.chars().any(|c| c.is_alphabetic()) {
+            return pos;
+        }
+    }
+    return 0;
 }
 
 impl Widget for TextEdit {
