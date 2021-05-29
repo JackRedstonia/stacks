@@ -219,7 +219,7 @@ impl Runner {
                 }
             }
 
-            if renderer.swapchain_helper.can_draw_without_blocking() {
+            if renderer.swapchain_helper.next_image_available() {
                 let (width, height) = win.vulkan_drawable_size();
                 let extents = RafxExtents2D { width, height };
                 if let Err(e) = renderer.draw(extents, 1.0, |canvas, _| {

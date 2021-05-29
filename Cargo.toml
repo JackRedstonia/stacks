@@ -16,6 +16,7 @@ unicode-segmentation = "1.7"
 
 [dependencies.skulpin-renderer]
 git = "https://gitlab.com/JackRedstonia/skulpin"
+branch = "patchout"
 default-features = false
 features = ["svg"]
 
