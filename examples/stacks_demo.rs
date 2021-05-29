@@ -2,7 +2,8 @@ use stacks::framework::{
     widgets::{
         audio::{Audio, AudioPlayer},
         layout::{
-            ContainerSize, FullscreenContainer, SizeFillContainer, VContainerDyn,
+            ContainerSize, FullscreenContainer, SizeFillContainer,
+            VContainerDyn,
         },
         shapes::{Rectangle, Throbber},
         Transform,
