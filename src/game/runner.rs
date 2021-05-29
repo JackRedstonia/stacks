@@ -2,7 +2,7 @@ use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::skia::{Color, Point, Size};
 
