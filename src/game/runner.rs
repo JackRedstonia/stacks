@@ -167,6 +167,15 @@ impl Runner {
         let (width, height) = win.vulkan_drawable_size();
         let extents = RafxExtents2D { width, height };
 
+        let mut renderer = renderer_builder
+            .build(&win, extents)
+            .expect("Failed to create renderer");
+
+        let mut event_pump =
+            sdl.event_pump().expect("Failed to create SDL2 event pump");
+
+        let target_update_time = Duration::from_millis(1); // 1000 fps
+
         let input_state = InputState::new(size);
         let time_state = TimeState::new();
         let time_state_draw = TimeState::new();
@@ -186,15 +195,6 @@ impl Runner {
             State::STATE
                 .with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
         );
-
-        let mut renderer = renderer_builder
-            .build(&win, extents)
-            .expect("Failed to create renderer");
-
-        let mut event_pump =
-            sdl.event_pump().expect("Failed to create SDL2 event pump");
-
-        let target_update_time = Duration::from_millis(1); // 1000 fps
 
         'events: loop {
             game.update();
