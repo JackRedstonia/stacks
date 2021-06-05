@@ -79,6 +79,7 @@ impl State {
     thread_local!(static STATE: RefCell<Option<State>> = RefCell::new(None));
 
     #[inline]
+    #[track_caller]
     fn with<F, R>(f: F) -> R
     where
         F: FnOnce(&Self) -> R,
@@ -87,6 +88,7 @@ impl State {
     }
 
     #[inline]
+    #[track_caller]
     fn with_mut<F, R>(f: F) -> R
     where
         F: FnOnce(&mut Self) -> R,
