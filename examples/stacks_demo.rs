@@ -13,7 +13,7 @@ use stacks::framework::{
 use stacks::prelude::*;
 
 fn main() {
-    Framework::run("Stacks", || {
+    let e = Framework::run("Stacks", || {
         let mut root = VContainerDyn::new(
             ContainerSize::ZERO.expand_width().expand_height(),
             None,
@@ -69,6 +69,6 @@ fn main() {
         let root = FullscreenContainer::new(root);
         let root = Audio::new(root)?;
         Ok(root)
-    })
-    .expect("Failed to run game");
+    });
+    eprintln!("Failed to run game: {:?}", e);
 }

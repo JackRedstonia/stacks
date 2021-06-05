@@ -3,17 +3,19 @@ use stacks::framework::{
         layout::{FullscreenContainer, Margin, MarginContainer},
         shapes::Rectangle,
         ui::TextEdit,
-        Backgrounded, Fonts, TextLayoutMode,
+        Backgrounded, Font, FontStyle, Fonts, TextLayoutMode,
     },
     Framework,
 };
 use stacks::prelude::*;
 
 fn main() {
-    Framework::run("Stacks", || {
+    let e = Framework::run("Stacks", || {
         let root = TextEdit::new(
-            LayoutDimension::ZERO.expand(),
-            Some(TextLayoutMode::MinHeight),
+            LayoutSize::ZERO.expand_width().expand_height(),
+            Some(TextLayoutMode::Static),
+            Font::Default,
+            FontStyle::Regular,
             Some(48.0),
             Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias(),
         );
@@ -29,6 +31,6 @@ fn main() {
         let root = Fonts::new(root);
         let root = FullscreenContainer::new(root);
         Ok(root)
-    })
-    .expect("Failed to run game");
+    });
+    eprintln!("Failed to run game: {:?}", e);
 }

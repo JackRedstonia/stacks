@@ -1,34 +1,41 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
-use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::thread::sleep;
 use std::time::Duration;
+use std::{cell::RefCell, convert::TryInto};
 
-use crate::skia::{Color, Point, Size};
+use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
+use crate::skia::gpu::{
+    BackendRenderTarget, DirectContext as SkiaDirectContext, SurfaceOrigin,
+};
+use crate::skia::{ColorType, Point, Surface};
+
+use glutin::dpi::LogicalSize;
+use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};
+use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::window::{Fullscreen, Window, WindowBuilder};
+use glutin::{
+    ContextWrapper as GlutinContextWrapper, GlProfile,
+    PossiblyCurrent as GlutinPossiblyCurrent,
+};
+
+use gl::types::GLint;
+use gl_rs as gl;
 
 use super::input::{EventHandleResult, InputState};
 use super::time::TimeState;
 use super::Game;
 
-use sdl2::{
-    event::Event as Sdl2Event,
-    keyboard::Keycode,
-    mouse::MouseButton,
-    video::{FullscreenType, Window as Sdl2Window},
-};
-use skulpin_renderer::rafx::api::{RafxError, RafxExtents2D};
-use skulpin_renderer::{LogicalSize, RendererBuilder};
+type WindowedContext = GlutinContextWrapper<GlutinPossiblyCurrent, Window>;
 
 #[derive(Debug)]
 pub enum Error {
-    RendererError(RafxError),
     FullscreenError(String),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            Error::RendererError(e) => e.fmt(f),
             Error::FullscreenError(s) => write!(f, "{}", s),
         }
     }
@@ -37,15 +44,8 @@ impl Display for Error {
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            Error::RendererError(e) => Some(e),
             Error::FullscreenError(_) => None,
         }
-    }
-}
-
-impl From<RafxError> for Error {
-    fn from(result: RafxError) -> Self {
-        Error::RendererError(result)
     }
 }
 
@@ -130,7 +130,7 @@ impl State {
         Self::with(|x| x.input_state.mouse_position())
     }
 
-    pub fn is_key_down(key: Keycode) -> bool {
+    pub fn is_key_down(key: VirtualKeyCode) -> bool {
         Self::with(|x| x.input_state.is_key_down(key))
     }
 
@@ -142,37 +142,44 @@ impl State {
 pub struct Runner;
 
 impl Runner {
-    const BACKGROUND: Color = Color::from_argb(255, 10, 10, 10);
-
-    pub fn run<F, T, E>(
-        game: F,
-        size: LogicalSize,
-        title: &str,
-        renderer_builder: RendererBuilder,
-    ) -> Result<(), E>
+    pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> E
     where
         F: FnOnce() -> Result<T, E>,
-        T: Game,
+        T: Game + 'static,
     {
-        let sdl = sdl2::init().expect("Failed to initialize SDL2");
-        let sdl_video = sdl.video().expect("Failed to initialize SDL2 video");
+        let event_loop = EventLoop::new();
+        let win_builder =
+            WindowBuilder::new().with_inner_size(size).with_title(title);
+        let ctx_builder = glutin::ContextBuilder::new()
+            .with_vsync(false)
+            .with_depth_buffer(0)
+            .with_stencil_buffer(8)
+            .with_pixel_format(24, 8)
+            .with_double_buffer(Some(true))
+            .with_gl_profile(GlProfile::Core);
 
-        let mut win = sdl_video
-            .window(title, size.width, size.height)
-            .allow_highdpi()
-            .resizable()
-            .build()
-            .expect("Failed to create game window");
+        let win_ctx = ctx_builder
+            .build_windowed(win_builder, &event_loop)
+            .expect("Failed to create windowed OpenGL context");
+        let win_ctx = unsafe {
+            win_ctx
+                .make_current()
+                .expect("Failed to make OpenGL context current")
+        };
 
-        let (width, height) = win.vulkan_drawable_size();
-        let extents = RafxExtents2D { width, height };
+        gl::load_with(|s| win_ctx.get_proc_address(s));
 
-        let mut renderer = renderer_builder
-            .build(&win, extents)
-            .expect("Failed to create renderer");
+        let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
+        let fb_info = {
+            let mut fboid: GLint = 0;
+            unsafe { gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &mut fboid) };
+            FramebufferInfo {
+                fboid: fboid.try_into().unwrap(),
+                format: SkiaGLFormat::RGBA8.into(),
+            }
+        };
 
-        let mut event_pump =
-            sdl.event_pump().expect("Failed to create SDL2 event pump");
+        let mut surface = Self::create_surface(&win_ctx, fb_info, &mut gr_ctx);
 
         let target_update_time = Duration::from_millis(1); // 1000 fps
 
@@ -190,78 +197,78 @@ impl Runner {
             });
         });
 
-        let mut game = game()?;
+        let mut game = match game() {
+            Ok(e) => e,
+            Err(e) => return e,
+        };
         game.set_size(
             State::STATE
                 .with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
         );
 
-        'events: loop {
-            game.update();
-
-            for event in event_pump.poll_iter() {
+        event_loop.run(move |event, _, flow| match event {
+            Event::WindowEvent { event, .. } => {
+                if let WindowEvent::Resized(size) = &event {
+                    surface =
+                        Self::create_surface(&win_ctx, fb_info, &mut gr_ctx);
+                    win_ctx.resize(*size);
+                }
                 if Self::game_handle_event(&mut game, event) {
-                    break 'events;
+                    *flow = ControlFlow::Exit;
                 }
             }
+            Event::MainEventsCleared => {
+                game.update();
 
-            if let Some(s) = State::with_mut(|x| {
-                if x.is_fullscreen != x.was_fullscreen {
-                    x.was_fullscreen = x.is_fullscreen;
-                    Some(x.is_fullscreen)
-                } else {
-                    None
-                }
-            }) {
-                if let Err(why) = Self::set_fullscreen(s, &mut win) {
-                    game.crash(Error::FullscreenError(why));
-                    break;
-                }
-            }
-
-            if renderer.swapchain_helper.next_image_available() {
-                let (width, height) = win.vulkan_drawable_size();
-                let extents = RafxExtents2D { width, height };
-                if let Err(e) = renderer.draw(extents, 1.0, |canvas, _| {
-                    canvas.clear(Self::BACKGROUND);
-                    game.draw(canvas);
+                if let Some(s) = State::with_mut(|x| {
+                    if x.is_fullscreen != x.was_fullscreen {
+                        x.was_fullscreen = x.is_fullscreen;
+                        Some(x.is_fullscreen)
+                    } else {
+                        None
+                    }
                 }) {
-                    game.crash(e.into());
-                    break;
+                    Self::set_fullscreen(s, win_ctx.window());
                 }
-                State::with_mut(|x| x.time_state_draw.update());
+
+                win_ctx.window().request_redraw();
+
+                State::with_mut(|state| {
+                    let update_time = state.time_state.last_update().elapsed();
+                    if target_update_time > update_time {
+                        sleep(target_update_time - update_time);
+                    }
+                    state.time_state.update();
+                });
             }
-            State::with_mut(|state| {
-                let update_time = state.time_state.last_update().elapsed();
-                if target_update_time > update_time {
-                    sleep(target_update_time - update_time);
-                }
-                state.time_state.update();
-            });
-        }
-
-        Ok(())
+            Event::RedrawRequested(_) => {
+                let canvas = surface.canvas();
+                State::with_mut(|state| state.time_state_draw.update());
+                game.draw(canvas);
+                gr_ctx.flush(None);
+                win_ctx.swap_buffers().unwrap();
+            }
+            _ => {}
+        });
     }
 
-    fn set_fullscreen(
-        enable: bool,
-        win: &mut Sdl2Window,
-    ) -> Result<(), String> {
+    fn set_fullscreen(enable: bool, win: &Window) {
         win.set_fullscreen(if enable {
-            FullscreenType::Desktop
+            let mode =
+                win.current_monitor().unwrap().video_modes().next().unwrap();
+            Some(Fullscreen::Exclusive(mode))
         } else {
-            FullscreenType::Off
-        })?;
-        Ok(())
+            None
+        });
     }
 
-    fn game_handle_event(game: &mut impl Game, event: Sdl2Event) -> bool {
+    fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
         if let Some(r) = State::with_mut(|x| x.input_state.handle_event(event))
         {
             match r {
                 EventHandleResult::Input(event) => game.input(event),
                 EventHandleResult::Resized(size) => {
-                    game.set_size(Size::new(size.width, size.height))
+                    game.set_size(size);
                 }
                 EventHandleResult::Exit => {
                     game.close();
@@ -271,5 +278,32 @@ impl Runner {
         }
 
         false
+    }
+
+    fn create_surface(
+        win_ctx: &WindowedContext,
+        fb_info: FramebufferInfo,
+        gr_ctx: &mut SkiaDirectContext,
+    ) -> Surface {
+        let pix = win_ctx.get_pixel_format();
+        let size = win_ctx.window().inner_size();
+        let target = BackendRenderTarget::new_gl(
+            (
+                size.width.try_into().unwrap(),
+                size.height.try_into().unwrap(),
+            ),
+            pix.multisampling.map(|s| s.try_into().unwrap()),
+            pix.stencil_bits.try_into().unwrap(),
+            fb_info,
+        );
+        Surface::from_backend_render_target(
+            gr_ctx,
+            &target,
+            SurfaceOrigin::BottomLeft,
+            ColorType::RGBA8888,
+            None,
+            None,
+        )
+        .unwrap()
     }
 }

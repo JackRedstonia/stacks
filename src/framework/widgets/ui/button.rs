@@ -23,6 +23,8 @@ impl Button {
 
     pub fn new(
         label: String,
+        label_font: Font,
+        label_style: FontStyle,
         label_size: Option<scalar>,
         background: Paint,
         label_paint: Paint,
@@ -36,8 +38,8 @@ impl Button {
             LayoutSize::ZERO,
             Some(TextLayoutMode::OneLine),
             label,
-            Font::Default,
-            FontStyle::Regular,
+            label_font,
+            label_style,
             label_size,
             label_paint,
         );

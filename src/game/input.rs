@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use crate::skia::{scalar, Matrix, Point, Size};
 use glutin::dpi::{LogicalPosition, LogicalSize};
 use glutin::event::{
-    ElementState, Event, KeyboardInput, MouseButton, MouseScrollDelta,
-    VirtualKeyCode, WindowEvent,
+    ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode,
+    WindowEvent,
 };
 
 use super::ID;
@@ -93,7 +93,7 @@ impl InputState {
     pub const KEYBOARD_BUTTON_COUNT: usize = 255;
     pub const MOUSE_BUTTON_COUNT: usize = 5;
 
-    pub fn new(window_size: LogicalSize<scalar>) -> Self {
+    pub fn new(window_size: LogicalSize<f64>) -> Self {
         Self {
             window_size: Size::new(
                 window_size.width as _,
@@ -108,12 +108,8 @@ impl InputState {
 
     pub fn handle_event(
         &mut self,
-        event: Event<()>,
+        event: WindowEvent,
     ) -> Option<EventHandleResult> {
-        let event = match event {
-            Event::WindowEvent { event, .. } => event,
-            _ => return None,
-        };
         match event {
             WindowEvent::CloseRequested => {
                 return Some(EventHandleResult::Exit)
@@ -187,9 +183,11 @@ impl InputState {
                 )));
             }
             WindowEvent::ReceivedCharacter(ch) => {
-                return Some(EventHandleResult::Input(
-                    InputEvent::CharReceived(ch),
-                ));
+                if !ch.is_control() {
+                    return Some(EventHandleResult::Input(
+                        InputEvent::CharReceived(ch),
+                    ));
+                }
             }
             _ => {}
         }

@@ -18,8 +18,10 @@ pub enum Font {
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum FontStyle {
     Regular,
+    Medium,
     Bold,
     Italic,
+    MediumItalic,
     BoldItalic,
 }
 

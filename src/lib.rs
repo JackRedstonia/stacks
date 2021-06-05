@@ -13,9 +13,9 @@ pub mod prelude {
         LayoutDimension, LayoutSize, Widget, WidgetState, Wrap, Wrappable,
     };
     pub use crate::framework::FrameworkState;
-    pub use crate::game::{InputEvent, State};
+    pub use crate::game::{InputEvent, ScrollAmount, State};
     pub use crate::utils::*;
-    pub use glutin::event::{MouseButton, VirtualKeyCode};
+    pub use glutin::event::{MouseButton, VirtualKeyCode as Keycode};
     pub use skia::{
         scalar, Canvas, Contains, Matrix, Paint, Rect, Size, Vector,
     };

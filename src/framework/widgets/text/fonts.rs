@@ -114,8 +114,10 @@ impl FontResource {
 
 struct FontSet {
     regular: Typeface,
+    medium: Typeface,
     bold: Typeface,
     italic: Typeface,
+    medium_italic: Typeface,
     bold_italic: Typeface,
 }
 
@@ -132,14 +134,18 @@ macro_rules! font_bytes {
 impl FontSet {
     fn new() -> Self {
         let regular = unsafe { Data::new_bytes(font_bytes!("Regular")) };
-        let bold = unsafe { Data::new_bytes(font_bytes!("Medium")) };
+        let medium = unsafe { Data::new_bytes(font_bytes!("Medium")) };
+        let bold = unsafe { Data::new_bytes(font_bytes!("Bold")) };
         let italic = unsafe { Data::new_bytes(font_bytes!("Italic")) };
-        let bold_italic =
+        let medium_italic =
             unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
+        let bold_italic = unsafe { Data::new_bytes(font_bytes!("BoldItalic")) };
         Self {
             regular: Typeface::from_data(regular, None).unwrap(),
+            medium: Typeface::from_data(medium, None).unwrap(),
             bold: Typeface::from_data(bold, None).unwrap(),
             italic: Typeface::from_data(italic, None).unwrap(),
+            medium_italic: Typeface::from_data(medium_italic, None).unwrap(),
             bold_italic: Typeface::from_data(bold_italic, None).unwrap(),
         }
     }
@@ -147,6 +153,11 @@ impl FontSet {
     fn from_type_name(family_name: &str) -> Self {
         Self {
             regular: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Upright),
+            )
+            .unwrap(),
+            medium: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Upright),
             )
@@ -157,6 +168,11 @@ impl FontSet {
             )
             .unwrap(),
             italic: Typeface::from_name(
+                family_name,
+                SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Italic),
+            )
+            .unwrap(),
+            medium_italic: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Italic),
             )
@@ -173,8 +189,10 @@ impl FontSet {
         SkFont::new(
             match style {
                 FontStyle::Regular => &self.regular,
+                FontStyle::Medium => &self.medium,
                 FontStyle::Bold => &self.bold,
                 FontStyle::Italic => &self.italic,
+                FontStyle::MediumItalic => &self.medium_italic,
                 FontStyle::BoldItalic => &self.bold_italic,
             },
             size.unwrap_or(13.5),

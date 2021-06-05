@@ -4,7 +4,7 @@ mod runner;
 mod time;
 
 pub use builder::Builder;
-pub use input::{EventHandleResult, InputEvent, InputState};
+pub use input::{EventHandleResult, InputEvent, InputState, ScrollAmount};
 pub use runner::{Error, State, ID};
 pub use time::TimeState;
 

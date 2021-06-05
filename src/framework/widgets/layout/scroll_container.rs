@@ -27,9 +27,14 @@ impl<T: Widget + ?Sized> ScrollContainer<T> {
         .into()
     }
 
-    fn scroll(&mut self, i: i32) {
-        let offset = i as scalar * 50.0;
+    fn scroll_lines(&mut self, i: scalar) {
+        let offset = i * 50.0;
         self.target_offset += offset;
+        self.rescroll();
+    }
+
+    fn scroll_pixels(&mut self, p: scalar) {
+        self.target_offset += p;
         self.rescroll();
     }
 
@@ -73,7 +78,14 @@ impl<T: Widget + ?Sized> Widget for ScrollContainer<T> {
             .unwrap_or(false);
         if !taken {
             if let InputEvent::MouseScroll(i, _) = event {
-                self.scroll(*i);
+                match i {
+                    ScrollAmount::Lines(Vector { y, .. }) => {
+                        self.scroll_lines(*y);
+                    }
+                    ScrollAmount::Pixels(Vector { y, .. }) => {
+                        self.scroll_pixels(*y);
+                    }
+                }
                 return true;
             }
         }

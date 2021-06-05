@@ -32,8 +32,8 @@ pub struct Framework<T: Widget + ?Sized> {
     recycled_resource_stack: ResourceStack,
 }
 
-impl<T: Widget> Framework<T> {
-    pub fn run<'a, F>(name: &'a str, root: F) -> Result<(), FrameworkError>
+impl<T: Widget + 'static> Framework<T> {
+    pub fn run<'a, F>(name: &'a str, root: F) -> FrameworkError
     where
         F: FnOnce() -> Result<Wrap<T>, FrameworkError<'a>>,
     {
@@ -80,7 +80,7 @@ impl<T: Widget> Framework<T> {
     }
 }
 
-impl<T: Widget> Game for Framework<T> {
+impl<T: Widget + 'static> Game for Framework<T> {
     fn update(&mut self) {
         self.root.update();
         self.maybe_load();
