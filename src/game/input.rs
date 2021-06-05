@@ -1,28 +1,31 @@
 use std::collections::HashSet;
 
-use crate::skia;
-use sdl2::{
-    event::{Event as Sdl2Event, WindowEvent},
-    keyboard::Keycode,
-    mouse::MouseButton,
+use crate::skia::{scalar, Matrix, Point, Size};
+use glutin::dpi::{LogicalPosition, LogicalSize};
+use glutin::event::{
+    ElementState, Event, KeyboardInput, MouseButton, MouseScrollDelta,
+    VirtualKeyCode, WindowEvent,
 };
-use skia::{Matrix, Point, Size};
-use skulpin_renderer::LogicalSize;
 
 use super::ID;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum InputEvent {
-    KeyDown(Keycode),
-    KeyUp(Keycode),
+    KeyDown(VirtualKeyCode),
+    KeyUp(VirtualKeyCode),
     MouseMove(Point),
     MouseDown(MouseButton, Point),
     MouseUp(MouseButton, Point),
-    MouseScroll(i32, Point),
-    TextEditing(String),
-    TextInput(String),
+    MouseScroll(ScrollAmount, Point),
+    CharReceived(char),
     Focused(ID, Box<Self>),
     RemoveHoverExcept(ID),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum ScrollAmount {
+    Lines(Point),
+    Pixels(Point),
 }
 
 impl InputEvent {
@@ -47,8 +50,7 @@ impl InputEvent {
             InputEvent::KeyDown(_)
             | InputEvent::MouseDown(_, _)
             | InputEvent::MouseScroll(_, _)
-            | InputEvent::TextEditing(_)
-            | InputEvent::TextInput(_) => true,
+            | InputEvent::CharReceived(_) => true,
         }
     }
 
@@ -75,7 +77,8 @@ impl InputEvent {
 
 pub struct InputState {
     pub window_size: Size,
-    keys: HashSet<Keycode>,
+    scale_factor: f64,
+    keys: HashSet<VirtualKeyCode>,
     mouse_position: Point,
     mouse_buttons: HashSet<MouseButton>,
 }
@@ -90,12 +93,13 @@ impl InputState {
     pub const KEYBOARD_BUTTON_COUNT: usize = 255;
     pub const MOUSE_BUTTON_COUNT: usize = 5;
 
-    pub fn new(window_size: LogicalSize) -> Self {
+    pub fn new(window_size: LogicalSize<scalar>) -> Self {
         Self {
             window_size: Size::new(
                 window_size.width as _,
                 window_size.height as _,
             ),
+            scale_factor: 1.0,
             keys: HashSet::new(),
             mouse_position: Point::default(),
             mouse_buttons: HashSet::new(),
@@ -104,74 +108,91 @@ impl InputState {
 
     pub fn handle_event(
         &mut self,
-        event: Sdl2Event,
+        event: Event<()>,
     ) -> Option<EventHandleResult> {
+        let event = match event {
+            Event::WindowEvent { event, .. } => event,
+            _ => return None,
+        };
         match event {
-            Sdl2Event::Quit { .. } => return Some(EventHandleResult::Exit),
-            Sdl2Event::Window { win_event, .. } => match win_event {
-                WindowEvent::Close => return Some(EventHandleResult::Exit),
-                WindowEvent::Resized(width, height) => {
-                    return Some(EventHandleResult::Resized(Size::new(
-                        width as _,
-                        height as _,
-                    )));
-                }
-                _ => {}
-            },
-            Sdl2Event::KeyDown {
-                keycode: Some(k), ..
-            } => {
-                self.keys.insert(k);
-                return Some(EventHandleResult::Input(InputEvent::KeyDown(k)));
+            WindowEvent::CloseRequested => {
+                return Some(EventHandleResult::Exit)
             }
-            Sdl2Event::KeyUp {
-                keycode: Some(k), ..
+            WindowEvent::ScaleFactorChanged {
+                scale_factor,
+                new_inner_size,
             } => {
-                self.keys.remove(&k);
-                return Some(EventHandleResult::Input(InputEvent::KeyUp(k)));
+                self.scale_factor = scale_factor;
+                let s = new_inner_size.to_logical(self.scale_factor);
+                self.window_size = Size::new(s.width, s.height);
+                return Some(EventHandleResult::Resized(self.window_size));
             }
-            Sdl2Event::MouseButtonDown {
-                mouse_btn, x, y, ..
+            WindowEvent::Resized(phys_size) => {
+                let s = phys_size.to_logical(self.scale_factor);
+                self.window_size = Size::new(s.width, s.height);
+                return Some(EventHandleResult::Resized(self.window_size));
+            }
+            WindowEvent::KeyboardInput {
+                input:
+                    KeyboardInput {
+                        state,
+                        virtual_keycode: Some(keycode),
+                        ..
+                    },
+                ..
             } => {
-                self.mouse_buttons.insert(mouse_btn);
-                let p = Point::new(x as _, y as _);
-                return Some(EventHandleResult::Input(InputEvent::MouseDown(
-                    mouse_btn, p,
-                )));
+                let is_pressed = state == ElementState::Pressed;
+                let e = if is_pressed {
+                    self.keys.insert(keycode);
+                    InputEvent::KeyDown(keycode)
+                } else {
+                    self.keys.remove(&keycode);
+                    InputEvent::KeyUp(keycode)
+                };
+                return Some(EventHandleResult::Input(e));
             }
-            Sdl2Event::MouseButtonUp {
-                mouse_btn, x, y, ..
-            } => {
-                self.mouse_buttons.remove(&mouse_btn);
-                let p = Point::new(x as _, y as _);
-                return Some(EventHandleResult::Input(InputEvent::MouseUp(
-                    mouse_btn, p,
-                )));
+            WindowEvent::MouseInput { state, button, .. } => {
+                let is_pressed = state == ElementState::Pressed;
+                let e = if is_pressed {
+                    self.mouse_buttons.insert(button);
+                    InputEvent::MouseDown(button, self.mouse_position)
+                } else {
+                    self.mouse_buttons.remove(&button);
+                    InputEvent::MouseUp(button, self.mouse_position)
+                };
+                return Some(EventHandleResult::Input(e));
             }
-            Sdl2Event::MouseMotion { x, y, .. } => {
-                let p = Point::new(x as _, y as _);
-                self.mouse_position = p;
+            WindowEvent::MouseWheel { delta, .. } => {
+                let e = match delta {
+                    MouseScrollDelta::LineDelta(x, y) => {
+                        ScrollAmount::Lines((x, y).into())
+                    }
+                    MouseScrollDelta::PixelDelta(a) => {
+                        let a: LogicalPosition<scalar> =
+                            a.to_logical(self.scale_factor);
+                        ScrollAmount::Pixels((a.x, a.y).into())
+                    }
+                };
+                return Some(EventHandleResult::Input(
+                    InputEvent::MouseScroll(e, self.mouse_position),
+                ));
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                let position: LogicalPosition<scalar> =
+                    position.to_logical(self.scale_factor);
+                let position = Point::new(position.x, position.y);
+                self.mouse_position = position;
                 return Some(EventHandleResult::Input(InputEvent::MouseMove(
-                    p,
+                    position,
                 )));
             }
-            Sdl2Event::MouseWheel { y, .. } => {
+            WindowEvent::ReceivedCharacter(ch) => {
                 return Some(EventHandleResult::Input(
-                    InputEvent::MouseScroll(y, self.mouse_position),
+                    InputEvent::CharReceived(ch),
                 ));
-            }
-            Sdl2Event::TextEditing { text, .. } => {
-                return Some(EventHandleResult::Input(
-                    InputEvent::TextEditing(text),
-                ));
-            }
-            Sdl2Event::TextInput { text, .. } => {
-                return Some(EventHandleResult::Input(InputEvent::TextInput(
-                    text,
-                )));
             }
             _ => {}
-        };
+        }
         None
     }
 
@@ -180,7 +201,7 @@ impl InputState {
     }
 
     /// Returns whether the given key is down
-    pub fn is_key_down(&self, key: Keycode) -> bool {
+    pub fn is_key_down(&self, key: VirtualKeyCode) -> bool {
         self.keys.contains(&key)
     }
 
