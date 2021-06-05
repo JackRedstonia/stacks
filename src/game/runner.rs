@@ -185,7 +185,10 @@ impl Runner {
 
         let target_update_time = Duration::from_millis(1); // 1000 fps
 
-        let input_state = InputState::new(size);
+        let input_state = InputState::new(
+            win_ctx.window().inner_size(),
+            win_ctx.window().scale_factor(),
+        );
         let time_state = TimeState::new();
         let time_state_draw = TimeState::new();
         State::STATE.with(|x| {
@@ -245,6 +248,9 @@ impl Runner {
             }
             Event::RedrawRequested(_) => {
                 let canvas = surface.canvas();
+                let sf = win_ctx.window().scale_factor() as f32;
+                canvas.reset_matrix();
+                canvas.scale((sf, sf));
                 State::with_mut(|state| state.time_state_draw.update());
                 game.draw(canvas);
                 gr_ctx.flush(None);

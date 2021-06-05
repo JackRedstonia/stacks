@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::skia::{scalar, Matrix, Point, Size};
-use glutin::dpi::{LogicalPosition, LogicalSize};
+use glutin::dpi::{LogicalPosition, LogicalSize, PhysicalSize};
 use glutin::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
@@ -93,13 +93,12 @@ impl InputState {
     pub const KEYBOARD_BUTTON_COUNT: usize = 255;
     pub const MOUSE_BUTTON_COUNT: usize = 5;
 
-    pub fn new(window_size: LogicalSize<f64>) -> Self {
+    pub fn new(window_size: PhysicalSize<u32>, scale_factor: f64) -> Self {
+        let LogicalSize::<f32> { width, height } =
+            window_size.to_logical(scale_factor);
         Self {
-            window_size: Size::new(
-                window_size.width as _,
-                window_size.height as _,
-            ),
-            scale_factor: 1.0,
+            window_size: Size::new(width, height),
+            scale_factor,
             keys: HashSet::new(),
             mouse_position: Point::default(),
             mouse_buttons: HashSet::new(),
