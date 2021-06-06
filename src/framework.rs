@@ -38,7 +38,7 @@ impl<T: Widget + 'static> Framework<T> {
         F: FnOnce() -> Result<Wrap<T>, FrameworkError<'a>>,
     {
         Builder::new().window_title(name).run(|| {
-            FrameworkState::initialize();
+            FrameworkState::init();
             let root = root()?;
             Ok(Self::new(root))
         })
@@ -136,7 +136,7 @@ impl FrameworkState {
         "Attempt to get framework state while framework is uninitialized";
     thread_local!(static STATE: RefCell<Option<FrameworkState>> = RefCell::new(None));
 
-    pub fn initialize() {
+    pub fn init() {
         FrameworkState::STATE
             .with(|x| *x.borrow_mut() = Some(Default::default()));
     }
