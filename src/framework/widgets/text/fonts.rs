@@ -157,7 +157,7 @@ impl FontSet {
         }
     }
 
-    fn from_type_name(family_name: &str, default_size: scalar,) -> Option<Self> {
+    fn from_type_name(family_name: &str, default_size: scalar) -> Option<Self> {
         Some(Self {
             default_size,
             regular: Typeface::from_name(
