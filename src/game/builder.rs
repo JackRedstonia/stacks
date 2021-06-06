@@ -28,7 +28,7 @@ impl<'a> Builder<'a> {
         self
     }
 
-    /// Specifies the title that the window will be created with
+    /// Specifies the title that the window will be created with.
     pub fn window_title(mut self, title: &'a str) -> Self {
         self.window_title = title;
         self
