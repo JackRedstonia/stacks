@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::fmt::Debug;
 
-use crate::game::{Builder, Error, Game, InputEvent, State, ID};
+use crate::game::{Builder, Game, GameError, InputEvent, State, ID};
 use crate::prelude::*;
 use resource::ResourceStack;
 use skia::{Canvas, Size};
@@ -119,7 +119,7 @@ impl<T: Widget + 'static> Game for Framework<T> {
 
     fn close(&mut self) {}
 
-    fn crash(&mut self, err: Error) {
+    fn crash(&mut self, err: GameError) {
         println!("Stacks has crashed!\nMore info: {:?}", err);
     }
 }

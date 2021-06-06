@@ -29,24 +29,24 @@ use super::Game;
 type WindowedContext = GlutinContextWrapper<GlutinPossiblyCurrent, Window>;
 
 #[derive(Debug)]
-pub enum Error {
+pub enum GameError {
     GLContextError(GLContextError),
 }
 
-impl Display for Error {
+impl Display for GameError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            Error::GLContextError(s) => {
+            GameError::GLContextError(s) => {
                 write!(f, "OpenGL context manipulation error: {}", s)
             }
         }
     }
 }
 
-impl StdError for Error {
+impl StdError for GameError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            Error::GLContextError(e) => Some(e),
+            GameError::GLContextError(e) => Some(e),
         }
     }
 }
@@ -207,7 +207,7 @@ where
             game.draw(canvas);
             gr_ctx.flush(None);
             if let Err(e) = win_ctx.swap_buffers() {
-                game.crash(Error::GLContextError(e));
+                game.crash(GameError::GLContextError(e));
                 game.close();
                 *flow = ControlFlow::Exit;
             }

@@ -5,7 +5,7 @@ mod time;
 
 pub use builder::Builder;
 pub use input::{EventHandleResult, InputEvent, InputState, ScrollAmount};
-pub use runner::{Error, State, ID};
+pub use runner::{GameError, State, ID};
 pub use time::TimeState;
 
 pub trait Game {
@@ -14,5 +14,5 @@ pub trait Game {
     fn set_size(&mut self, size: crate::skia::Size);
     fn input(&mut self, event: InputEvent);
     fn close(&mut self);
-    fn crash(&mut self, err: runner::Error);
+    fn crash(&mut self, err: runner::GameError);
 }
