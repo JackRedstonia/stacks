@@ -12,10 +12,11 @@ use crate::skia::{ColorType, Point, Surface};
 use glutin::dpi::LogicalSize;
 use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::monitor::VideoMode;
 use glutin::window::{Fullscreen, Window, WindowBuilder};
 use glutin::{
-    ContextWrapper as GlutinContextWrapper, GlProfile,
-    PossiblyCurrent as GlutinPossiblyCurrent,
+    ContextError as GLContextError, ContextWrapper as GlutinContextWrapper,
+    GlProfile, PossiblyCurrent as GlutinPossiblyCurrent,
 };
 
 use gl::types::GLint;
@@ -29,13 +30,15 @@ type WindowedContext = GlutinContextWrapper<GlutinPossiblyCurrent, Window>;
 
 #[derive(Debug)]
 pub enum Error {
-    FullscreenError(String),
+    GLContextError(GLContextError),
 }
 
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            Error::FullscreenError(s) => write!(f, "{}", s),
+            Error::GLContextError(s) => {
+                write!(f, "OpenGL context manipulation error: {}", s)
+            }
         }
     }
 }
@@ -43,7 +46,7 @@ impl Display for Error {
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            Error::FullscreenError(_) => None,
+            Error::GLContextError(e) => Some(e),
         }
     }
 }
@@ -168,6 +171,7 @@ where
                 win_ctx.resize(*size);
             }
             if game_handle_event(&mut game, event) {
+                game.close();
                 *flow = ControlFlow::Exit;
             }
         }
@@ -195,14 +199,18 @@ where
             });
         }
         Event::RedrawRequested(_) => {
+            State::with_mut(|state| state.time_state_draw.update());
             let canvas = surface.canvas();
             let sf = win_ctx.window().scale_factor() as f32;
             canvas.reset_matrix();
             canvas.scale((sf, sf));
-            State::with_mut(|state| state.time_state_draw.update());
             game.draw(canvas);
             gr_ctx.flush(None);
-            win_ctx.swap_buffers().unwrap();
+            if let Err(e) = win_ctx.swap_buffers() {
+                game.crash(Error::GLContextError(e));
+                game.close();
+                *flow = ControlFlow::Exit;
+            }
         }
         _ => {}
     });
@@ -210,11 +218,14 @@ where
 
 fn set_fullscreen(enable: bool, win: &Window) {
     win.set_fullscreen(if enable {
-        let mode = win.current_monitor().unwrap().video_modes().next().unwrap();
-        Some(Fullscreen::Exclusive(mode))
+        default_video_mode(win).map(|e| Fullscreen::Exclusive(e))
     } else {
         None
     });
+}
+
+fn default_video_mode(win: &Window) -> Option<VideoMode> {
+    win.current_monitor()?.video_modes().next()
 }
 
 fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
@@ -225,7 +236,6 @@ fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
                 game.set_size(size);
             }
             EventHandleResult::Exit => {
-                game.close();
                 return true;
             }
         }
