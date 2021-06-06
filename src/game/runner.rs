@@ -1,6 +1,5 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::error::Error as StdError;
-use std::thread::sleep;
 use std::time::Duration;
 use std::{cell::RefCell, convert::TryInto};
 
@@ -141,177 +140,177 @@ impl State {
     }
 }
 
-pub struct Runner;
+pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> E
+where
+    F: FnOnce() -> Result<T, E>,
+    T: Game + 'static,
+{
+    let (event_loop, win_ctx) = init_runner(size, title);
 
-impl Runner {
-    pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> E
-    where
-        F: FnOnce() -> Result<T, E>,
-        T: Game + 'static,
-    {
-        let event_loop = EventLoop::new();
-        let win_builder =
-            WindowBuilder::new().with_inner_size(size).with_title(title);
-        let ctx_builder = glutin::ContextBuilder::new()
-            .with_vsync(false)
-            .with_depth_buffer(0)
-            .with_stencil_buffer(8)
-            .with_pixel_format(24, 8)
-            .with_double_buffer(Some(true))
-            .with_gl_profile(GlProfile::Core);
+    let fb_info = create_fb_info();
+    let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
+    let mut surface = create_surface(&win_ctx, fb_info, &mut gr_ctx);
 
-        let win_ctx = ctx_builder
-            .build_windowed(win_builder, &event_loop)
-            .expect("Failed to create windowed OpenGL context");
-        let win_ctx = unsafe {
-            win_ctx
-                .make_current()
-                .expect("Failed to make OpenGL context current")
-        };
+    init_state(win_ctx.window());
 
-        gl::load_with(|s| win_ctx.get_proc_address(s));
+    let mut game = match game() {
+        Ok(e) => e,
+        Err(e) => return e,
+    };
+    game.set_size(State::with(|x| x.input_state.window_size));
 
-        let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
-        let fb_info = {
-            let mut fboid: GLint = 0;
-            unsafe { gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &mut fboid) };
-            FramebufferInfo {
-                fboid: fboid.try_into().unwrap(),
-                format: SkiaGLFormat::RGBA8.into(),
+    let target_update_time = Duration::from_millis(1); // 1000 fps
+
+    event_loop.run(move |event, _, flow| match event {
+        Event::WindowEvent { event, .. } => {
+            if let WindowEvent::Resized(size) = &event {
+                surface = create_surface(&win_ctx, fb_info, &mut gr_ctx);
+                win_ctx.resize(*size);
             }
-        };
-
-        let mut surface = Self::create_surface(&win_ctx, fb_info, &mut gr_ctx);
-
-        let target_update_time = Duration::from_millis(1); // 1000 fps
-
-        let input_state = InputState::new(
-            win_ctx.window().inner_size(),
-            win_ctx.window().scale_factor(),
-        );
-        let time_state = TimeState::new();
-        let time_state_draw = TimeState::new();
-        State::STATE.with(|x| {
-            *x.borrow_mut() = Some(State {
-                input_state,
-                time_state,
-                time_state_draw,
-                was_fullscreen: false,
-                is_fullscreen: false,
-                id_keeper: 0,
-            });
-        });
-
-        let mut game = match game() {
-            Ok(e) => e,
-            Err(e) => return e,
-        };
-        game.set_size(
-            State::STATE
-                .with(|x| x.borrow().as_ref().unwrap().input_state.window_size),
-        );
-
-        event_loop.run(move |event, _, flow| match event {
-            Event::WindowEvent { event, .. } => {
-                if let WindowEvent::Resized(size) = &event {
-                    surface =
-                        Self::create_surface(&win_ctx, fb_info, &mut gr_ctx);
-                    win_ctx.resize(*size);
-                }
-                if Self::game_handle_event(&mut game, event) {
-                    *flow = ControlFlow::Exit;
-                }
-            }
-            Event::MainEventsCleared => {
-                game.update();
-
-                if let Some(s) = State::with_mut(|x| {
-                    if x.is_fullscreen != x.was_fullscreen {
-                        x.was_fullscreen = x.is_fullscreen;
-                        Some(x.is_fullscreen)
-                    } else {
-                        None
-                    }
-                }) {
-                    Self::set_fullscreen(s, win_ctx.window());
-                }
-
-                win_ctx.window().request_redraw();
-
-                State::with_mut(|state| {
-                    let update_time = state.time_state.last_update().elapsed();
-                    if target_update_time > update_time {
-                        sleep(target_update_time - update_time);
-                    }
-                    state.time_state.update();
-                });
-            }
-            Event::RedrawRequested(_) => {
-                let canvas = surface.canvas();
-                let sf = win_ctx.window().scale_factor() as f32;
-                canvas.reset_matrix();
-                canvas.scale((sf, sf));
-                State::with_mut(|state| state.time_state_draw.update());
-                game.draw(canvas);
-                gr_ctx.flush(None);
-                win_ctx.swap_buffers().unwrap();
-            }
-            _ => {}
-        });
-    }
-
-    fn set_fullscreen(enable: bool, win: &Window) {
-        win.set_fullscreen(if enable {
-            let mode =
-                win.current_monitor().unwrap().video_modes().next().unwrap();
-            Some(Fullscreen::Exclusive(mode))
-        } else {
-            None
-        });
-    }
-
-    fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
-        if let Some(r) = State::with_mut(|x| x.input_state.handle_event(event))
-        {
-            match r {
-                EventHandleResult::Input(event) => game.input(event),
-                EventHandleResult::Resized(size) => {
-                    game.set_size(size);
-                }
-                EventHandleResult::Exit => {
-                    game.close();
-                    return true;
-                }
+            if game_handle_event(&mut game, event) {
+                *flow = ControlFlow::Exit;
             }
         }
+        Event::MainEventsCleared => {
+            State::with_mut(|state| state.time_state.update());
+            game.update();
 
-        false
+            if let Some(s) = State::with_mut(|x| {
+                if x.is_fullscreen != x.was_fullscreen {
+                    x.was_fullscreen = x.is_fullscreen;
+                    Some(x.is_fullscreen)
+                } else {
+                    None
+                }
+            }) {
+                set_fullscreen(s, win_ctx.window());
+            }
+
+            win_ctx.window().request_redraw();
+
+            State::with_mut(|state| {
+                let last_update = state.time_state.last_update();
+                let then = last_update + target_update_time;
+                *flow = ControlFlow::WaitUntil(then);
+            });
+        }
+        Event::RedrawRequested(_) => {
+            let canvas = surface.canvas();
+            let sf = win_ctx.window().scale_factor() as f32;
+            canvas.reset_matrix();
+            canvas.scale((sf, sf));
+            State::with_mut(|state| state.time_state_draw.update());
+            game.draw(canvas);
+            gr_ctx.flush(None);
+            win_ctx.swap_buffers().unwrap();
+        }
+        _ => {}
+    });
+}
+
+fn set_fullscreen(enable: bool, win: &Window) {
+    win.set_fullscreen(if enable {
+        let mode = win.current_monitor().unwrap().video_modes().next().unwrap();
+        Some(Fullscreen::Exclusive(mode))
+    } else {
+        None
+    });
+}
+
+fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
+    if let Some(r) = State::with_mut(|x| x.input_state.handle_event(event)) {
+        match r {
+            EventHandleResult::Input(event) => game.input(event),
+            EventHandleResult::Resized(size) => {
+                game.set_size(size);
+            }
+            EventHandleResult::Exit => {
+                game.close();
+                return true;
+            }
+        }
     }
 
-    fn create_surface(
-        win_ctx: &WindowedContext,
-        fb_info: FramebufferInfo,
-        gr_ctx: &mut SkiaDirectContext,
-    ) -> Surface {
-        let pix = win_ctx.get_pixel_format();
-        let size = win_ctx.window().inner_size();
-        let target = BackendRenderTarget::new_gl(
-            (
-                size.width.try_into().unwrap(),
-                size.height.try_into().unwrap(),
-            ),
-            pix.multisampling.map(|s| s.try_into().unwrap()),
-            pix.stencil_bits.try_into().unwrap(),
-            fb_info,
-        );
-        Surface::from_backend_render_target(
-            gr_ctx,
-            &target,
-            SurfaceOrigin::BottomLeft,
-            ColorType::RGBA8888,
-            None,
-            None,
-        )
-        .unwrap()
+    false
+}
+
+fn init_runner(
+    size: LogicalSize<f64>,
+    title: &str,
+) -> (EventLoop<()>, WindowedContext) {
+    let event_loop = EventLoop::new();
+    let win = WindowBuilder::new().with_inner_size(size).with_title(title);
+    let ctxb = glutin::ContextBuilder::new()
+        .with_vsync(false)
+        .with_depth_buffer(0)
+        .with_stencil_buffer(8)
+        .with_pixel_format(24, 8)
+        .with_double_buffer(Some(true))
+        .with_gl_profile(GlProfile::Core);
+
+    let win_ctx = ctxb
+        .build_windowed(win, &event_loop)
+        .expect("Failed to create windowed OpenGL context");
+    let win_ctx = unsafe {
+        win_ctx
+            .make_current()
+            .expect("Failed to make OpenGL context current")
+    };
+
+    gl::load_with(|s| win_ctx.get_proc_address(s));
+
+    (event_loop, win_ctx)
+}
+
+fn init_state(win: &Window) {
+    let input_state = InputState::new(win.inner_size(), win.scale_factor());
+    let time_state = TimeState::new();
+    let time_state_draw = TimeState::new();
+    State::STATE.with(|x| {
+        *x.borrow_mut() = Some(State {
+            input_state,
+            time_state,
+            time_state_draw,
+            was_fullscreen: false,
+            is_fullscreen: false,
+            id_keeper: 0,
+        });
+    });
+}
+
+fn create_fb_info() -> FramebufferInfo {
+    let mut fboid: GLint = 0;
+    unsafe { gl::GetIntegerv(gl::FRAMEBUFFER_BINDING, &mut fboid) };
+    FramebufferInfo {
+        fboid: fboid.try_into().unwrap(),
+        format: SkiaGLFormat::RGBA8.into(),
     }
+}
+
+fn create_surface(
+    win_ctx: &WindowedContext,
+    fb_info: FramebufferInfo,
+    gr_ctx: &mut SkiaDirectContext,
+) -> Surface {
+    let pix = win_ctx.get_pixel_format();
+    let size = win_ctx.window().inner_size();
+    let size = (
+        size.width.try_into().unwrap(),
+        size.height.try_into().unwrap(),
+    );
+    let target = BackendRenderTarget::new_gl(
+        size,
+        pix.multisampling.map(|s| s.try_into().unwrap()),
+        pix.stencil_bits.try_into().unwrap(),
+        fb_info,
+    );
+    Surface::from_backend_render_target(
+        gr_ctx,
+        &target,
+        SurfaceOrigin::BottomLeft,
+        ColorType::RGBA8888,
+        None,
+        None,
+    )
+    .unwrap()
 }
