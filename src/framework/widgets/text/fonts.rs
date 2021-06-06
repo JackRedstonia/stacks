@@ -52,8 +52,8 @@ impl<T: Widget + ?Sized> Widget for Fonts<T> {
 
 pub struct FontResource {
     default: FontSet,
-    fallback_ja: FontSet,
-    fallback_vn: FontSet,
+    fallback_ja: Option<FontSet>,
+    fallback_vn: Option<FontSet>,
 }
 
 impl FontResource {
@@ -88,10 +88,11 @@ impl FontResource {
             .map(|e| e.family_name())
             .unwrap_or_else(|| "Noto Sans".to_owned());
 
+        let default = FontSet::new();
         ResourceHoster::new(Self {
-            default: FontSet::new(),
-            fallback_ja: FontSet::from_type_name(&ja),
-            fallback_vn: FontSet::from_type_name(&vn),
+            fallback_ja: FontSet::from_type_name(&ja, default.default_size),
+            fallback_vn: FontSet::from_type_name(&vn, default.default_size),
+            default,
         })
     }
 
@@ -104,15 +105,20 @@ impl FontResource {
         let f = match font {
             Font::Default => &self.default,
         };
-        vec![
-            f.get(style, size),
-            self.fallback_ja.get(style, size),
-            self.fallback_vn.get(style, size),
-        ]
+        let mut v = Vec::with_capacity(3);
+        v.push(f.get(style, size));
+        if let Some(ja) = &self.fallback_ja {
+            v.push(ja.get(style, size));
+        }
+        if let Some(vn) = &self.fallback_vn {
+            v.push(vn.get(style, size));
+        }
+        v
     }
 }
 
 struct FontSet {
+    default_size: scalar,
     regular: Typeface,
     medium: Typeface,
     bold: Typeface,
@@ -141,6 +147,7 @@ impl FontSet {
             unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
         let bold_italic = unsafe { Data::new_bytes(font_bytes!("BoldItalic")) };
         Self {
+            default_size: 13.5,
             regular: Typeface::from_data(regular, None).unwrap(),
             medium: Typeface::from_data(medium, None).unwrap(),
             bold: Typeface::from_data(bold, None).unwrap(),
@@ -150,39 +157,34 @@ impl FontSet {
         }
     }
 
-    fn from_type_name(family_name: &str) -> Self {
-        Self {
+    fn from_type_name(family_name: &str, default_size: scalar,) -> Option<Self> {
+        Some(Self {
+            default_size,
             regular: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Upright),
-            )
-            .unwrap(),
+            )?,
             medium: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Upright),
-            )
-            .unwrap(),
+            )?,
             bold: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Upright),
-            )
-            .unwrap(),
+            )?,
             italic: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Italic),
-            )
-            .unwrap(),
+            )?,
             medium_italic: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Italic),
-            )
-            .unwrap(),
+            )?,
             bold_italic: Typeface::from_name(
                 family_name,
                 SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Italic),
-            )
-            .unwrap(),
-        }
+            )?,
+        })
     }
 
     fn get(&self, style: FontStyle, size: Option<scalar>) -> SkFont {
@@ -195,7 +197,7 @@ impl FontSet {
                 FontStyle::MediumItalic => &self.medium_italic,
                 FontStyle::BoldItalic => &self.bold_italic,
             },
-            size.unwrap_or(13.5),
+            size.unwrap_or(self.default_size),
         )
     }
 }
