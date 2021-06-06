@@ -1,6 +1,9 @@
-use super::{runner::run, Game};
+use std::error::Error;
 
 use glutin::dpi::LogicalSize;
+
+use super::runner::{run, RunnerError};
+use super::Game;
 
 pub struct Builder<'a> {
     window_size: LogicalSize<f64>,
@@ -35,10 +38,11 @@ impl<'a> Builder<'a> {
     }
 
     /// Start the app.
-    pub fn run<F, T, E>(self, game: F) -> E
+    pub fn run<F, T, E>(self, game: F) -> Result<E, RunnerError>
     where
         F: FnOnce() -> Result<T, E>,
         T: Game + 'static,
+        E: Error,
     {
         run(game, self.window_size, self.window_title)
     }

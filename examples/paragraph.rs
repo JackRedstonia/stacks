@@ -60,5 +60,5 @@ fn main() {
         let root = FullscreenContainer::new(root);
         Ok(root)
     });
-    eprintln!("Failed to run game: {:?}", e);
+    eprintln!("Failed to run game: {}", e);
 }

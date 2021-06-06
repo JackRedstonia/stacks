@@ -16,7 +16,7 @@ use glutin::monitor::VideoMode;
 use glutin::window::{Fullscreen, Window, WindowBuilder};
 use glutin::{
     ContextError as GLContextError, ContextWrapper as GlutinContextWrapper,
-    GlProfile, PossiblyCurrent as GlutinPossiblyCurrent,
+    GlProfile, PossiblyCurrent as GlutinPossiblyCurrent, CreationError as GLCreationError,
 };
 
 use gl::types::GLint;
@@ -30,14 +30,14 @@ type WindowedContext = GlutinContextWrapper<GlutinPossiblyCurrent, Window>;
 
 #[derive(Debug)]
 pub enum GameError {
-    GLContextError(GLContextError),
+    RunnerError(RunnerError),
 }
 
 impl Display for GameError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            GameError::GLContextError(s) => {
-                write!(f, "OpenGL context manipulation error: {}", s)
+            GameError::RunnerError(s) => {
+                write!(f, "runner error: {}", s)
             }
         }
     }
@@ -46,8 +46,48 @@ impl Display for GameError {
 impl StdError for GameError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
-            GameError::GLContextError(e) => Some(e),
+            GameError::RunnerError(e) => Some(e),
         }
+    }
+}
+
+#[derive(Debug)]
+pub enum RunnerError {
+    GLCreationError(GLCreationError),
+    GLContextError(GLContextError),
+}
+
+impl Display for RunnerError {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        match self {
+            RunnerError::GLCreationError(s) => {
+                write!(f, "OpenGL window creation error: {}", s)
+            }
+            RunnerError::GLContextError(s) => {
+                write!(f, "OpenGL context manipulation error: {}", s)
+            }
+        }
+    }
+}
+
+impl StdError for RunnerError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            RunnerError::GLCreationError(e) => Some(e),
+            RunnerError::GLContextError(e) => Some(e),
+        }
+    }
+}
+
+impl From<GLCreationError> for RunnerError {
+    fn from(e: GLCreationError) -> Self {
+        Self::GLCreationError(e)
+    }
+}
+
+impl From<GLContextError> for RunnerError {
+    fn from(e: GLContextError) -> Self {
+        Self::GLContextError(e)
     }
 }
 
@@ -143,12 +183,12 @@ impl State {
     }
 }
 
-pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> E
+pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> Result<E, RunnerError>
 where
     F: FnOnce() -> Result<T, E>,
     T: Game + 'static,
 {
-    let (event_loop, win_ctx) = init_runner(size, title);
+    let (event_loop, win_ctx) = init_runner(size, title)?;
 
     let fb_info = create_fb_info();
     let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
@@ -158,7 +198,7 @@ where
 
     let mut game = match game() {
         Ok(e) => e,
-        Err(e) => return e,
+        Err(e) => return Ok(e),
     };
     game.set_size(State::with(|x| x.input_state.window_size));
 
@@ -207,7 +247,7 @@ where
             game.draw(canvas);
             gr_ctx.flush(None);
             if let Err(e) = win_ctx.swap_buffers() {
-                game.crash(GameError::GLContextError(e));
+                game.crash(GameError::RunnerError(e.into()));
                 game.close();
                 *flow = ControlFlow::Exit;
             }
@@ -247,10 +287,10 @@ fn game_handle_event(game: &mut impl Game, event: WindowEvent) -> bool {
 fn init_runner(
     size: LogicalSize<f64>,
     title: &str,
-) -> (EventLoop<()>, WindowedContext) {
+) -> Result<(EventLoop<()>, WindowedContext), RunnerError> {
     let event_loop = EventLoop::new();
     let win = WindowBuilder::new().with_inner_size(size).with_title(title);
-    let ctxb = glutin::ContextBuilder::new()
+    let ctx_builder = glutin::ContextBuilder::new()
         .with_vsync(false)
         .with_depth_buffer(0)
         .with_stencil_buffer(8)
@@ -258,18 +298,16 @@ fn init_runner(
         .with_double_buffer(Some(true))
         .with_gl_profile(GlProfile::Core);
 
-    let win_ctx = ctxb
-        .build_windowed(win, &event_loop)
-        .expect("Failed to create windowed OpenGL context");
+    let win_ctx = ctx_builder
+        .build_windowed(win, &event_loop)?;
     let win_ctx = unsafe {
         win_ctx
-            .make_current()
-            .expect("Failed to make OpenGL context current")
+            .make_current().map_err(|e| e.1)?
     };
 
     gl::load_with(|s| win_ctx.get_proc_address(s));
 
-    (event_loop, win_ctx)
+    Ok((event_loop, win_ctx))
 }
 
 fn init_state(win: &Window) {

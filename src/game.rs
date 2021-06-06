@@ -5,7 +5,7 @@ mod time;
 
 pub use builder::Builder;
 pub use input::{EventHandleResult, InputEvent, InputState, ScrollAmount};
-pub use runner::{GameError, State, ID};
+pub use runner::{GameError, RunnerError, State, ID};
 pub use time::TimeState;
 
 pub trait Game {

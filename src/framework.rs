@@ -4,22 +4,39 @@ pub mod widgets;
 use std::cell::RefCell;
 
 use std::error::Error as StdError;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::game::{Builder, Game, GameError, InputEvent, State, ID};
+use crate::game::{Builder, Game, GameError, InputEvent, State, ID, RunnerError};
 use crate::prelude::*;
 use resource::ResourceStack;
 use skia::{Canvas, Size};
 use widgets::{LayoutSize, Widget, Wrap};
 
 #[derive(Debug)]
-pub enum FrameworkError<'a> {
-    WidgetCreationError(Box<dyn StdError + 'a>),
+pub enum FrameworkError {
+    WidgetCreationError(Box<dyn StdError + 'static>),
+    RunnerError(RunnerError),
 }
 
-impl<'a, T: 'a + StdError> From<T> for FrameworkError<'a> {
-    fn from(err: T) -> Self {
-        Self::WidgetCreationError(Box::new(err))
+impl Display for FrameworkError {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        match self {
+            FrameworkError::WidgetCreationError(e) => {
+                write!(f, "widget creation error: {}", e)
+            }
+            FrameworkError::RunnerError(e) => {
+                write!(f, "runner error: {}", e)
+            }
+        }
+    }
+}
+
+impl StdError for FrameworkError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match self {
+            FrameworkError::WidgetCreationError(e) => Some(e.as_ref()),
+            FrameworkError::RunnerError(e) => Some(e),
+        }
     }
 }
 
@@ -33,15 +50,20 @@ pub struct Framework<T: Widget + ?Sized> {
 }
 
 impl<T: Widget + 'static> Framework<T> {
-    pub fn run<'a, F>(name: &'a str, root: F) -> FrameworkError
+    pub fn run<F>(name: &str, root: F) -> FrameworkError
     where
-        F: FnOnce() -> Result<Wrap<T>, FrameworkError<'a>>,
+        F: FnOnce() -> Result<Wrap<T>, Box<dyn StdError + 'static>>,
     {
-        Builder::new().window_title(name).run(|| {
+        let e = Builder::new().window_title(name).run(|| {
             FrameworkState::init();
-            let root = root()?;
+            let root =
+                root().map_err(|e| FrameworkError::WidgetCreationError(e))?;
             Ok(Self::new(root))
-        })
+        });
+        match e {
+            Ok(e) => e,
+            Err(e) => FrameworkError::RunnerError(e)
+        }
     }
 
     pub fn new(root: Wrap<T>) -> Self {
@@ -58,7 +80,7 @@ impl<T: Widget + 'static> Framework<T> {
         let remove_hover = FrameworkState::with_mut(|x| {
             if x.just_grabbed_focus {
                 x.just_grabbed_focus = false;
-                return Some(x.current_focused_id.expect("Framework state's current focused widget ID is None despite focus just being grabbed"));
+                return x.current_focused_id;
             }
             None
         });

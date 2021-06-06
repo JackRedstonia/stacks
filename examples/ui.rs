@@ -92,5 +92,5 @@ fn main() {
         let root = Audio::new(root)?;
         Ok(root)
     });
-    eprintln!("Failed to run game: {:?}", e);
+    eprintln!("Failed to run game: {}", e);
 }
