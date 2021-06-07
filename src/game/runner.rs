@@ -212,9 +212,29 @@ where
     let target_update_time = Duration::from_millis(1); // 1000 fps
 
     event_loop.run(move |event, _, flow| {
+        // https://github.com/rust-skia/rust-skia/issues/476
+        // The following 3 lines of code fixes the entire application hanging
+        // on Windows when you `*flow = ControlFlow::Exit`.
+        // This is like the TF2 coconut texture, but this time it's real.
+        // I love the software industry.
+        // As per GitHub user `kognise`:
+        //
+        // "Skia will hang - the program doesn't exit and cpu usage goes to
+        // around 30%. [...] This only happens if:
+        // - It's being run on Windows
+        // - The window handle, the graphics context, AND the Skia surface are
+        //   moved into the closure
+        // They AREN'T accessed in the order of surface, then context, then
+        // handle"
+        //
+        // ...hence the ordering of the 3 lines of code.
+        // Please do not touch this whatever you do with the code around here,
+        // for it holds together the fabric of space and time... at least on
+        // Windows.
         let surface = &mut surface;
         let gr_ctx = &mut gr_ctx;
         let win_ctx = &win_ctx;
+
         match event {
             Event::WindowEvent { event, .. } => {
                 if let WindowEvent::Resized(size) = &event {
