@@ -211,58 +211,63 @@ where
 
     let target_update_time = Duration::from_millis(1); // 1000 fps
 
-    event_loop.run(move |event, _, flow| match event {
-        Event::WindowEvent { event, .. } => {
-            if let WindowEvent::Resized(size) = &event {
-                surface = create_surface(&win_ctx, fb_info, &mut gr_ctx);
-                win_ctx.resize(*size);
-            }
-            if game_handle_event(&mut game, event) {
-                game.close();
-                *flow = ControlFlow::Exit;
-            }
-        }
-        Event::MainEventsCleared => {
-            game.update();
-
-            if let Some(s) = State::with_mut(|x| {
-                if x.is_fullscreen != x.was_fullscreen {
-                    x.was_fullscreen = x.is_fullscreen;
-                    Some(x.is_fullscreen)
-                } else {
-                    None
+    event_loop.run(move |event, _, flow| {
+        let surface = &mut surface;
+        let gr_ctx = &mut gr_ctx;
+        let win_ctx = &win_ctx;
+        match event {
+            Event::WindowEvent { event, .. } => {
+                if let WindowEvent::Resized(size) = &event {
+                    *surface = create_surface(win_ctx, fb_info, gr_ctx);
+                    win_ctx.resize(*size);
                 }
-            }) {
-                set_fullscreen(s, win_ctx.window());
+                if game_handle_event(&mut game, event) {
+                    game.close();
+                    *flow = ControlFlow::Exit;
+                }
             }
+            Event::MainEventsCleared => {
+                game.update();
 
-            win_ctx.window().request_redraw();
-
-            State::with_mut(|state| {
-                let last_update = state.time_state.last_update();
-                let last_update_time = last_update.elapsed();
-                if last_update_time < target_update_time {
-                    sleep(target_update_time - last_update_time);
+                if let Some(s) = State::with_mut(|x| {
+                    if x.is_fullscreen != x.was_fullscreen {
+                        x.was_fullscreen = x.is_fullscreen;
+                        Some(x.is_fullscreen)
+                    } else {
+                        None
+                    }
+                }) {
+                    set_fullscreen(s, win_ctx.window());
                 }
 
-                state.time_state.update();
-            });
-        }
-        Event::RedrawRequested(_) => {
-            State::with_mut(|state| state.time_state_draw.update());
-            let canvas = surface.canvas();
-            let sf = win_ctx.window().scale_factor() as f32;
-            canvas.reset_matrix();
-            canvas.scale((sf, sf));
-            game.draw(canvas);
-            gr_ctx.flush(None);
-            if let Err(e) = win_ctx.swap_buffers() {
-                game.crash(GameError::RunnerError(e.into()));
-                game.close();
-                *flow = ControlFlow::Exit;
+                win_ctx.window().request_redraw();
+
+                State::with_mut(|state| {
+                    let last_update = state.time_state.last_update();
+                    let last_update_time = last_update.elapsed();
+                    if last_update_time < target_update_time {
+                        sleep(target_update_time - last_update_time);
+                    }
+
+                    state.time_state.update();
+                });
             }
+            Event::RedrawRequested(_) => {
+                State::with_mut(|state| state.time_state_draw.update());
+                let canvas = surface.canvas();
+                let sf = win_ctx.window().scale_factor() as f32;
+                canvas.reset_matrix();
+                canvas.scale((sf, sf));
+                game.draw(canvas);
+                gr_ctx.flush(None);
+                if let Err(e) = win_ctx.swap_buffers() {
+                    game.crash(GameError::RunnerError(e.into()));
+                    game.close();
+                    *flow = ControlFlow::Exit;
+                }
+            }
+            _ => {}
         }
-        _ => {}
     });
 }
 
