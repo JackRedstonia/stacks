@@ -24,11 +24,16 @@ impl<T: Widget + ?Sized> VContainer<T> {
         .into()
     }
 
+    pub fn add_child(&mut self, child: Wrap<T>) -> &mut Self {
+        FrameworkState::request_load();
+        self.children.push((child, ChildState::new()));
+        self
+    }
+
     fn layout(&mut self, _state: &mut WidgetState, size: Size) {
         let total_space = size.height;
 
-        let mut min =
-            (self.children.len() as scalar - 1.0).max(0.0) * self.spacing;
+        let mut min = self.preoccupied();
         let mut expand = 0.0f32;
 
         for (_, state) in &self.children {
@@ -56,10 +61,8 @@ impl<T: Widget + ?Sized> VContainer<T> {
         }
     }
 
-    pub fn add_child(&mut self, child: Wrap<T>) -> &mut Self {
-        FrameworkState::request_load();
-        self.children.push((child, ChildState::new()));
-        self
+    fn preoccupied(&self) -> scalar {
+        (self.children.len() as scalar - 1.0).max(0.0) * self.spacing
     }
 }
 
@@ -95,7 +98,7 @@ impl<T: Widget + ?Sized> Widget for VContainer<T> {
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        let mut height_min = 0.0f32;
+        let mut height_min = self.preoccupied();
         let mut width_min = 0.0f32;
 
         self.sizes_changed = false;
