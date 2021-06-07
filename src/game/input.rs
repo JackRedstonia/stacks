@@ -1,13 +1,16 @@
 use std::collections::HashSet;
 
 use crate::skia::{scalar, Matrix, Point, Size};
-use glutin::dpi::{LogicalPosition, LogicalSize, PhysicalSize};
+use glutin::dpi::{LogicalPosition, LogicalSize};
 use glutin::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode,
     WindowEvent,
 };
+use glutin::window::Window;
 
 use super::ID;
+
+use crate::utils::Snap;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum InputEvent {
@@ -90,7 +93,12 @@ pub enum EventHandleResult {
 }
 
 impl InputState {
-    pub fn new(window_size: PhysicalSize<u32>, scale_factor: f64) -> Self {
+    const SCALE_FACTOR_INTERVALS: f64 = 0.05;
+
+    pub fn new(win: &Window) -> Self {
+        let window_size = win.inner_size();
+        let scale_factor =
+            win.scale_factor().snap(1.0, Self::SCALE_FACTOR_INTERVALS);
         let LogicalSize::<f32> { width, height } =
             window_size.to_logical(scale_factor);
         Self {
@@ -114,7 +122,8 @@ impl InputState {
                 scale_factor,
                 new_inner_size,
             } => {
-                self.scale_factor = scale_factor;
+                self.scale_factor =
+                    scale_factor.snap(1.0, Self::SCALE_FACTOR_INTERVALS);
                 let s = new_inner_size.to_logical(self.scale_factor);
                 self.window_size = Size::new(s.width, s.height);
                 return Some(EventHandleResult::Resized(self.window_size));
@@ -194,13 +203,15 @@ impl InputState {
         self.mouse_position
     }
 
-    /// Returns whether the given key is down
     pub fn is_key_down(&self, key: VirtualKeyCode) -> bool {
         self.keys.contains(&key)
     }
 
-    /// Returns whether the given button is down
     pub fn is_mouse_down(&self, button: MouseButton) -> bool {
         self.mouse_buttons.contains(&button)
+    }
+
+    pub fn scale_factor(&self) -> f64 {
+        self.scale_factor
     }
 }

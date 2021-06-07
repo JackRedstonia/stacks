@@ -162,6 +162,10 @@ impl State {
             f
         })
     }
+
+    fn scale_factor() -> f64 {
+        Self::with(|x| x.input_state.scale_factor())
+    }
 }
 
 // Programmer-facing API
@@ -270,7 +274,7 @@ where
         }
         Event::RedrawRequested(_) => {
             State::with_mut(|state| state.time_state_draw.update());
-            let sf = ctx.window().scale_factor() as f32;
+            let sf = State::scale_factor() as f32;
             let canvas = ctx.canvas();
             canvas.reset_matrix();
             canvas.scale((sf, sf));
@@ -357,7 +361,7 @@ fn set_fullscreen(enable: bool, win: &Window) {
 }
 
 fn set_min_size(size: Size, win: &Window) {
-    let sf = win.scale_factor() as f32;
+    let sf = State::scale_factor() as f32;
     let size = PhysicalSize::new(size.width * sf, size.height * sf);
     win.set_min_inner_size(Some(size));
 }
@@ -405,7 +409,7 @@ fn init_runner(
 }
 
 fn init_state(win: &Window) {
-    let input_state = InputState::new(win.inner_size(), win.scale_factor());
+    let input_state = InputState::new(win);
     let time_state = TimeState::new();
     let time_state_draw = TimeState::new();
     State::STATE.with(|x| {
