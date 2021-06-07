@@ -224,7 +224,7 @@ where
         // - It's being run on Windows
         // - The window handle, the graphics context, AND the Skia surface are
         //   moved into the closure
-        // They AREN'T accessed in the order of surface, then context, then
+        // - They AREN'T accessed in the order of surface, then context, then
         // handle"
         //
         // ...hence the ordering of the 3 lines of code.
