@@ -2,8 +2,6 @@ mod fonts;
 
 pub use fonts::{FontResource, Fonts};
 
-use std::mem::MaybeUninit;
-
 use crate::prelude::*;
 use skia::{Canvas, Font as SkFont, FontMetrics, GlyphId, Path, RoundOut};
 
@@ -351,17 +349,18 @@ impl Paragraph {
             };
             // SAFETY: this is fine, we do know that `rerun_with_width` will
             // initialize this after.
-            words.push((Word::new(word, font), prev_index, pb, unsafe {
-                uninit_point()
-            }));
+            words.push((
+                Word::new(word, font),
+                prev_index,
+                pb,
+                Vector::default(),
+            ));
         }
 
         if visual_prev != s.len() {
             // SAFETY: same as before, this is fine. we do know that
             // `rerun_with_width` will initialize this after.
-            words.push((Word::new("", font), prev, true, unsafe {
-                uninit_point()
-            }))
+            words.push((Word::new("", font), prev, true, Vector::default()))
         }
 
         let mut q = Self {
@@ -446,12 +445,4 @@ fn combine(a: &mut Rect, b: &Rect) {
     a.right = a.right.max(b.right);
     a.top = a.top.min(b.top);
     a.bottom = a.bottom.max(b.bottom);
-}
-
-unsafe fn uninit_point() -> Vector {
-    // LINT SUPPRESSION: this is fine, really.
-    // We're not getting bitten by calling deconstructors or anything,
-    // Vector is just a Copy struct with 2 f32 fields.
-    #[allow(clippy::uninit_assumed_init)]
-    MaybeUninit::uninit().assume_init()
 }
