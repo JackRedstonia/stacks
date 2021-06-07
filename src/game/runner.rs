@@ -1,7 +1,9 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::error::Error as StdError;
 use std::time::Duration;
-use std::{cell::RefCell, convert::TryInto};
+use std::cell::RefCell;
+use std::convert::TryInto;
+use std::thread::sleep;
 
 use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
 use crate::skia::gpu::{
@@ -216,7 +218,6 @@ where
             }
         }
         Event::MainEventsCleared => {
-            State::with_mut(|state| state.time_state.update());
             game.update();
 
             if let Some(s) = State::with_mut(|x| {
@@ -234,8 +235,12 @@ where
 
             State::with_mut(|state| {
                 let last_update = state.time_state.last_update();
-                let then = last_update + target_update_time;
-                *flow = ControlFlow::WaitUntil(then);
+                let last_update_time = last_update.elapsed();
+                if last_update_time < target_update_time {
+                    sleep(target_update_time - last_update_time);
+                }
+                
+                state.time_state.update();
             });
         }
         Event::RedrawRequested(_) => {
