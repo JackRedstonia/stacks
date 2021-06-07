@@ -90,9 +90,6 @@ pub enum EventHandleResult {
 }
 
 impl InputState {
-    pub const KEYBOARD_BUTTON_COUNT: usize = 255;
-    pub const MOUSE_BUTTON_COUNT: usize = 5;
-
     pub fn new(window_size: PhysicalSize<u32>, scale_factor: f64) -> Self {
         let LogicalSize::<f32> { width, height } =
             window_size.to_logical(scale_factor);
