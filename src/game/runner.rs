@@ -1,9 +1,9 @@
 use core::fmt::{Display, Formatter, Result as FmtResult};
-use std::error::Error as StdError;
-use std::time::Duration;
 use std::cell::RefCell;
 use std::convert::TryInto;
+use std::error::Error as StdError;
 use std::thread::sleep;
+use std::time::Duration;
 
 use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
 use crate::skia::gpu::{
@@ -18,7 +18,8 @@ use glutin::monitor::VideoMode;
 use glutin::window::{Fullscreen, Window, WindowBuilder};
 use glutin::{
     ContextError as GLContextError, ContextWrapper as GlutinContextWrapper,
-    GlProfile, PossiblyCurrent as GlutinPossiblyCurrent, CreationError as GLCreationError,
+    CreationError as GLCreationError, GlProfile,
+    PossiblyCurrent as GlutinPossiblyCurrent,
 };
 
 use gl::types::GLint;
@@ -185,7 +186,11 @@ impl State {
     }
 }
 
-pub fn run<F, T, E>(game: F, size: LogicalSize<f64>, title: &str) -> Result<E, RunnerError>
+pub fn run<F, T, E>(
+    game: F,
+    size: LogicalSize<f64>,
+    title: &str,
+) -> Result<E, RunnerError>
 where
     F: FnOnce() -> Result<T, E>,
     T: Game + 'static,
@@ -239,7 +244,7 @@ where
                 if last_update_time < target_update_time {
                     sleep(target_update_time - last_update_time);
                 }
-                
+
                 state.time_state.update();
             });
         }
@@ -303,12 +308,8 @@ fn init_runner(
         .with_double_buffer(Some(true))
         .with_gl_profile(GlProfile::Core);
 
-    let win_ctx = ctx_builder
-        .build_windowed(win, &event_loop)?;
-    let win_ctx = unsafe {
-        win_ctx
-            .make_current().map_err(|e| e.1)?
-    };
+    let win_ctx = ctx_builder.build_windowed(win, &event_loop)?;
+    let win_ctx = unsafe { win_ctx.make_current().map_err(|e| e.1)? };
 
     gl::load_with(|s| win_ctx.get_proc_address(s));
 

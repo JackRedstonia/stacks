@@ -6,7 +6,9 @@ use std::cell::RefCell;
 use std::error::Error as StdError;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use crate::game::{Builder, Game, GameError, InputEvent, State, ID, RunnerError};
+use crate::game::{
+    Builder, Game, GameError, InputEvent, RunnerError, State, ID,
+};
 use crate::prelude::*;
 use resource::ResourceStack;
 use skia::{Canvas, Size};
@@ -62,7 +64,7 @@ impl<T: Widget + 'static> Framework<T> {
         });
         match e {
             Ok(e) => e,
-            Err(e) => FrameworkError::RunnerError(e)
+            Err(e) => FrameworkError::RunnerError(e),
         }
     }
 

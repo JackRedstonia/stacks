@@ -3,8 +3,8 @@
 //! things.
 //!
 //! Contains `unsafe` blocks, borrowing safety backed by RefCell. Is memory safe
-//! and cannot be exploited to get two or more mutable references to the resource
-//! as far as testing done by the author can tell.
+//! and cannot be exploited to get two or more mutable references to the
+//! resource as far as testing done by the author can tell.
 
 mod stack;
 
