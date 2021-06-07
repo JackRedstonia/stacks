@@ -9,9 +9,9 @@ use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
 use crate::skia::gpu::{
     BackendRenderTarget, DirectContext as SkiaDirectContext, SurfaceOrigin,
 };
-use crate::skia::{ColorType, Point, Surface, Canvas};
+use crate::skia::{Canvas, ColorType, Point, Size, Surface};
 
-use glutin::dpi::LogicalSize;
+use glutin::dpi::{LogicalSize, PhysicalSize};
 use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::monitor::VideoMode;
@@ -114,10 +114,12 @@ pub struct State {
 
     was_fullscreen: bool,
     is_fullscreen: bool,
+    min_win_size_request: Option<Size>,
 
     id_keeper: u64,
 }
 
+// Internal helper functions
 impl State {
     const PANIC_MESSAGE: &'static str =
         "Attempt to get game state while game is uninitialized";
@@ -142,6 +144,28 @@ impl State {
             .with(|x| f(x.borrow_mut().as_mut().expect(Self::PANIC_MESSAGE)))
     }
 
+    fn consume_fullscreen_request() -> Option<bool> {
+        Self::with_mut(|x| {
+            if x.is_fullscreen != x.was_fullscreen {
+                x.was_fullscreen = x.is_fullscreen;
+                Some(x.is_fullscreen)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn consume_min_win_size_request() -> Option<Size> {
+        Self::with_mut(|x| {
+            let f = x.min_win_size_request;
+            x.min_win_size_request = None;
+            f
+        })
+    }
+}
+
+// Programmer-facing API
+impl State {
     pub fn last_update_time() -> Duration {
         Self::with(|x| x.time_state.last_update_time())
     }
@@ -171,6 +195,12 @@ impl State {
             x.is_fullscreen = !x.is_fullscreen;
             x.is_fullscreen
         })
+    }
+
+    pub fn set_min_window_size(size: Size) {
+        Self::with_mut(|x| {
+            x.min_win_size_request = Some(size);
+        });
     }
 
     pub fn mouse_position() -> Point {
@@ -204,9 +234,11 @@ where
     game.set_size(State::with(|x| x.input_state.window_size));
 
     let target_update_time = Duration::from_millis(1); // 1000 fps
+
     // Most displays are <= 200 fps.
     // Of course this will be upgraded from a hard-coded value in the future.
     let target_draw_time = Duration::from_millis(5); // 200 fps
+
     event_loop.run(move |event, _, flow| match event {
         Event::WindowEvent { event, .. } => {
             if let WindowEvent::Resized(size) = &event {
@@ -221,15 +253,11 @@ where
         Event::MainEventsCleared => {
             game.update();
 
-            if let Some(s) = State::with_mut(|x| {
-                if x.is_fullscreen != x.was_fullscreen {
-                    x.was_fullscreen = x.is_fullscreen;
-                    Some(x.is_fullscreen)
-                } else {
-                    None
-                }
-            }) {
+            if let Some(s) = State::consume_fullscreen_request() {
                 set_fullscreen(s, ctx.window());
+            }
+            if let Some(size) = State::consume_min_win_size_request() {
+                set_min_size(size, ctx.window());
             }
 
             State::with_mut(|state| {
@@ -328,6 +356,12 @@ fn set_fullscreen(enable: bool, win: &Window) {
     });
 }
 
+fn set_min_size(size: Size, win: &Window) {
+    let sf = win.scale_factor() as f32;
+    let size = PhysicalSize::new(size.width * sf, size.height * sf);
+    win.set_min_inner_size(Some(size));
+}
+
 fn default_video_mode(win: &Window) -> Option<VideoMode> {
     win.current_monitor()?.video_modes().next()
 }
@@ -381,6 +415,7 @@ fn init_state(win: &Window) {
             time_state_draw,
             was_fullscreen: false,
             is_fullscreen: false,
+            min_win_size_request: None,
             id_keeper: 0,
         });
     });
