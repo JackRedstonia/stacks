@@ -58,6 +58,7 @@ pub struct Text {
     text: String,
     paragraph: Option<Paragraph>,
     just_changed: bool,
+    height_cache: scalar,
 }
 
 impl Text {
@@ -84,6 +85,7 @@ impl Text {
             text: text.to_owned(),
             paragraph: None,
             just_changed: false,
+            height_cache: 0.0,
         }
         .into()
     }
@@ -158,11 +160,11 @@ impl Text {
             .unwrap_or_default()
     }
 
-    fn height(&self) -> scalar {
-        self.paragraph
-            .as_ref()
-            .map(|e| e.total_height.ceil())
-            .unwrap_or(0.0)
+    fn height(&mut self) -> scalar {
+        if let Some(p) = &self.paragraph {
+            self.height_cache = p.total_height.ceil();
+        }
+        self.height_cache
     }
 }
 
