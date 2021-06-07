@@ -90,8 +90,8 @@ impl FontResource {
 
         let default = FontSet::new();
         ResourceHoster::new(Self {
-            fallback_ja: FontSet::from_type_name(&ja, default.default_size),
-            fallback_vn: FontSet::from_type_name(&vn, default.default_size),
+            fallback_ja: FontSet::from_family_name(&ja, default.default_size),
+            fallback_vn: FontSet::from_family_name(&vn, default.default_size),
             default,
         })
     }
@@ -127,63 +127,59 @@ struct FontSet {
     bold_italic: Typeface,
 }
 
-macro_rules! font_bytes {
+macro_rules! include_font {
     ($s:expr) => {
-        include_bytes!(concat!(
-            "../../../../resources/fonts/IBMPlexSans-",
-            $s,
-            ".ttf"
-        ))
+        // SAFETY: This is fine. Sure, an unsafe code block inside a macro, it's
+        // extremely evil, but the good old 'static `include_bytes!` gives us
+        // is perfectly good for `Data::new_bytes`.
+        Typeface::from_data(
+            unsafe {
+                Data::new_bytes(include_bytes!(concat!(
+                    "../../../../resources/fonts/IBMPlexSans-",
+                    $s,
+                    ".ttf"
+                )))
+            },
+            None,
+        )
+        .unwrap()
+    };
+}
+
+macro_rules! typeface {
+    ($name:expr, $weight:ident, $slant:ident) => {
+        Typeface::from_name(
+            $name,
+            SkFontStyle::new(Weight::$weight, Width::NORMAL, Slant::$slant),
+        )
     };
 }
 
 impl FontSet {
     fn new() -> Self {
-        let regular = unsafe { Data::new_bytes(font_bytes!("Regular")) };
-        let medium = unsafe { Data::new_bytes(font_bytes!("Medium")) };
-        let bold = unsafe { Data::new_bytes(font_bytes!("Bold")) };
-        let italic = unsafe { Data::new_bytes(font_bytes!("Italic")) };
-        let medium_italic =
-            unsafe { Data::new_bytes(font_bytes!("MediumItalic")) };
-        let bold_italic = unsafe { Data::new_bytes(font_bytes!("BoldItalic")) };
         Self {
             default_size: 13.5,
-            regular: Typeface::from_data(regular, None).unwrap(),
-            medium: Typeface::from_data(medium, None).unwrap(),
-            bold: Typeface::from_data(bold, None).unwrap(),
-            italic: Typeface::from_data(italic, None).unwrap(),
-            medium_italic: Typeface::from_data(medium_italic, None).unwrap(),
-            bold_italic: Typeface::from_data(bold_italic, None).unwrap(),
+            regular: include_font!("Regular"),
+            medium: include_font!("Medium"),
+            bold: include_font!("Bold"),
+            italic: include_font!("Italic"),
+            medium_italic: include_font!("MediumItalic"),
+            bold_italic: include_font!("BoldItalic"),
         }
     }
 
-    fn from_type_name(family_name: &str, default_size: scalar) -> Option<Self> {
+    fn from_family_name(
+        family_name: &str,
+        default_size: scalar,
+    ) -> Option<Self> {
         Some(Self {
             default_size,
-            regular: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Upright),
-            )?,
-            medium: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Upright),
-            )?,
-            bold: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Upright),
-            )?,
-            italic: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::NORMAL, Width::NORMAL, Slant::Italic),
-            )?,
-            medium_italic: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::MEDIUM, Width::NORMAL, Slant::Italic),
-            )?,
-            bold_italic: Typeface::from_name(
-                family_name,
-                SkFontStyle::new(Weight::BOLD, Width::NORMAL, Slant::Italic),
-            )?,
+            regular: typeface!(family_name, NORMAL, Upright)?,
+            medium: typeface!(family_name, MEDIUM, Upright)?,
+            bold: typeface!(family_name, BOLD, Upright)?,
+            italic: typeface!(family_name, NORMAL, Italic)?,
+            medium_italic: typeface!(family_name, MEDIUM, Italic)?,
+            bold_italic: typeface!(family_name, BOLD, Italic)?,
         })
     }
 
