@@ -9,7 +9,7 @@ use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
 use crate::skia::gpu::{
     BackendRenderTarget, DirectContext as SkiaDirectContext, SurfaceOrigin,
 };
-use crate::skia::{ColorType, Point, Surface};
+use crate::skia::{ColorType, Point, Surface, Canvas};
 
 use glutin::dpi::LogicalSize;
 use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};
@@ -195,13 +195,7 @@ where
     F: FnOnce() -> Result<T, E>,
     T: Game + 'static,
 {
-    let (event_loop, win_ctx) = init_runner(size, title)?;
-
-    let fb_info = create_fb_info();
-    let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
-    let mut surface = create_surface(&win_ctx, fb_info, &mut gr_ctx);
-
-    init_state(win_ctx.window());
+    let (event_loop, mut ctx) = Context::new(size, title)?;
 
     let mut game = match game() {
         Ok(e) => e,
@@ -210,69 +204,111 @@ where
     game.set_size(State::with(|x| x.input_state.window_size));
 
     let target_update_time = Duration::from_millis(1); // 1000 fps
-
-    event_loop.run(move |event, _, flow| {
-        // Ensure drop ordering of the Skia surface, the GrDirectContext, and
-        // the windowed context.
-        // https://github.com/rust-skia/rust-skia/issues/476
-        let surface = &mut surface;
-        let gr_ctx = &mut gr_ctx;
-        let win_ctx = &win_ctx;
-
-        match event {
-            Event::WindowEvent { event, .. } => {
-                if let WindowEvent::Resized(size) = &event {
-                    *surface = create_surface(win_ctx, fb_info, gr_ctx);
-                    win_ctx.resize(*size);
-                }
-                if game_handle_event(&mut game, event) {
-                    game.close();
-                    *flow = ControlFlow::Exit;
-                }
+    event_loop.run(move |event, _, flow| match event {
+        Event::WindowEvent { event, .. } => {
+            if let WindowEvent::Resized(size) = &event {
+                ctx.renew_surface();
+                ctx.win.resize(*size);
             }
-            Event::MainEventsCleared => {
-                game.update();
-
-                if let Some(s) = State::with_mut(|x| {
-                    if x.is_fullscreen != x.was_fullscreen {
-                        x.was_fullscreen = x.is_fullscreen;
-                        Some(x.is_fullscreen)
-                    } else {
-                        None
-                    }
-                }) {
-                    set_fullscreen(s, win_ctx.window());
-                }
-
-                win_ctx.window().request_redraw();
-
-                State::with_mut(|state| {
-                    let last_update = state.time_state.last_update();
-                    let last_update_time = last_update.elapsed();
-                    if last_update_time < target_update_time {
-                        sleep(target_update_time - last_update_time);
-                    }
-
-                    state.time_state.update();
-                });
+            if game_handle_event(&mut game, event) {
+                game.close();
+                *flow = ControlFlow::Exit;
             }
-            Event::RedrawRequested(_) => {
-                State::with_mut(|state| state.time_state_draw.update());
-                let canvas = surface.canvas();
-                let sf = win_ctx.window().scale_factor() as f32;
-                canvas.reset_matrix();
-                canvas.scale((sf, sf));
-                game.draw(canvas);
-                gr_ctx.flush(None);
-                if let Err(e) = win_ctx.swap_buffers() {
-                    game.crash(GameError::RunnerError(e.into()));
-                    game.close();
-                    *flow = ControlFlow::Exit;
-                }
-            }
-            _ => {}
         }
+        Event::MainEventsCleared => {
+            game.update();
+
+            if let Some(s) = State::with_mut(|x| {
+                if x.is_fullscreen != x.was_fullscreen {
+                    x.was_fullscreen = x.is_fullscreen;
+                    Some(x.is_fullscreen)
+                } else {
+                    None
+                }
+            }) {
+                set_fullscreen(s, ctx.window());
+            }
+
+            ctx.window().request_redraw();
+
+            State::with_mut(|state| {
+                let last_update = state.time_state.last_update();
+                let last_update_time = last_update.elapsed();
+                if last_update_time < target_update_time {
+                    sleep(target_update_time - last_update_time);
+                }
+
+                state.time_state.update();
+            });
+        }
+        Event::RedrawRequested(_) => {
+            State::with_mut(|state| state.time_state_draw.update());
+            let sf = ctx.window().scale_factor() as f32;
+            let canvas = ctx.canvas();
+            canvas.reset_matrix();
+            canvas.scale((sf, sf));
+            game.draw(canvas);
+            ctx.flush_gr();
+            if let Err(e) = ctx.swap_buffers() {
+                game.crash(GameError::RunnerError(e.into()));
+                game.close();
+                *flow = ControlFlow::Exit;
+            }
+        }
+        _ => {}
     });
+}
+
+// This struct is for ensuring drop ordering of the Skia surface, the
+// GrDirectContext, and the windowed context.
+// https://github.com/rust-skia/rust-skia/issues/476
+struct Context {
+    fb_info: FramebufferInfo,
+    surface: Surface,
+    gr: SkiaDirectContext,
+    win: WindowedContext,
+}
+
+impl Context {
+    fn new(
+        size: LogicalSize<f64>,
+        title: &str,
+    ) -> Result<(EventLoop<()>, Self), RunnerError> {
+        let (event_loop, win_ctx) = init_runner(size, title)?;
+        let fb_info = create_fb_info();
+        let mut gr_ctx = SkiaDirectContext::new_gl(None, None).unwrap();
+        let surface = create_surface(&win_ctx, fb_info, &mut gr_ctx);
+        init_state(win_ctx.window());
+        Ok((
+            event_loop,
+            Self {
+                fb_info,
+                surface,
+                gr: gr_ctx,
+                win: win_ctx,
+            },
+        ))
+    }
+
+    fn renew_surface(&mut self) {
+        self.surface = create_surface(&self.win, self.fb_info, &mut self.gr);
+    }
+
+    fn window(&self) -> &Window {
+        self.win.window()
+    }
+
+    fn swap_buffers(&mut self) -> Result<(), GLContextError> {
+        self.win.swap_buffers()
+    }
+
+    fn canvas(&mut self) -> &mut Canvas {
+        self.surface.canvas()
+    }
+
+    fn flush_gr(&mut self) {
+        self.gr.flush(None);
+    }
 }
 
 fn set_fullscreen(enable: bool, win: &Window) {
