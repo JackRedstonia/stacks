@@ -204,6 +204,9 @@ where
     game.set_size(State::with(|x| x.input_state.window_size));
 
     let target_update_time = Duration::from_millis(1); // 1000 fps
+    // Most displays are <= 200 fps.
+    // Of course this will be upgraded from a hard-coded value in the future.
+    let target_draw_time = Duration::from_millis(5); // 200 fps
     event_loop.run(move |event, _, flow| match event {
         Event::WindowEvent { event, .. } => {
             if let WindowEvent::Resized(size) = &event {
@@ -229,16 +232,12 @@ where
                 set_fullscreen(s, ctx.window());
             }
 
-            ctx.window().request_redraw();
-
             State::with_mut(|state| {
-                let last_update = state.time_state.last_update();
-                let last_update_time = last_update.elapsed();
-                if last_update_time < target_update_time {
-                    sleep(target_update_time - last_update_time);
+                let last_draw = state.time_state_draw.last_update();
+                let last_draw_time = last_draw.elapsed();
+                if last_draw_time >= target_draw_time {
+                    ctx.window().request_redraw();
                 }
-
-                state.time_state.update();
             });
         }
         Event::RedrawRequested(_) => {
@@ -254,6 +253,16 @@ where
                 game.close();
                 *flow = ControlFlow::Exit;
             }
+        }
+        Event::RedrawEventsCleared => {
+            State::with_mut(|state| {
+                let last_update = state.time_state.last_update();
+                let last_update_time = last_update.elapsed();
+                if last_update_time < target_update_time {
+                    sleep(target_update_time - last_update_time);
+                }
+                state.time_state.update();
+            });
         }
         _ => {}
     });
