@@ -12,8 +12,8 @@ use stacks::prelude::*;
 fn main() {
     let e = Framework::run("Stacks", || {
         let root = TextEdit::new(
-            LayoutSize::ZERO.expand_width().expand_height(),
-            Some(TextLayoutMode::Static),
+            LayoutSize::min(500.0, 0.0).expand_width().expand_height(),
+            Some(TextLayoutMode::MinHeight),
             Font::Default,
             FontStyle::Regular,
             Some(48.0),
