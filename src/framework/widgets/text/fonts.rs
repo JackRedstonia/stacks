@@ -46,12 +46,6 @@ impl<T: Widget + ?Sized> Fonts<T> {
         include_font!(r, "Italic", n.clone(), FontStyle::Italic, z);
         include_font!(r, "MediumItalic", n.clone(), FontStyle::MediumItalic, z);
         include_font!(r, "BoldItalic", n, FontStyle::BoldItalic, z);
-        // r.register_face_memory(
-        //     "/home/reverb/Downloads/BarlowSemiCondensed-Regular.ttf",
-        //     Cow::Borrowed("IBM Plex Sans"),
-        //     FontStyle::Regular,
-        //     f32_to_26dot6(16.0),
-        // )?;
         drop(r);
         Ok(Self { res, inner }.into())
     }
