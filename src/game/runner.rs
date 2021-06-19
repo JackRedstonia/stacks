@@ -2,7 +2,6 @@ use core::fmt::{Display, Formatter, Result as FmtResult};
 use std::cell::RefCell;
 use std::convert::TryInto;
 use std::error::Error as StdError;
-use std::thread::sleep;
 use std::time::Duration;
 
 use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
@@ -237,7 +236,7 @@ where
     };
     game.set_size(State::with(|x| x.input_state.window_size));
 
-    let target_update_time = Duration::from_millis(1); // 1000 fps
+    let target_update_time = Duration::from_millis(2); // 500 fps
 
     // Most displays are <= 200 fps.
     // Of course this will be upgraded from a hard-coded value in the future.
@@ -255,6 +254,9 @@ where
             }
         }
         Event::MainEventsCleared => {
+            State::with_mut(|state| {
+                state.time_state.update();
+            });
             game.update();
 
             if let Some(s) = State::consume_fullscreen_request() {
@@ -291,9 +293,8 @@ where
                 let last_update = state.time_state.last_update();
                 let last_update_time = last_update.elapsed();
                 if last_update_time < target_update_time {
-                    sleep(target_update_time - last_update_time);
+                    *flow = ControlFlow::WaitUntil(last_update + target_update_time - last_update_time);
                 }
-                state.time_state.update();
             });
         }
         _ => {}
