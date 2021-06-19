@@ -162,6 +162,9 @@ impl FontResource {
         face: ID,
         size: Option<isize>,
     ) -> Option<&mut CachedFont> {
+        if let Some(size) = size {
+            self.register_size(face, size).ok()?;
+        }
         self.cache.get_font(face, size)
     }
 }
