@@ -1,7 +1,7 @@
 mod fonts;
 
 pub use fonts::{
-    f32_to_26dot6, CachedFont, FontMetrics, FontName, FontResource, Fonts,
+    CachedFont, FTError, FontMetrics, FontName, FontResource, Fonts,
 };
 
 use crate::game::ID;
@@ -79,7 +79,7 @@ impl Text {
             font_name: font,
             face_id: None,
             style,
-            font_size: font_size.map(|e| f32_to_26dot6(e)),
+            font_size: font_size.map(|e| e.to_26dot6()),
             paint,
             size: Size::new_empty(),
             text: text.to_owned(),
@@ -169,8 +169,7 @@ impl Text {
             Some(f) => f,
             None => return,
         };
-        self.paragraph =
-            Some(Paragraph::new(&self.text, f, width));
+        self.paragraph = Some(Paragraph::new(&self.text, f, width));
     }
 }
 

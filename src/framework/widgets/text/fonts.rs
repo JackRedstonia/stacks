@@ -1,3 +1,5 @@
+pub use freetype::Error as FTError;
+
 use super::FontStyle;
 use crate::game::ID;
 use crate::prelude::*;
@@ -15,9 +17,9 @@ macro_rules! include_font {
     ($r:expr, $s:expr, $n:expr, $t:expr, $z:expr) => {
         $r.register_face_memory(
             include_bytes!(concat!(
-                "../../../../resources/fonts/IBMPlexSans-",
+                "../../../../resources/fonts/FiraSans-",
                 $s,
-                ".ttf"
+                ".otf"
             ))
             .to_vec(),
             $n,
@@ -35,11 +37,11 @@ pub struct Fonts<T: Widget + ?Sized> {
 }
 
 impl<T: Widget + ?Sized> Fonts<T> {
-    pub fn new(inner: Wrap<T>) -> Result<Wrap<Self>, freetype::Error> {
-        let n = Cow::Borrowed("IBM Plex Sans");
-        let res = FontResource::new(Some(n.clone()))?;
+    pub fn new(inner: Wrap<T>) -> Result<Wrap<Self>, FTError> {
+        let n = Cow::Borrowed("Fira Sans");
+        let res = FontResource::new(n.clone())?;
         let mut r = res.access_mut();
-        let z = f32_to_26dot6(13.5);
+        let z = 13.5f32.to_26dot6();
         include_font!(r, "Regular", n.clone(), FontStyle::Regular, z);
         include_font!(r, "Medium", n.clone(), FontStyle::Medium, z);
         include_font!(r, "Bold", n.clone(), FontStyle::Bold, z);
@@ -86,13 +88,11 @@ pub struct FontResource {
 }
 
 impl FontResource {
-    fn new(
-        default_face: Option<FontName>,
-    ) -> Result<ResourceHoster<Self>, freetype::Error> {
+    fn new(default_face: FontName) -> Result<ResourceHoster<Self>, FTError> {
         Ok(ResourceHoster::new(Self {
             lib: freetype::Library::init()?,
             cache: FontCache::new(),
-            default_face: default_face.unwrap_or("Noto Sans".into()),
+            default_face,
         }))
     }
 
@@ -102,7 +102,7 @@ impl FontResource {
         name: FontName,
         style: FontStyle,
         default_size: isize,
-    ) -> Result<ID, freetype::Error> {
+    ) -> Result<ID, FTError> {
         let id = self.cache.register_face(
             &self.lib,
             p,
@@ -120,7 +120,7 @@ impl FontResource {
         name: FontName,
         style: FontStyle,
         default_size: isize,
-    ) -> Result<ID, freetype::Error> {
+    ) -> Result<ID, FTError> {
         let id = self.cache.register_face_memory(
             &self.lib,
             buf,
@@ -187,7 +187,7 @@ impl FontCache {
         name: FontName,
         style: FontStyle,
         default_size: isize,
-    ) -> Result<ID, freetype::Error> {
+    ) -> Result<ID, FTError> {
         let e = (name, style);
         if let Some(id) = self.face_ids.get(&e) {
             return Ok(*id);
@@ -206,7 +206,7 @@ impl FontCache {
         name: FontName,
         style: FontStyle,
         default_size: isize,
-    ) -> Result<ID, freetype::Error> {
+    ) -> Result<ID, FTError> {
         let e = (name, style);
         if let Some(id) = self.face_ids.get(&e) {
             return Ok(*id);
@@ -324,10 +324,6 @@ impl FontMetrics {
             height: ft_26dot6_to_f32(metrics.height),
         }
     }
-}
-
-pub fn f32_to_26dot6(f: scalar) -> isize {
-    (f * 64.0) as isize
 }
 
 fn ft_26dot6_to_f32(d: i64) -> f32 {

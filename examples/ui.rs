@@ -21,7 +21,7 @@ fn main() {
             Some(TextLayoutMode::MinHeight),
             "This demonstration features the Button and Slider widgets, along with an audio player. You can press the Space key to play/pause audio, click the blue button to seek to 25%, or change how fast the audio player's visualisations can move with the slider.",
             None,
-            FontStyle::Medium,
+            FontStyle::Regular,
             None,
             text_paint.clone(),
         );
@@ -30,7 +30,7 @@ fn main() {
         let mut button = Button::new(
             "Seek to 25%".to_owned(),
             None,
-            FontStyle::Medium,
+            FontStyle::Regular,
             None,
             btn_bg.clone(),
             text_paint.clone(),
@@ -49,7 +49,7 @@ fn main() {
         let mut slider = Slider::new(
             "FFT display interpolation factor".to_owned(),
             None,
-            FontStyle::Medium,
+            FontStyle::Regular,
             None,
             ValueRange::new(5.0..=24.0).precise_to(1.0),
             LayoutDimension::min(500.0),
