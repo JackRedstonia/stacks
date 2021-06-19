@@ -194,6 +194,15 @@ dependencies = [
 [[package]]
 name = "cmake"
 version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "cmake"
+version = "0.1.45"
 source = "git+https://github.com/moalyousef/cmake-rs#bb95c0a7d0837848b8b2ca38788f0200c17bfb9d"
 dependencies = [
  "cc",
@@ -479,6 +488,28 @@ checksum = "5fc25a87fa4fd2094bffb06925852034d90a17f0d1e05197d4956d3555752191"
 dependencies = [
  "matches",
  "percent-encoding",
+]
+
+[[package]]
+name = "freetype-rs"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a96ca0b8ae3b1e198988c7609a264b355796356e6898a3b928af10e4ac3bc54"
+dependencies = [
+ "bitflags",
+ "freetype-sys",
+ "libc",
+]
+
+[[package]]
+name = "freetype-sys"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b67cedeffcf3d18fd38769bb9323b374f09441934a0f9096b9d33efddf920fc7"
+dependencies = [
+ "cmake 0.1.45 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc",
+ "pkg-config",
 ]
 
 [[package]]
@@ -1294,7 +1325,7 @@ name = "soloud-sys"
 version = "0.3.4"
 source = "git+https://gitlab.com/JackRedstonia/soloud-rs#a77b4ae5e133be203adf3a157d04398a5252aadc"
 dependencies = [
- "cmake",
+ "cmake 0.1.45 (git+https://github.com/moalyousef/cmake-rs)",
  "libc",
 ]
 
@@ -1308,6 +1339,7 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 name = "stacks"
 version = "0.1.0"
 dependencies = [
+ "freetype-rs",
  "gl",
  "glutin",
  "skia-safe",
