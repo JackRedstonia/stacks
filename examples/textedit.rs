@@ -3,7 +3,7 @@ use stacks::framework::{
         layout::{FullscreenContainer, Margin, MarginContainer},
         shapes::Rectangle,
         ui::TextEdit,
-        Backgrounded, Font, FontStyle, Fonts, TextLayoutMode,
+        Backgrounded, FontStyle, Fonts, TextLayoutMode,
     },
     Framework,
 };
@@ -14,7 +14,7 @@ fn main() {
         let root = TextEdit::new(
             LayoutSize::min(500.0, 0.0).expand_width().expand_height(),
             Some(TextLayoutMode::MinHeight),
-            Font::Default,
+            None,
             FontStyle::Regular,
             Some(48.0),
             Paint::new_color4f(1.0, 1.0, 1.0, 1.0).anti_alias(),
@@ -28,7 +28,7 @@ fn main() {
 
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
-        let root = Fonts::new(root);
+        let root = Fonts::new(root)?;
         let root = FullscreenContainer::new(root);
         Ok(root)
     });

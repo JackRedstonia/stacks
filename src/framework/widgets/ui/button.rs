@@ -1,7 +1,7 @@
 use super::super::{
     layout::{Margin, MarginContainer},
     shapes::Rectangle,
-    Font, FontStyle, Text, TextLayoutMode,
+    FontName, FontStyle, Text, TextLayoutMode,
 };
 use crate::prelude::*;
 
@@ -23,7 +23,7 @@ impl Button {
 
     pub fn new(
         label: String,
-        label_font: Font,
+        label_font: Option<FontName>,
         label_style: FontStyle,
         label_size: Option<scalar>,
         background: Paint,

@@ -7,7 +7,7 @@ use stacks::framework::{
         },
         shapes::Rectangle,
         ui::{Button, Slider, ValueRange},
-        Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
+        Backgrounded, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
 };
@@ -20,7 +20,7 @@ fn main() {
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
             "This demonstration features the Button and Slider widgets, along with an audio player. You can press the Space key to play/pause audio, click the blue button to seek to 25%, or change how fast the audio player's visualisations can move with the slider.",
-            Font::Default,
+            None,
             FontStyle::Medium,
             None,
             text_paint.clone(),
@@ -29,7 +29,7 @@ fn main() {
         let btn_bg = Paint::new_color4f(0.2, 0.4, 0.6, 1.0).anti_alias();
         let mut button = Button::new(
             "Seek to 25%".to_owned(),
-            Font::Default,
+            None,
             FontStyle::Medium,
             None,
             btn_bg.clone(),
@@ -48,7 +48,7 @@ fn main() {
         let slider_btn_bg = Paint::new_color4f(0.7, 0.7, 0.9, 0.7).anti_alias();
         let mut slider = Slider::new(
             "FFT display interpolation factor".to_owned(),
-            Font::Default,
+            None,
             FontStyle::Medium,
             None,
             ValueRange::new(5.0..=24.0).precise_to(1.0),
@@ -87,7 +87,7 @@ fn main() {
             .add_child(player.into());
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
-        let root = Fonts::new(root);
+        let root = Fonts::new(root)?;
         let root = FullscreenContainer::new(root);
         let root = Audio::new(root)?;
         Ok(root)

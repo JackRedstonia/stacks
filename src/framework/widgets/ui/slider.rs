@@ -1,7 +1,7 @@
 use super::super::{
     layout::{CenterContainer, Margin, MarginContainer},
     shapes::Rectangle,
-    Font, FontStyle, Text, TextLayoutMode,
+    FontName, FontStyle, Text, TextLayoutMode,
 };
 use crate::prelude::*;
 
@@ -72,7 +72,7 @@ pub struct Slider {
 impl Slider {
     pub fn new(
         label: String,
-        label_font: Font,
+        label_font: Option<FontName>,
         label_style: FontStyle,
         label_size: Option<scalar>,
         value_range: ValueRange,

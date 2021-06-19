@@ -1,4 +1,4 @@
-use super::super::{Font, FontStyle, Text, TextLayoutMode};
+use super::super::{FontName, FontStyle, Text, TextLayoutMode};
 use crate::prelude::*;
 
 use unicode_segmentation::UnicodeSegmentation;
@@ -22,7 +22,7 @@ impl TextEdit {
     pub fn new(
         layout_size: LayoutSize,
         layout_mode: Option<TextLayoutMode>,
-        font: Font,
+        font: Option<FontName>,
         style: FontStyle,
         text_size: Option<scalar>,
         text_paint: Paint,
@@ -231,7 +231,7 @@ fn pseudoword_start_from_end(s: &str) -> usize {
 impl Widget for TextEdit {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         self.text.load(stack);
-        if let Some((_, metrics)) = self.text.inner().metrics() {
+        if let Some(metrics) = self.text.inner().metrics() {
             self.cursor_rect =
                 Rect::new(-0.5, metrics.ascent, 0.5, metrics.descent);
         }

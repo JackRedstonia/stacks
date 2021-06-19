@@ -11,7 +11,9 @@ mod wrap;
 
 pub use backgrounded::Backgrounded;
 pub use layout_size::{LayoutDimension, LayoutSize};
-pub use text::{Font, FontResource, FontStyle, Fonts, Text, TextLayoutMode};
+pub use text::{
+    FontName, FontResource, FontStyle, Fonts, Text, TextLayoutMode,
+};
 pub use transform::Transform;
 pub use wrap::{WidgetBorrow, WidgetBorrowMut, WidgetState, Wrap, Wrappable};
 

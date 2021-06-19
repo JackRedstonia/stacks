@@ -1,199 +1,342 @@
-use super::{Font, FontStyle};
+use super::FontStyle;
+use crate::game::ID;
 use crate::prelude::*;
 
-use std::mem::transmute;
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::ffi::OsStr;
+use std::rc::Rc;
 
-use skia::font_style::{Slant, Weight, Width};
-use skia::{Data, Font as SkFont, FontMgr, FontStyle as SkFontStyle, Typeface};
+use freetype::face::LoadFlag;
+use freetype::ffi::FT_Size_Metrics;
+use freetype::outline::Curve;
+
+macro_rules! include_font {
+    ($r:expr, $s:expr, $n:expr, $t:expr, $z:expr) => {
+        $r.register_face_memory(
+            include_bytes!(concat!(
+                "../../../../resources/fonts/IBMPlexSans-",
+                $s,
+                ".ttf"
+            ))
+            .to_vec(),
+            $n,
+            $t,
+            $z,
+        )?;
+    };
+}
+
+pub type FontName = Cow<'static, str>;
 
 pub struct Fonts<T: Widget + ?Sized> {
-    child: Wrap<T>,
-    resource: ResourceHoster<FontResource>,
+    res: ResourceHoster<FontResource>,
+    inner: Wrap<T>,
 }
 
 impl<T: Widget + ?Sized> Fonts<T> {
-    pub fn new(child: Wrap<T>) -> Wrap<Self> {
-        FrameworkState::request_load();
-        Self {
-            child,
-            resource: FontResource::new(),
-        }
-        .into()
+    pub fn new(inner: Wrap<T>) -> Result<Wrap<Self>, freetype::Error> {
+        let n = Cow::Borrowed("IBM Plex Sans");
+        let res = FontResource::new(Some(n.clone()))?;
+        let mut r = res.access_mut();
+        let z = f32_to_26dot6(13.5);
+        include_font!(r, "Regular", n.clone(), FontStyle::Regular, z);
+        include_font!(r, "Medium", n.clone(), FontStyle::Medium, z);
+        include_font!(r, "Bold", n.clone(), FontStyle::Bold, z);
+        include_font!(r, "Italic", n.clone(), FontStyle::Italic, z);
+        include_font!(r, "MediumItalic", n.clone(), FontStyle::MediumItalic, z);
+        include_font!(r, "BoldItalic", n, FontStyle::BoldItalic, z);
+        // r.register_face_memory(
+        //     "/home/reverb/Downloads/BarlowSemiCondensed-Regular.ttf",
+        //     Cow::Borrowed("IBM Plex Sans"),
+        //     FontStyle::Regular,
+        //     f32_to_26dot6(16.0),
+        // )?;
+        drop(r);
+        Ok(Self { res, inner }.into())
     }
 }
 
 impl<T: Widget + ?Sized> Widget for Fonts<T> {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
-        stack.push(self.resource.new_user());
-        self.child.load(stack);
+        stack.push::<ResourceUser<FontResource>>(self.res.new_user());
+        self.inner.load(stack);
         stack.pop::<ResourceUser<FontResource>>();
     }
 
     fn update(&mut self, _state: &mut WidgetState) {
-        self.child.update();
+        self.inner.update();
     }
 
     fn input(&mut self, _state: &mut WidgetState, event: &InputEvent) -> bool {
-        self.child.input(event)
+        self.inner.input(event)
     }
 
     fn size(&mut self, _state: &mut WidgetState) -> (LayoutSize, bool) {
-        self.child.size()
+        self.inner.size()
     }
 
     fn set_size(&mut self, _state: &mut WidgetState, size: Size) {
-        self.child.set_size(size);
+        self.inner.set_size(size);
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
-        self.child.draw(canvas);
+        self.inner.draw(canvas);
     }
 }
 
 pub struct FontResource {
-    default: FontSet,
-    fallback_ja: Option<FontSet>,
-    fallback_vn: Option<FontSet>,
+    lib: freetype::Library,
+    cache: FontCache,
+    default_face: FontName,
 }
 
 impl FontResource {
-    pub fn new() -> ResourceHoster<Self> {
-        let mgr = FontMgr::new();
-
-        // We're mostly just probing system fonts here based on whether they
-        // support Japanese and Vietnamese, falling back to Noto Sans because
-        // that's what Skia comes with.
-        // The unsafe code here is because skia-safe (heheh, "safe"...) takes
-        // i32 instead of char for Skia's Unichar.
-
-        let ja = unsafe { transmute('あ') };
-        let ja = mgr.match_family_style_character(
-            "",
-            SkFontStyle::default(),
-            &["ja"],
-            ja,
-        );
-        let ja = ja
-            .map(|e| e.family_name())
-            .unwrap_or_else(|| "Noto Sans".to_owned());
-
-        let vn = unsafe { transmute('ố') };
-        let vn = mgr.match_family_style_character(
-            "",
-            SkFontStyle::default(),
-            &["vn"],
-            vn,
-        );
-        let vn = vn
-            .map(|e| e.family_name())
-            .unwrap_or_else(|| "Noto Sans".to_owned());
-
-        let default = FontSet::new();
-        ResourceHoster::new(Self {
-            fallback_ja: FontSet::from_family_name(&ja, default.default_size),
-            fallback_vn: FontSet::from_family_name(&vn, default.default_size),
-            default,
-        })
+    fn new(
+        default_face: Option<FontName>,
+    ) -> Result<ResourceHoster<Self>, freetype::Error> {
+        Ok(ResourceHoster::new(Self {
+            lib: freetype::Library::init()?,
+            cache: FontCache::new(),
+            default_face: default_face.unwrap_or("Noto Sans".into()),
+        }))
     }
 
-    pub fn resolve(
-        &self,
-        font: Font,
+    pub fn register_face(
+        &mut self,
+        p: impl AsRef<OsStr>,
+        name: FontName,
         style: FontStyle,
-        size: Option<scalar>,
-    ) -> Vec<SkFont> {
-        let f = match font {
-            Font::Default => &self.default,
-        };
-        let mut v = Vec::with_capacity(3);
-        v.push(f.get(style, size));
-        if let Some(ja) = &self.fallback_ja {
-            v.push(ja.get(style, size));
+        default_size: isize,
+    ) -> Result<ID, freetype::Error> {
+        let id = self.cache.register_face(
+            &self.lib,
+            p,
+            name,
+            style,
+            default_size,
+        )?;
+        self.register_size(id, default_size).unwrap();
+        Ok(id)
+    }
+
+    pub fn register_face_memory(
+        &mut self,
+        buf: impl Into<Rc<Vec<u8>>>,
+        name: FontName,
+        style: FontStyle,
+        default_size: isize,
+    ) -> Result<ID, freetype::Error> {
+        let id = self.cache.register_face_memory(
+            &self.lib,
+            buf,
+            name,
+            style,
+            default_size,
+        )?;
+        self.register_size(id, default_size).unwrap();
+        Ok(id)
+    }
+
+    pub fn register_size(&mut self, face: ID, size: isize) -> Result<(), ()> {
+        self.cache.register_size(face, size)
+    }
+
+    pub fn get_face(
+        &self,
+        name: Option<&FontName>,
+        style: FontStyle,
+    ) -> Option<ID> {
+        match name {
+            Some(c) => self.cache.get_face(c, style),
+            None => self
+                .cache
+                .face_ids
+                .get(&(Cow::Borrowed(&self.default_face), style))
+                .map(|e| *e),
         }
-        if let Some(vn) = &self.fallback_vn {
-            v.push(vn.get(style, size));
-        }
-        v
+    }
+
+    pub fn get_font(
+        &mut self,
+        face: ID,
+        size: Option<isize>,
+    ) -> Option<&mut CachedFont> {
+        self.cache.get_font(face, size)
     }
 }
 
-struct FontSet {
-    default_size: scalar,
-    regular: Typeface,
-    medium: Typeface,
-    bold: Typeface,
-    italic: Typeface,
-    medium_italic: Typeface,
-    bold_italic: Typeface,
+struct FontCache {
+    face_ids: HashMap<(FontName, FontStyle), ID>,
+    faces: HashMap<ID, (freetype::Face, isize)>,
+    sized_fonts: HashMap<(ID, isize), CachedFont>,
 }
 
-macro_rules! include_font {
-    ($s:expr) => {
-        // SAFETY: This is fine. Sure, an unsafe code block inside a macro, it's
-        // extremely evil, but the good old 'static `include_bytes!` gives us
-        // is perfectly good for `Data::new_bytes`.
-        Typeface::from_data(
-            unsafe {
-                Data::new_bytes(include_bytes!(concat!(
-                    "../../../../resources/fonts/IBMPlexSans-",
-                    $s,
-                    ".ttf"
-                )))
-            },
-            None,
-        )
-        .unwrap()
-    };
-}
+impl FontCache {
+    const COMMON_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890`-=[]\\;',./~!@#$%^&*()_+{}|:\"<>? ";
 
-macro_rules! typeface {
-    ($name:expr, $weight:ident, $slant:ident) => {
-        Typeface::from_name(
-            $name,
-            SkFontStyle::new(Weight::$weight, Width::NORMAL, Slant::$slant),
-        )
-    };
-}
-
-impl FontSet {
     fn new() -> Self {
         Self {
-            default_size: 13.5,
-            regular: include_font!("Regular"),
-            medium: include_font!("Medium"),
-            bold: include_font!("Bold"),
-            italic: include_font!("Italic"),
-            medium_italic: include_font!("MediumItalic"),
-            bold_italic: include_font!("BoldItalic"),
+            face_ids: HashMap::new(),
+            faces: HashMap::new(),
+            sized_fonts: HashMap::new(),
         }
     }
 
-    fn from_family_name(
-        family_name: &str,
-        default_size: scalar,
-    ) -> Option<Self> {
-        Some(Self {
-            default_size,
-            regular: typeface!(family_name, NORMAL, Upright)?,
-            medium: typeface!(family_name, MEDIUM, Upright)?,
-            bold: typeface!(family_name, BOLD, Upright)?,
-            italic: typeface!(family_name, NORMAL, Italic)?,
-            medium_italic: typeface!(family_name, MEDIUM, Italic)?,
-            bold_italic: typeface!(family_name, BOLD, Italic)?,
-        })
+    fn register_face(
+        &mut self,
+        lib: &freetype::Library,
+        p: impl AsRef<OsStr>,
+        name: FontName,
+        style: FontStyle,
+        default_size: isize,
+    ) -> Result<ID, freetype::Error> {
+        let e = (name, style);
+        if let Some(id) = self.face_ids.get(&e) {
+            return Ok(*id);
+        }
+        let face = lib.new_face(p, 0)?;
+        let id = ID::next();
+        self.face_ids.insert(e, id);
+        self.faces.insert(id, (face, default_size));
+        Ok(id)
     }
 
-    fn get(&self, style: FontStyle, size: Option<scalar>) -> SkFont {
-        SkFont::new(
-            match style {
-                FontStyle::Regular => &self.regular,
-                FontStyle::Medium => &self.medium,
-                FontStyle::Bold => &self.bold,
-                FontStyle::Italic => &self.italic,
-                FontStyle::MediumItalic => &self.medium_italic,
-                FontStyle::BoldItalic => &self.bold_italic,
-            },
-            size.unwrap_or(self.default_size),
-        )
+    fn register_face_memory(
+        &mut self,
+        lib: &freetype::Library,
+        buf: impl Into<Rc<Vec<u8>>>,
+        name: FontName,
+        style: FontStyle,
+        default_size: isize,
+    ) -> Result<ID, freetype::Error> {
+        let e = (name, style);
+        if let Some(id) = self.face_ids.get(&e) {
+            return Ok(*id);
+        }
+        let face = lib.new_memory_face(buf, 0)?;
+        let id = ID::next();
+        self.face_ids.insert(e, id);
+        self.faces.insert(id, (face, default_size));
+        Ok(id)
     }
+
+    fn register_size(&mut self, face: ID, size: isize) -> Result<(), ()> {
+        if self.sized_fonts.contains_key(&(face, size)) {
+            return Ok(());
+        }
+        let ftface = &self.faces.get(&face).ok_or(())?.0;
+        ftface.set_char_size(size, 0, 0, 0).unwrap();
+        let mut font = CachedFont {
+            size,
+            face: ftface.clone(),
+            cache: HashMap::new(),
+            metrics: FontMetrics::from_ft(ftface.size_metrics().unwrap()),
+        };
+        for c in Self::COMMON_CHARS.chars() {
+            let _ = font.get_char(c);
+        }
+        self.sized_fonts.insert((face, size), font);
+        Ok(())
+    }
+
+    fn get_face(&self, name: &FontName, style: FontStyle) -> Option<ID> {
+        self.face_ids.get(&(Cow::Borrowed(name), style)).map(|e| *e)
+    }
+
+    fn get_font(
+        &mut self,
+        face: ID,
+        size: Option<isize>,
+    ) -> Option<&mut CachedFont> {
+        let size = match size {
+            Some(s) => s,
+            None => self
+                .faces
+                .get(&face)
+                .map(|(_, default_size)| *default_size)?,
+        };
+        self.sized_fonts.get_mut(&(face, size))
+    }
+}
+
+pub struct CachedFont {
+    size: isize,
+    face: freetype::Face,
+    cache: HashMap<char, (skia::Path, scalar)>,
+    pub metrics: FontMetrics,
+}
+
+impl CachedFont {
+    pub fn get_char(&mut self, c: char) -> (skia::Path, scalar) {
+        if let Some(i) = self.cache.get(&c) {
+            i.clone()
+        } else {
+            let (path, right) = self.make_char(c);
+            self.cache.insert(c, (path.clone(), right));
+            (path, right)
+        }
+    }
+
+    fn make_char(&mut self, c: char) -> (skia::Path, scalar) {
+        self.face.set_char_size(self.size, 0, 0, 0).unwrap();
+        self.face
+            .load_char(
+                c as usize,
+                LoadFlag::NO_BITMAP | LoadFlag::TARGET_NORMAL,
+            )
+            .unwrap();
+        let glyph = self.face.glyph();
+        let right = ft_26dot6_to_f32(glyph.advance().x);
+        let outline =
+            glyph.outline().expect("Non-vector fonts are not supported");
+        let mut path = skia::Path::new();
+        for contour in outline.contours_iter() {
+            path.move_to(ft2sk_vector(*contour.start()));
+            for curve in contour {
+                match curve {
+                    Curve::Line(v) => path.line_to(ft2sk_vector(v)),
+                    Curve::Bezier2(a, b) => {
+                        path.quad_to(ft2sk_vector(a), ft2sk_vector(b))
+                    }
+                    Curve::Bezier3(a, b, c) => path.cubic_to(
+                        ft2sk_vector(a),
+                        ft2sk_vector(b),
+                        ft2sk_vector(c),
+                    ),
+                };
+            }
+            path.close();
+        }
+        (path, right)
+    }
+}
+
+#[derive(Clone)]
+pub struct FontMetrics {
+    pub ascent: scalar,
+    pub descent: scalar,
+    pub height: scalar,
+}
+
+impl FontMetrics {
+    fn from_ft(metrics: FT_Size_Metrics) -> Self {
+        Self {
+            ascent: -ft_26dot6_to_f32(metrics.ascender),
+            descent: -ft_26dot6_to_f32(metrics.descender),
+            height: ft_26dot6_to_f32(metrics.height),
+        }
+    }
+}
+
+pub fn f32_to_26dot6(f: scalar) -> isize {
+    (f * 64.0) as isize
+}
+
+fn ft_26dot6_to_f32(d: i64) -> f32 {
+    d as f32 / 64.0
+}
+
+fn ft2sk_vector(v: freetype::Vector) -> Vector {
+    (ft_26dot6_to_f32(v.x), -ft_26dot6_to_f32(v.y)).into()
 }

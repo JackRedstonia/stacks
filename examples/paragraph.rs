@@ -5,7 +5,7 @@ use stacks::framework::{
             ScrollContainer, VContainerDyn,
         },
         shapes::Rectangle,
-        Backgrounded, Font, FontStyle, Fonts, Text, TextLayoutMode,
+        Backgrounded, FontStyle, Fonts, Text, TextLayoutMode,
     },
     Framework,
 };
@@ -20,8 +20,8 @@ fn main() {
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
             header,
-            Font::Default,
-            FontStyle::Medium,
+            None,
+            FontStyle::Regular,
             None,
             paint.clone(),
         );
@@ -31,7 +31,7 @@ fn main() {
             LayoutSize::ZERO.expand_width(),
             Some(TextLayoutMode::MinHeight),
             text,
-            Font::Default,
+            None,
             FontStyle::Regular,
             Some(24.0),
             paint,
@@ -56,7 +56,7 @@ fn main() {
             .add_child(text.into());
         let root = MarginContainer::new(root, Margin::all(18.0));
         let root = Backgrounded::new(bg, root, false);
-        let root = Fonts::new(root);
+        let root = Fonts::new(root)?;
         let root = FullscreenContainer::new(root);
         Ok(root)
     });
