@@ -1,4 +1,6 @@
-use crate::skia::{scalar, Color4f, ColorSpace, Paint, PaintStyle, Shader};
+use crate::skia::{
+    scalar, BlendMode, Color4f, ColorSpace, Paint, PaintStyle, Shader,
+};
 
 pub trait PaintUtils
 where
@@ -29,6 +31,7 @@ where
     fn with_alpha(self, alpha: scalar) -> Self;
     fn with_shader(self, shader: impl Into<Option<Shader>>) -> Self;
     fn with_dither(self, dither: bool) -> Self;
+    fn with_blend_mode(self, blend_mode: BlendMode) -> Self;
 
     fn anti_alias(self) -> Self {
         self.with_anti_alias(true)
@@ -114,6 +117,11 @@ impl PaintUtils for Paint {
 
     fn with_dither(mut self, dither: bool) -> Self {
         self.set_dither(dither);
+        self
+    }
+
+    fn with_blend_mode(mut self, mode: BlendMode) -> Self {
+        self.set_blend_mode(mode);
         self
     }
 }

@@ -293,7 +293,9 @@ where
                 let last_update = state.time_state.last_update();
                 let last_update_time = last_update.elapsed();
                 if last_update_time < target_update_time {
-                    *flow = ControlFlow::WaitUntil(last_update + target_update_time - last_update_time);
+                    *flow = ControlFlow::WaitUntil(
+                        last_update + target_update_time - last_update_time,
+                    );
                 }
             });
         }
