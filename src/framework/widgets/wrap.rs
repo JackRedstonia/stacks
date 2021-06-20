@@ -165,6 +165,14 @@ impl<T: Widget + ?Sized> WrapWeak<T> {
     }
 }
 
+impl<T: Widget + ?Sized> Clone for WrapWeak<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Weak::clone(&self.inner),
+        }
+    }
+}
+
 pub trait Wrappable<'a, T: Widget> {
     fn wrap(self) -> Wrap<T>;
 }
