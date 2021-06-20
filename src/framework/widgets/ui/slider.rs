@@ -152,7 +152,8 @@ impl Slider {
         let pos = if let Some(precision) = *precision {
             // Similar code to the Snap util, but tweaked a bit to make sliding
             // more pleasant.
-            let intervals = (pos / precision).round() + range.start() / precision;
+            let intervals =
+                (pos / precision).round() + range.start() / precision;
             let pos = Self::snap_value(intervals, precision);
             if pos > delta {
                 Self::snap_value(intervals - 1.0, precision)
