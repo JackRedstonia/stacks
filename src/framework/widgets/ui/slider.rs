@@ -145,16 +145,14 @@ impl Slider {
         let width = self.size.width - self.button_size.width;
         let x = (pos.x - self.button_size.width * 0.5).clamp(0.0, width);
 
-        // 0..=1
-        let pos = x / width;
         // 0..=delta
         let delta = range.end() - range.start();
-        let pos = pos * delta;
+        let pos = x * delta / width;
         // snapped
         let pos = if let Some(precision) = *precision {
             // Similar code to the Snap util, but tweaked a bit to make sliding
             // more pleasant.
-            let intervals = (pos / precision).round();
+            let intervals = (pos / precision).round() + range.start() / precision;
             let pos = Self::snap_value(intervals, precision);
             if pos > delta {
                 Self::snap_value(intervals - 1.0, precision)
@@ -164,8 +162,6 @@ impl Slider {
         } else {
             pos
         };
-        // start..=end
-        let pos = pos + range.start();
 
         // LINT SUPPRESSION: For the sake of absolute correctness, we do indeed
         // want strict comparison here.
