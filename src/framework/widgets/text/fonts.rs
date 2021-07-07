@@ -147,7 +147,7 @@ impl FontResource {
                 .cache
                 .face_ids
                 .get(&(Cow::Borrowed(&self.default_face), style))
-                .map(|e| *e),
+                .copied(),
         }
     }
 
@@ -238,7 +238,7 @@ impl FontCache {
     }
 
     fn get_face(&self, name: &FontName, style: FontStyle) -> Option<ID> {
-        self.face_ids.get(&(Cow::Borrowed(name), style)).map(|e| *e)
+        self.face_ids.get(&(Cow::Borrowed(name), style)).copied()
     }
 
     fn get_font(

@@ -292,7 +292,7 @@ impl Paragraph {
             .size_hint()
             .1
             .map(|s| Vec::with_capacity(s + 1))
-            .unwrap_or_else(|| Vec::new());
+            .unwrap_or_else(Vec::new);
 
         for (end_index, break_op) in words_iter {
             let word = &s[prev..end_index];

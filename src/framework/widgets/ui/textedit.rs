@@ -34,7 +34,7 @@ impl TextEdit {
             font,
             style,
             text_size,
-            text_paint.clone(),
+            text_paint,
         );
         Self {
             text,
@@ -193,7 +193,7 @@ impl TextEdit {
             }
             return None;
         }
-        return self.cursor.position;
+        self.cursor.position
     }
 }
 
@@ -216,7 +216,7 @@ fn pseudoword_start_from_start(s: &str) -> usize {
             return pos + st.len();
         }
     }
-    return s.len();
+    s.len()
 }
 
 fn pseudoword_start_from_end(s: &str) -> usize {
@@ -225,7 +225,7 @@ fn pseudoword_start_from_end(s: &str) -> usize {
             return pos;
         }
     }
-    return 0;
+    0
 }
 
 impl Widget for TextEdit {

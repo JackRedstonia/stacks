@@ -357,7 +357,7 @@ impl Context {
 
 fn set_fullscreen(enable: bool, win: &Window) {
     win.set_fullscreen(if enable {
-        default_video_mode(win).map(|e| Fullscreen::Exclusive(e))
+        default_video_mode(win).map(Fullscreen::Exclusive)
     } else {
         None
     });
