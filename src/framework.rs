@@ -111,9 +111,6 @@ impl<T: Widget + 'static> Game for Framework<T> {
     }
 
     fn draw(&mut self, canvas: &mut Canvas) {
-        // Trigger widget wrappers to check whether they are hovered on
-        self.focus_aware_input(InputEvent::MouseMove(State::mouse_position()));
-
         // Trigger layout
         let (size, changed) = self.root.size();
         let resized = size != self.layout_size;
