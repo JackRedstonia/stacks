@@ -236,6 +236,7 @@ impl Widget for Text {
 struct Word {
     string_length: usize,
     path: skia::Path,
+    advance: scalar,
     width: scalar,
     grapheme_positions: Vec<(usize, Vector)>,
     last_position: Vector,
@@ -245,13 +246,17 @@ impl Word {
     fn new(s: &str, fonts: &mut CachedFont) -> Self {
         let mut path = skia::Path::new();
         let mut offset = Vector::default();
+        let mut width = 0.0;
         let mut l = 0;
         let mut grapheme_positions = vec![];
         for chs in s.graphemes(true) {
             grapheme_positions.push((l, offset));
             for ch in chs.chars() {
                 let (glyph_path, adv) = fonts.get_char(ch);
-                path.add_path(&glyph_path, offset, None);
+                if !glyph_path.is_empty() {
+                    width += adv;
+                    path.add_path(&glyph_path, offset, None);
+                }
                 offset.x += adv;
             }
             l += chs.len();
@@ -259,7 +264,8 @@ impl Word {
         Self {
             string_length: s.len(),
             path,
-            width: offset.x,
+            advance: offset.x,
+            width,
             grapheme_positions,
             last_position: offset,
         }
@@ -331,19 +337,18 @@ impl Paragraph {
         let mut offset = Vector::default();
         self.total_height = -self.ascent + self.descent;
         for (word, _, must_break, word_offset) in &mut self.words {
-            let word_width = word.width;
-            let nx = offset.x + word_width;
+            let nx = offset.x + word.width;
             if let Some(width) = width {
                 if *must_break || (nx >= width && offset.x != 0.0) {
                     offset = Vector::new(0.0, offset.y + self.line_spacing);
                     self.total_height += self.line_spacing;
                 }
             }
-            let b = Rect::new(0.0, self.ascent, word_width, self.descent)
+            let b = Rect::new(0.0, self.ascent, word.width, self.descent)
                 .with_offset(offset);
             combine(&mut self.bounds, &b);
             *word_offset = offset;
-            offset.x += word_width;
+            offset.x += word.advance;
         }
     }
 
