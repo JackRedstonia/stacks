@@ -155,7 +155,7 @@ impl Slider {
             let intervals =
                 (pos / precision).round() + range.start() / precision;
             let pos = Self::snap_value(intervals, precision);
-            if pos > delta {
+            if pos > *range.end() {
                 Self::snap_value(intervals - 1.0, precision)
             } else {
                 pos
