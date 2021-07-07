@@ -284,7 +284,7 @@ impl CachedFont {
             )
             .unwrap();
         let glyph = self.face.glyph();
-        let right = ft_26dot6_to_f32(glyph.advance().x);
+        let advance = ft_26dot6_to_f32(glyph.advance().x);
         let outline =
             glyph.outline().expect("Non-vector fonts are not supported");
         let mut path = skia::Path::new();
@@ -305,7 +305,7 @@ impl CachedFont {
             }
             path.close();
         }
-        (path, right)
+        (path, advance)
     }
 }
 
