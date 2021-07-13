@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use super::{AudioResource, AudioStream};
 use crate::prelude::*;
 
@@ -63,11 +61,13 @@ impl AudioPlayer {
 impl Widget for AudioPlayer {
     fn load(&mut self, _state: &mut WidgetState, stack: &mut ResourceStack) {
         if let Some(resource) = stack.get::<ResourceUser<AudioResource>>() {
-            self.audio = resource.clone();
-            self.sound = resource
-                .try_access_mut()
-                .unwrap()
-                .new_audio_stream(&self.path);
+            if &self.audio != resource {
+                self.audio = resource.clone();
+                self.sound = resource
+                    .try_access_mut()
+                    .unwrap()
+                    .new_audio_stream(&self.path);
+            }
         } else {
             self.audio = ResourceUser::new_none();
             self.sound = None;
@@ -82,7 +82,7 @@ impl Widget for AudioPlayer {
                 if let Some(sound) = &mut self.sound {
                     if !self.play_lock {
                         self.play_lock = true;
-                        sound.toggle_playing();
+                        sound.toggle_playing().unwrap();
                     }
                     return true;
                 }
