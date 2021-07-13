@@ -20,5 +20,4 @@ pub mod prelude {
         scalar, Canvas, Contains, Matrix, Paint, Rect, Size, Vector,
     };
     pub use skia_safe as skia;
-    pub use soloud;
 }

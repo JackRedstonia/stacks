@@ -1,206 +1,86 @@
 mod player;
 mod sound;
 
+use allegro_audio::AttachToMixer;
 pub use player::AudioPlayer;
-pub use sound::{Sound, SoundInstance};
+pub use sound::{AudioStream, Sample, SampleInstance};
 
 use std::error::Error as StdError;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 use crate::prelude::*;
-use soloud::{
-    AudioExt, Backend as SoloudBackend, Bus as SoloudBus,
-    Handle as SoloudHandle, Soloud, SoloudError, SoloudFlag,
-};
 
 #[derive(Debug)]
 pub enum AudioError {
-    Soloud(SoloudError),
+    CoreInitError(String),
+    AudioAddonInitError(String),
+    AcodecAddonInitError(String),
+    SinkInitError(String),
 }
 
 impl Display for AudioError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         match self {
-            Self::Soloud(err) => err.fmt(f),
+            AudioError::CoreInitError(s) => {
+                write!(f, "Initializing Allegro core failed ({})", s)
+            }
+            AudioError::AudioAddonInitError(s) => write!(
+                f,
+                "Initializing Allegro audio playback addon failed ({})",
+                s
+            ),
+            AudioError::AcodecAddonInitError(s) => write!(
+                f,
+                "Initializing Allegro audio codec addon failed ({})",
+                s
+            ),
+            AudioError::SinkInitError(s) => {
+                write!(f, "Creating Allegro audio sink failed ({})", s)
+            }
         }
     }
 }
 
 impl StdError for AudioError {}
 
-impl From<SoloudError> for AudioError {
-    fn from(err: SoloudError) -> Self {
-        Self::Soloud(err)
-    }
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum AudioBus {
-    Default,
-}
-
-impl AudioBus {
-    pub fn to_bus(self, resource: &AudioResource) -> &SoloudBus {
-        match self {
-            AudioBus::Default => &resource.default_bus.0,
-        }
-    }
-}
-
-impl Default for AudioBus {
-    fn default() -> Self {
-        Self::Default
-    }
-}
-
 pub struct AudioResource {
-    soloud: Soloud,
-    default_bus: (SoloudBus, SoloudHandle),
+    sink: allegro_audio::Sink,
+    audio: allegro_audio::AudioAddon,
 }
 
 impl AudioResource {
     pub fn new() -> Result<ResourceHoster<Self>, AudioError> {
-        let mut soloud = Soloud::new(
-            SoloudFlag::ClipRoundoff | SoloudFlag::EnableVisualization,
-            SoloudBackend::Auto,
-            48000,
-            1024,
-            2,
-        )?;
-        soloud.set_post_clip_scaler(2.0);
-        let default_bus = SoloudBus::default();
-        default_bus.set_visualize_enable(true);
-        let default_bus_instance = soloud.play(&default_bus);
-        Ok(ResourceHoster::new(Self {
-            soloud,
-            default_bus: (default_bus, default_bus_instance),
-        }))
+        let allegro =
+            allegro::Core::init().map_err(|s| AudioError::CoreInitError(s))?;
+        let audio = allegro_audio::AudioAddon::init(&allegro)
+            .map_err(|s| AudioError::AudioAddonInitError(s))?;
+        allegro_acodec::AcodecAddon::init(&audio)
+            .map_err(|s| AudioError::AcodecAddonInitError(s))?;
+        let sink = allegro_audio::Sink::new(&audio)
+            .map_err(|s| AudioError::SinkInitError(s))?;
+
+        Ok(ResourceHoster::new(Self { sink, audio }))
     }
 
-    pub fn play<T>(&self, sound: &T, bus: Option<AudioBus>) -> SoloudHandle
-    where
-        T: AudioExt,
-    {
-        self.play_ex(sound, None, None, None, bus.unwrap_or_default())
+    pub fn new_audio_stream(&mut self, path: &str) -> Option<AudioStream> {
+        let mut s = allegro_audio::AudioStream::load(&self.audio, path).ok()?;
+        s.set_playing(false).ok()?;
+        s.attach(&mut self.sink).ok()?;
+        Some(AudioStream::from_allegro_stream(s))
     }
 
-    pub fn play_ex<T>(
-        &self,
-        sound: &T,
-        volume: Option<f32>,
-        pan: Option<f32>,
-        paused: Option<bool>,
-        bus: AudioBus,
-    ) -> SoloudHandle
-    where
-        T: AudioExt,
-    {
-        bus.to_bus(&self).play_ex(
-            sound,
-            volume.unwrap_or(1.0),
-            pan.unwrap_or(0.0),
-            paused.unwrap_or(false),
-        )
+    pub fn new_sample(&self, path: &str) -> Option<Sample> {
+        let s = allegro_audio::Sample::load(&self.audio, path).ok()?;
+        Some(Sample::from_allegro_sample(s))
     }
 
-    pub fn play_clocked<T>(&self, time: f64, sound: &T) -> SoloudHandle
-    where
-        T: AudioExt,
-    {
-        self.soloud.play_clocked(time, sound)
-    }
-
-    pub fn play_clocked_ex<T>(
-        &self,
-        time: f64,
-        sound: &T,
-        volume: Option<f32>,
-        pan: Option<f32>,
-        bus: AudioBus,
-    ) -> SoloudHandle
-    where
-        T: AudioExt,
-    {
-        bus.to_bus(&self).play_clocked_ex(
-            time,
-            sound,
-            volume.unwrap_or(1.0),
-            pan.unwrap_or(0.0),
-        )
-    }
-
-    pub fn resume(&mut self, handle: SoloudHandle) {
-        self.soloud.set_pause(handle, false);
-    }
-
-    pub fn pause(&mut self, handle: SoloudHandle) {
-        self.soloud.set_pause(handle, true)
-    }
-
-    pub fn set_playing(&mut self, handle: SoloudHandle, playing: bool) {
-        self.soloud.set_pause(handle, !playing)
-    }
-
-    pub fn toggle_playing(&mut self, handle: SoloudHandle) -> bool {
-        let was_paused = self.soloud.pause(handle);
-        self.soloud.set_pause(handle, !was_paused);
-        was_paused
-    }
-
-    pub fn set_auto_stop(&mut self, handle: SoloudHandle, auto_stop: bool) {
-        self.soloud.set_auto_stop(handle, auto_stop);
-    }
-
-    pub fn is_playing(&self, handle: SoloudHandle) -> bool {
-        // The method is called "pause" but it actually returns a boolean
-        // indicating whether the handle is paused for some reason.
-        // Lucky we get to abstract it out here so users of the library
-        // doesn't get confused.
-        !self.soloud.pause(handle)
-    }
-
-    pub fn seek(
-        &self,
-        handle: SoloudHandle,
-        seconds: f64,
-    ) -> Result<(), SoloudError> {
-        self.soloud.seek(handle, seconds)
-    }
-
-    pub fn position(&self, handle: SoloudHandle) -> f64 {
-        self.soloud.stream_position(handle)
-    }
-
-    pub fn master_fft(&self) -> Vec<f32> {
-        self.soloud.calc_fft()
-    }
-
-    pub fn set_speed(
+    pub fn new_sample_instance(
         &mut self,
-        handle: SoloudHandle,
-        speed: f32,
-    ) -> Result<(), SoloudError> {
-        self.soloud.set_relative_play_speed(handle, speed)
-    }
-
-    pub fn speed(&self, handle: SoloudHandle) -> f32 {
-        self.soloud.relative_play_speed(handle)
-    }
-
-    pub fn set_volume(&mut self, handle: SoloudHandle, volume: f32) {
-        self.soloud.set_volume(handle, volume);
-    }
-
-    pub fn volume(&self, handle: SoloudHandle) -> f32 {
-        self.soloud.volume(handle)
-    }
-
-    pub fn set_pan(&mut self, handle: SoloudHandle, pan: f32) {
-        self.soloud.set_pan(handle, pan);
-    }
-
-    pub fn pan(&self, handle: SoloudHandle) -> f32 {
-        self.soloud.pan(handle)
+        sample: &Sample,
+    ) -> Option<SampleInstance> {
+        let mut s = sample.inner.create_instance().ok()?;
+        s.attach(&mut self.sink).ok()?;
+        Some(SampleInstance::from_allegro_sample_instance(s))
     }
 }
 

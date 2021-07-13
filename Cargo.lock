@@ -22,6 +22,81 @@ dependencies = [
 ]
 
 [[package]]
+name = "allegro"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d6890b91f6b0714e65f310ca5243eb6eb308953e7691c9a1b6f1f6ce61d791c"
+dependencies = [
+ "allegro-sys",
+ "allegro_util",
+ "lazy_static",
+ "libc",
+]
+
+[[package]]
+name = "allegro-sys"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f897bccb7d3241e763cae019d1b40a4fbc06724f28c0ac18d2a2d77d6ec008c"
+dependencies = [
+ "allegro_util",
+ "libc",
+]
+
+[[package]]
+name = "allegro_acodec"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90bd715c26603ef11f91c08de8e3d19db0b84bdd1468cd45a845a77920e349bb"
+dependencies = [
+ "allegro",
+ "allegro_acodec-sys",
+ "allegro_audio",
+]
+
+[[package]]
+name = "allegro_acodec-sys"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b5d338c0e74046cdc33ec3fea52f9835f516962417098e161b07aa3b2565764"
+dependencies = [
+ "allegro_util",
+ "libc",
+]
+
+[[package]]
+name = "allegro_audio"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac195b897ab34622c0bd01b27327a7a41a408465bb95a26dcccfed59e55c1c74"
+dependencies = [
+ "allegro",
+ "allegro_audio-sys",
+ "allegro_util",
+ "libc",
+]
+
+[[package]]
+name = "allegro_audio-sys"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0d18a2e568428815e334ea5bbb9aa155a12eaac0c0731d89f21c780ceb035ba"
+dependencies = [
+ "allegro-sys",
+ "allegro_util",
+ "libc",
+]
+
+[[package]]
+name = "allegro_util"
+version = "0.0.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55bac672303c25c69d0d669b8994c5580fa2b896e167c009f3e278d1d8cf391b"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "andrew"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -196,14 +271,6 @@ name = "cmake"
 version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
-dependencies = [
- "cc",
-]
-
-[[package]]
-name = "cmake"
-version = "0.1.45"
-source = "git+https://github.com/moalyousef/cmake-rs#bb95c0a7d0837848b8b2ca38788f0200c17bfb9d"
 dependencies = [
  "cc",
 ]
@@ -507,7 +574,7 @@ version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b67cedeffcf3d18fd38769bb9323b374f09441934a0f9096b9d33efddf920fc7"
 dependencies = [
- "cmake 0.1.45 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cmake",
  "libc",
  "pkg-config",
 ]
@@ -1302,34 +1369,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "soloud"
-version = "0.3.4"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#a77b4ae5e133be203adf3a157d04398a5252aadc"
-dependencies = [
- "bitflags",
- "soloud-derive",
- "soloud-sys",
-]
-
-[[package]]
-name = "soloud-derive"
-version = "0.3.2"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#a77b4ae5e133be203adf3a157d04398a5252aadc"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
-name = "soloud-sys"
-version = "0.3.4"
-source = "git+https://gitlab.com/JackRedstonia/soloud-rs#a77b4ae5e133be203adf3a157d04398a5252aadc"
-dependencies = [
- "cmake 0.1.45 (git+https://github.com/moalyousef/cmake-rs)",
- "libc",
-]
-
-[[package]]
 name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1339,11 +1378,13 @@ checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 name = "stacks"
 version = "0.1.0"
 dependencies = [
+ "allegro",
+ "allegro_acodec",
+ "allegro_audio",
  "freetype-rs",
  "gl",
  "glutin",
  "skia-safe",
- "soloud",
  "unicode-linebreak",
  "unicode-segmentation",
  "unsafe-any",

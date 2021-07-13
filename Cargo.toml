@@ -15,7 +15,9 @@ unicode-segmentation = "1.7"
 glutin = "0.26"
 gl-rs = { package = "gl", version = "0.14.0" }
 freetype-rs = "0.28.0"
-soloud = { git = "https://gitlab.com/JackRedstonia/soloud-rs" }
+allegro = "0.0.41"
+allegro_acodec = "0.0.41"
+allegro_audio = "0.0.41"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # NOTE: x11 implies gl, but whatever.

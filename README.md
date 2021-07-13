@@ -7,7 +7,7 @@ It adopts a model similar to osu!framework and Flutter, where widgets parent oth
 ## Current state
 Stacks' is in an "experimental" phase, and as such its implementation and API rapidly change. ***Very*** big and ***very*** breaking changes are to be expected. Large portions of Stacks are not documented yet, but anywhere `unsafe` is used, at least a `SAFETY: ...` comment is expected.
 
-Stacks uses Skia, Winit and OpenGL. Audio is in a usable state, based on the SoLoud audio library, though it is planned to be replaced by a new audio library written in Rust in the future due to it being written in C++ and several showstopping bugs preventing production use. Once that happens, only `.ogg` files will have planned support.
+Stacks uses Skia (https://skia.org/), Winit (https://github.com/rust-windowing/winit) and OpenGL (https://www.opengl.org/). Audio is in a usable state, based on Allegro's audio addon (https://www.allegro.cc/).
 
 The repository currently contains a library and a few examples as demos. To run them, execute `cargo run --example <name> --release`.
 

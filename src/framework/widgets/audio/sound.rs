@@ -1,231 +1,177 @@
-use std::path::Path;
-
-use super::{AudioBus, AudioResource};
-use crate::prelude::*;
-use soloud::{
-    AudioExt, Bus as SoloudBus, Handle as SoloudHandle, LoadExt, SoloudError,
-    Wav, WavStream,
-};
-
-pub struct Sound<T>
-where
-    T: AudioExt,
-{
-    source: T,
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PlayMode {
+    Once,
+    Loop,
+    Bidirectional,
 }
 
-impl Sound<Wav> {
-    pub fn new_wav(wav: Wav) -> Self {
-        Self::from_source(wav)
-    }
-
-    pub fn new_wav_from_path<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<Self, SoloudError> {
-        let mut wav = Wav::default();
-        wav.load(path.as_ref())?;
-        Ok(Self::new_wav(wav))
-    }
-
-    pub fn length(&self) -> f64 {
-        self.source.length()
-    }
-}
-
-impl Sound<WavStream> {
-    pub fn new_wav_stream(wav_stream: WavStream) -> Self {
-        Self::from_source(wav_stream)
-    }
-
-    pub fn new_wav_stream_from_path<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<Self, SoloudError> {
-        let mut wav = WavStream::default();
-        wav.load(path.as_ref())?;
-        Ok(Self::new_wav_stream(wav))
-    }
-
-    pub fn length(&self) -> f64 {
-        self.source.length()
-    }
-}
-
-impl<T> Sound<T>
-where
-    T: AudioExt,
-{
-    pub fn from_source(source: T) -> Self {
-        Self { source }
-    }
-
-    pub fn create_instance(
-        &self,
-        resource: &ResourceUser<AudioResource>,
-        bus: Option<AudioBus>,
-    ) -> SoundInstance {
-        let bus = bus.unwrap_or_default();
-        let resource = resource.clone();
-        let rsc = resource
-            .try_access()
-            .expect("Failed to access audio resource");
-        let handle = rsc.play_ex(&self.source, None, None, Some(true), bus);
-        drop(rsc);
-        SoundInstance {
-            resource,
-            handle,
-            bus,
+impl PlayMode {
+    fn from_allegro_playmode(p: allegro_audio::Playmode) -> Self {
+        match p {
+            allegro_audio::Playmode::Once => PlayMode::Once,
+            allegro_audio::Playmode::Loop => PlayMode::Loop,
+            allegro_audio::Playmode::BiDir => PlayMode::Bidirectional,
         }
     }
 
-    pub fn play_clocked(
-        &self,
-        resource: &ResourceUser<AudioResource>,
-        time: f64,
-        bus: Option<AudioBus>,
-    ) -> SoundInstance {
-        let bus = bus.unwrap_or_default();
-        let resource = resource.clone();
-        let rsc = resource
-            .try_access()
-            .expect("Failed to access audio resource");
-        let handle = rsc.play_clocked(time, &self.source);
-        drop(rsc);
-        SoundInstance {
-            resource,
-            handle,
-            bus,
-        }
-    }
-
-    pub fn play_clocked_ex(
-        &self,
-        resource: &ResourceUser<AudioResource>,
-        time: f64,
-        volume: Option<f32>,
-        pan: Option<f32>,
-        bus: Option<AudioBus>,
-    ) -> SoundInstance {
-        let bus = bus.unwrap_or_default();
-        let resource = resource.clone();
-        let rsc = resource
-            .try_access()
-            .expect("Failed to access audio resource");
-        let handle = rsc.play_clocked_ex(time, &self.source, volume, pan, bus);
-        drop(rsc);
-        SoundInstance {
-            resource,
-            handle,
-            bus,
+    fn to_allegro_playmode(self) -> allegro_audio::Playmode {
+        match self {
+            PlayMode::Once => allegro_audio::Playmode::Once,
+            PlayMode::Loop => allegro_audio::Playmode::Loop,
+            PlayMode::Bidirectional => allegro_audio::Playmode::BiDir,
         }
     }
 }
 
-pub struct SoundInstance {
-    resource: ResourceUser<AudioResource>,
-    handle: SoloudHandle,
-    bus: AudioBus,
+pub struct AudioStream {
+    inner: allegro_audio::AudioStream,
 }
 
-impl SoundInstance {
-    pub fn resource(&self) -> &ResourceUser<AudioResource> {
-        &self.resource
+impl AudioStream {
+    pub(super) fn from_allegro_stream(s: allegro_audio::AudioStream) -> Self {
+        Self { inner: s }
     }
 
-    pub fn bus(&self) -> Option<ResourceUsage<AudioResource, SoloudBus>> {
-        self.resource
-            .try_access()
-            .map(|e| e.map(|e| self.bus.to_bus(&*e)))
-    }
-
-    pub fn resume(&mut self) {
-        if let Some(mut e) = self.resource.try_access_mut() {
-            e.resume(self.handle);
-        }
-    }
-
-    pub fn pause(&mut self) {
-        if let Some(mut e) = self.resource.try_access_mut() {
-            e.pause(self.handle);
-        }
-    }
-
-    pub fn set_playing(&mut self, playing: bool) {
-        if let Some(mut e) = self.resource.try_access_mut() {
-            e.set_playing(self.handle, playing);
-        }
-    }
-
-    pub fn toggle_playing(&mut self) -> bool {
-        self.resource
-            .try_access_mut()
-            .map(|mut e| e.toggle_playing(self.handle))
-            .unwrap_or(false)
-    }
-
-    pub fn set_auto_stop(&mut self, auto_stop: bool) {
-        if let Some(mut e) = self.resource.try_access_mut() {
-            e.set_auto_stop(self.handle, auto_stop);
-        }
+    pub fn length(&self) -> Result<f64, ()> {
+        self.inner.get_length_secs()
     }
 
     pub fn is_playing(&self) -> bool {
-        self.resource
-            .try_access()
-            .map(|e| e.is_playing(self.handle))
-            .unwrap_or(false)
+        self.inner.get_playing()
     }
 
-    pub fn seek(&mut self, seconds: f64) -> Result<(), SoloudError> {
-        self.resource
-            .try_access_mut()
-            .map(|e| e.seek(self.handle, seconds))
-            .unwrap_or(Ok(()))
+    pub fn set_playing(&self, playing: bool) -> Result<(), ()> {
+        self.inner.set_playing(playing)
     }
 
-    pub fn position(&self) -> f64 {
-        self.resource
-            .try_access()
-            .map(|e| e.position(self.handle))
-            .unwrap_or(0.0)
+    pub fn toggle_playing(&self) -> Result<bool, ()> {
+        let new_state = !self.is_playing();
+        self.set_playing(new_state)?;
+        Ok(new_state)
     }
 
-    pub fn set_speed(&mut self, speed: f32) -> Result<(), SoloudError> {
-        self.resource
-            .try_access_mut()
-            .map(|mut e| e.set_speed(self.handle, speed))
-            .unwrap_or(Ok(()))
+    pub fn drain(&self) {
+        self.inner.drain()
     }
 
-    pub fn speed(&self) -> f32 {
-        self.resource
-            .try_access()
-            .map(|e| e.speed(self.handle))
-            .unwrap_or(1.0)
+    pub fn gain(&self) -> f32 {
+        self.inner.get_gain()
     }
 
-    pub fn set_volume(&mut self, volume: f32) {
-        if let Some(mut resource) = self.resource.try_access_mut() {
-            resource.set_volume(self.handle, volume);
-        }
-    }
-
-    pub fn volume(&self) -> f32 {
-        self.resource
-            .try_access()
-            .map(|e| e.volume(self.handle))
-            .unwrap_or(1.0)
-    }
-
-    pub fn set_pan(&mut self, pan: f32) {
-        if let Some(mut resource) = self.resource.try_access_mut() {
-            resource.set_pan(self.handle, pan);
-        }
+    pub fn set_gain(&self, gain: f32) -> Result<(), ()> {
+        self.inner.set_gain(gain)
     }
 
     pub fn pan(&self) -> f32 {
-        self.resource
-            .try_access()
-            .map(|e| e.pan(self.handle))
-            .unwrap_or(0.0)
+        self.inner.get_pan()
+    }
+
+    pub fn set_pan(&self, pan: Option<f32>) -> Result<(), ()> {
+        self.inner.set_pan(pan)
+    }
+
+    pub fn speed(&self) -> f32 {
+        self.inner.get_speed()
+    }
+
+    pub fn set_speed(&self, speed: f32) -> Result<(), ()> {
+        self.inner.set_speed(speed)
+    }
+
+    pub fn play_mode(&self) -> PlayMode {
+        PlayMode::from_allegro_playmode(self.inner.get_playmode())
+    }
+
+    pub fn set_play_mode(&self, play_mode: PlayMode) -> Result<(), ()> {
+        self.inner.set_playmode(play_mode.to_allegro_playmode())
+    }
+
+    pub fn position(&self) -> Result<f64, ()> {
+        self.inner.get_position_secs()
+    }
+
+    pub fn seek(&self, position: f64) -> Result<(), ()> {
+        self.inner.seek_secs(position)
+    }
+}
+
+pub struct Sample {
+    pub(super) inner: allegro_audio::Sample,
+}
+
+impl Sample {
+    pub(super) fn from_allegro_sample(s: allegro_audio::Sample) -> Self {
+        Self { inner: s }
+    }
+}
+
+pub struct SampleInstance {
+    inner: allegro_audio::SampleInstance,
+}
+
+impl SampleInstance {
+    pub(super) fn from_allegro_sample_instance(
+        s: allegro_audio::SampleInstance,
+    ) -> Self {
+        Self { inner: s }
+    }
+
+    pub fn length(&self) -> Result<f64, ()> {
+        let s = self.inner.get_length()?;
+        let f = self.inner.get_frequency()?;
+        Ok(s as f64 / f as f64)
+    }
+
+    pub fn is_playing(&self) -> Result<bool, ()> {
+        self.inner.get_playing()
+    }
+
+    pub fn set_playing(&self, playing: bool) -> Result<(), ()> {
+        self.inner.set_playing(playing)
+    }
+
+    pub fn toggle_playing(&self) -> Result<bool, ()> {
+        let new_state = !self.is_playing()?;
+        self.set_playing(new_state)?;
+        Ok(new_state)
+    }
+
+    pub fn gain(&self) -> Result<f32, ()> {
+        self.inner.get_gain()
+    }
+
+    pub fn set_gain(&self, gain: f32) -> Result<(), ()> {
+        self.inner.set_gain(gain)
+    }
+
+    pub fn pan(&self) -> Result<f32, ()> {
+        self.inner.get_pan()
+    }
+
+    pub fn set_pan(&self, pan: Option<f32>) -> Result<(), ()> {
+        self.inner.set_pan(pan)
+    }
+
+    pub fn speed(&self) -> Result<f32, ()> {
+        self.inner.get_speed()
+    }
+
+    pub fn set_speed(&self, speed: f32) -> Result<(), ()> {
+        self.inner.set_speed(speed)
+    }
+
+    pub fn play_mode(&self) -> Result<PlayMode, ()> {
+        let p = self.inner.get_playmode()?;
+        Ok(PlayMode::from_allegro_playmode(p))
+    }
+
+    pub fn set_play_mode(&self, play_mode: PlayMode) -> Result<(), ()> {
+        self.inner.set_playmode(play_mode.to_allegro_playmode())
+    }
+
+    pub fn position(&self) -> Result<f64, ()> {
+        let s = self.inner.get_position()?;
+        let f = self.inner.get_frequency()?;
+        Ok(s as f64 / f as f64)
     }
 }
