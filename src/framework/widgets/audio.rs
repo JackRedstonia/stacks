@@ -67,7 +67,7 @@ impl AudioResource {
         let mut s = allegro_audio::AudioStream::load_custom(
             &self.audio,
             path,
-            3,
+            4,
             f as _,
         )
         .ok()?;
