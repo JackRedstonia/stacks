@@ -25,11 +25,18 @@ impl PlayMode {
 
 pub struct AudioStream {
     inner: allegro_audio::AudioStream,
+    frag_size: usize,
 }
 
 impl AudioStream {
-    pub(super) fn from_allegro_stream(s: allegro_audio::AudioStream) -> Self {
-        Self { inner: s }
+    pub(super) fn from_allegro_stream(
+        s: allegro_audio::AudioStream,
+        frag_size: usize,
+    ) -> Self {
+        Self {
+            inner: s,
+            frag_size,
+        }
     }
 
     pub fn length(&self) -> Result<f64, ()> {
@@ -88,6 +95,14 @@ impl AudioStream {
 
     pub fn position(&self) -> Result<f64, ()> {
         self.inner.get_position_secs()
+    }
+
+    pub fn frequency(&self) -> u32 {
+        self.inner.get_frequency()
+    }
+
+    pub fn fragment_sample_count(&self) -> usize {
+        self.frag_size
     }
 
     pub fn seek(&self, position: f64) -> Result<(), ()> {

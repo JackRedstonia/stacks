@@ -236,7 +236,7 @@ where
     };
     game.set_size(State::with(|x| x.input_state.window_size));
 
-    let target_update_time = Duration::from_millis(5); // 200 fps
+    let target_update_time = Duration::from_millis(2); // 500 fps
 
     // Most displays are <= 200 fps.
     // Of course this will be upgraded from a hard-coded value in the future.

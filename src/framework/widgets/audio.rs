@@ -63,12 +63,17 @@ impl AudioResource {
     }
 
     pub fn new_audio_stream(&mut self, path: &str) -> Option<AudioStream> {
-        let mut s =
-            allegro_audio::AudioStream::load_custom(&self.audio, path, 4, 880)
-                .ok()?;
+        let f = 512;
+        let mut s = allegro_audio::AudioStream::load_custom(
+            &self.audio,
+            path,
+            3,
+            f as _,
+        )
+        .ok()?;
         s.set_playing(false).ok()?;
         s.attach(&mut self.sink).ok()?;
-        Some(AudioStream::from_allegro_stream(s))
+        Some(AudioStream::from_allegro_stream(s, f))
     }
 
     pub fn new_sample(&self, path: &str) -> Option<Sample> {
