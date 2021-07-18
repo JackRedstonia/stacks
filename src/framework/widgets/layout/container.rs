@@ -49,6 +49,13 @@ impl ContainerSize {
         self.height.expand = None;
         self
     }
+
+    pub fn apply(&self, child_size: &LayoutSize) -> LayoutSize {
+        LayoutSize {
+            width: self.width.apply(child_size.width),
+            height: self.height.apply(child_size.height),
+        }
+    }
 }
 
 impl From<LayoutSize> for ContainerSize {
@@ -92,6 +99,15 @@ impl ContainerDimension {
     pub fn with_no_expand(mut self) -> Self {
         self.expand = None;
         self
+    }
+
+    pub fn apply(&self, child_dim: LayoutDimension) -> LayoutDimension {
+        let child_min = child_dim.min;
+        let min = self.min.map_or(child_min, |c| child_min.max(c));
+        LayoutDimension {
+            min,
+            expand: self.expand,
+        }
     }
 }
 

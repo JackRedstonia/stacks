@@ -1,5 +1,6 @@
 mod ab;
 mod center_container;
+mod contained;
 mod container;
 mod fullscreen_container;
 mod h_container;
@@ -10,6 +11,7 @@ mod v_container;
 
 pub use ab::{TimeReport, AB};
 pub use center_container::CenterContainer;
+pub use contained::{ContainMode, Contained};
 pub use container::{ContainerDimension, ContainerSize};
 pub use fullscreen_container::FullscreenContainer;
 pub use h_container::{HContainer, HContainerDyn};

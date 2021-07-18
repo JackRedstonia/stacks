@@ -112,24 +112,7 @@ impl<T: Widget + ?Sized> Widget for HContainer<T> {
         }
 
         (
-            LayoutSize {
-                width: LayoutDimension {
-                    min: self
-                        .size
-                        .width
-                        .min
-                        .map_or(width_min, |min| min.max(width_min)),
-                    expand: self.size.width.expand,
-                },
-                height: LayoutDimension {
-                    min: self
-                        .size
-                        .height
-                        .min
-                        .map_or(height_min, |min| min.max(height_min)),
-                    expand: self.size.height.expand,
-                },
-            },
+            self.size.apply(&LayoutSize::min(width_min, height_min)),
             children_changed,
         )
     }
