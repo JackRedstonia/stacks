@@ -105,6 +105,10 @@ impl AudioStream {
         self.frag_size
     }
 
+    pub fn fragment_count(&self) -> u32 {
+        self.inner.get_num_fragments()
+    }
+
     pub fn seek(&self, position: f64) -> Result<(), ()> {
         self.inner.seek_secs(position)
     }
