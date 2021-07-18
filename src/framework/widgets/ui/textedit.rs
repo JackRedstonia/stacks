@@ -284,7 +284,6 @@ impl Widget for TextEdit {
             }
             _ => return false,
         }
-        println!("returning true");
         true
     }
 

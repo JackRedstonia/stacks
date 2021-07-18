@@ -133,7 +133,6 @@ impl<T: Widget + 'static> Game for Framework<T> {
         if let Some(id) = FrameworkState::current_focus() {
             let focused = InputEvent::Focused(id, Box::new(event.clone()));
             if !self.root.input(&focused) && event.is_consumable() {
-                println!("the focused thing didn't take it. resending");
                 self.root.input(&event);
             }
         } else {
