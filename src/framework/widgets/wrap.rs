@@ -98,6 +98,10 @@ impl<'a, T: 'a + Widget + ?Sized> Wrap<T> {
         }
     }
 
+    pub fn grab_focus(&self) {
+        FrameworkState::grab_focus(self.id())
+    }
+
     pub fn load(&mut self, stack: &mut ResourceStack) {
         let s = &mut *self.inner.borrow_mut();
         let state = &mut s.state;
