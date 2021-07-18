@@ -132,7 +132,9 @@ impl<T: Widget + 'static> Game for Framework<T> {
         }
         if let Some(id) = FrameworkState::current_focus() {
             let focused = InputEvent::Focused(id, Box::new(event.clone()));
-            if !self.root.input(&focused) && event.is_consumable() {
+            self.root.input(&focused);
+            let should_resend = || FrameworkState::consume_reinput_request();
+            if should_resend() {
                 self.root.input(&event);
             }
         } else {
@@ -152,6 +154,7 @@ impl<T: Widget + 'static> Game for Framework<T> {
 pub struct FrameworkState {
     current_focused_id: Option<ID>,
     just_grabbed_focus: bool,
+    resend_input: bool,
     load_requested: bool,
 }
 
@@ -204,6 +207,18 @@ impl FrameworkState {
             x.current_focused_id = None;
             x.just_grabbed_focus = false;
         });
+    }
+
+    pub fn resend_unfocused_input() {
+        Self::with_mut(|x| x.resend_input = true)
+    }
+
+    fn consume_reinput_request() -> bool {
+        Self::with_mut(|x| {
+            let r = x.resend_input;
+            x.resend_input = false;
+            r
+        })
     }
 
     #[inline]

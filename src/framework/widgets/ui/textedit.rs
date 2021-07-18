@@ -4,6 +4,8 @@ use crate::prelude::*;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TextEdit {
+    pub auto_focus: bool,
+    pub take_input: bool,
     text: Wrap<Text>,
     text_layout_size: LayoutSize,
 
@@ -37,6 +39,8 @@ impl TextEdit {
             text_paint,
         );
         Self {
+            auto_focus: true,
+            take_input: false,
             text,
             text_layout_size: LayoutSize::default(),
             size: Size::default(),
@@ -243,24 +247,32 @@ impl Widget for TextEdit {
     }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
-        if !state.is_focused() {
+        if self.auto_focus {
             match event {
                 InputEvent::MouseDown(MouseButton::Left, pos)
-                    if Rect::from_size(self.size).contains(*pos) =>
+                    if !state.is_focused()
+                        && Rect::from_size(self.size).contains(*pos) =>
                 {
                     state.grab_focus();
+                    self.take_input = true;
                     return true;
+                }
+                InputEvent::MouseDown(MouseButton::Left, pos)
+                    if state.is_focused()
+                        && !Rect::from_size(self.size).contains(*pos) =>
+                {
+                    state.release_focus();
+                    self.take_input = false;
+                    FrameworkState::resend_unfocused_input();
+                    return false;
                 }
                 _ => return false,
             }
         }
+        if !self.take_input {
+            return false;
+        }
         match event {
-            InputEvent::MouseDown(MouseButton::Left, pos)
-                if !Rect::from_size(self.size).contains(*pos) =>
-            {
-                state.release_focus();
-                return false;
-            }
             InputEvent::KeyDown(k) => match k {
                 Keycode::Left => {
                     self.go_left();
@@ -302,9 +314,9 @@ impl Widget for TextEdit {
         self.invalidate_cursor();
     }
 
-    fn draw(&mut self, state: &mut WidgetState, canvas: &mut Canvas) {
+    fn draw(&mut self, _state: &mut WidgetState, canvas: &mut Canvas) {
         self.text.draw(canvas);
-        if state.is_focused() {
+        if self.take_input {
             let t = State::elapsed_draw().as_secs_f32();
             self.cursor_paint.set_alpha_f((t * 8.0).sin() * 0.5 + 0.5);
             if let Some(pos) = self.update_cursor() {
