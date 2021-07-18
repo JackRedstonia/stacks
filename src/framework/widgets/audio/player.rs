@@ -1,6 +1,9 @@
 use super::{AudioResource, AudioStream};
 use crate::prelude::*;
 
+const FFT_SIZE: usize = 512;
+type FftInterpolation = [f32; FFT_SIZE];
+
 pub struct AudioPlayer {
     pub layout_size: LayoutSize,
     pub foreground: Paint,
@@ -11,6 +14,7 @@ pub struct AudioPlayer {
     path: String,
     sound: Option<AudioStream>,
     seek_preview_percentage: Option<f32>,
+    fft: FftInterpolation,
     size: Size,
     play_lock: bool,
 }
@@ -33,6 +37,7 @@ impl AudioPlayer {
             seek_preview_percentage: None,
             audio: ResourceUser::new_none(),
             path: path.to_owned(),
+            fft: [0.0; FFT_SIZE],
             sound: None,
             play_lock: false,
         }
@@ -56,6 +61,33 @@ impl AudioPlayer {
     fn pos_percentage_from_x(&self, x: scalar) -> f64 {
         (x as f64 / self.size.width as f64).clamp_unit()
     }
+
+    fn curve_fft_height(height: f32) -> f32 {
+        let clipoff_factor = 1.25;
+        let clipoff_factor_inv = 1.0 / clipoff_factor;
+
+        let lifted = height * clipoff_factor;
+        let clipped = if lifted > 1.0 {
+            lifted.powf(0.5)
+        } else {
+            lifted
+        };
+
+        (clipoff_factor_inv * clipped).min(1.0)
+    }
+
+    fn refresh_fft(&mut self, factor: f32) -> Option<()> {
+        let vis = self.audio.try_access()?.vis().upgrade()?;
+        let vis = vis.lock().ok()?;
+        let vis = vis.vals();
+        assert!((0.0..=1.0).contains(&factor));
+        let factor_inv = 1.0 - factor;
+        assert_eq!(vis.len(), FFT_SIZE);
+        self.fft.iter_mut().zip(vis.iter()).for_each(|(a, b)| {
+            *a = *a * factor_inv + b * factor;
+        });
+        Some(())
+    }
 }
 
 impl Widget for AudioPlayer {
@@ -74,7 +106,12 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn update(&mut self, _state: &mut WidgetState) {}
+    fn update(&mut self, _state: &mut WidgetState) {
+        let factor = (State::last_update_time().as_secs_f32()
+            * self.interpolation_factor)
+            .min(1.0);
+        self.refresh_fft(factor);
+    }
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
@@ -156,5 +193,30 @@ impl Widget for AudioPlayer {
                 }
             }
         }
+
+        // Draw visualizations
+        let fft = &self.fft[..400];
+        let width = self.size.width / fft.len() as f32;
+        let mut path = skia::Path::new();
+        let spacing = width * 0.48;
+        let quad_spacing = width * 0.18;
+        path.move_to((0.0, self.size.height));
+        let last = fft
+            .iter()
+            .fold((0.0, self.size.height), |(n, prev), i| {
+                let height = self.size.height
+                    - Self::curve_fft_height(i / 16.0) * self.size.height;
+                let mid = (height + prev) / 2.0;
+                if n != 0.0 {
+                    path.quad_to((n - quad_spacing, prev), (n, mid));
+                }
+                path.quad_to((n + quad_spacing, height), (n + spacing, height));
+                path.line_to((n + width - spacing, height));
+                (n + width, height)
+            })
+            .1;
+        path.quad_to((self.size.width, last), self.size.bottom_right());
+        path.close();
+        canvas.draw_path(&path, &self.fft_paint);
     }
 }

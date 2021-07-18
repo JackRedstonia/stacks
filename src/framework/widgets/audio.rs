@@ -1,12 +1,19 @@
 mod player;
 mod sound;
 
-use allegro_audio::AttachToMixer;
 pub use player::AudioPlayer;
 pub use sound::{AudioStream, Sample, SampleInstance};
 
+use allegro_audio::{
+    AttachToMixer, AudioDepth, ChannelConf, MixerLike, PostProcessCallback,
+};
+use rustfft::{num_complex::Complex, FftPlanner};
+
+use std::convert::TryInto;
 use std::error::Error as StdError;
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex, Weak};
 
 use crate::prelude::*;
 
@@ -43,9 +50,51 @@ impl Display for AudioError {
 
 impl StdError for AudioError {}
 
+pub struct Visuals {
+    vals: [Complex<f32>; 1024],
+    vals_real: [f32; 512],
+}
+
+impl Visuals {
+    pub fn vals(&self) -> &[f32; 512] {
+        &self.vals_real
+    }
+}
+
+struct VisualsCallback {
+    chan_count: usize,
+    vis: Weak<Mutex<Visuals>>,
+}
+
+impl PostProcessCallback for VisualsCallback {
+    fn process(&mut self, data: &mut [u8], num_samples: u32) {
+        assert_eq!(data.len() / num_samples as usize / self.chan_count, 4);
+        let fl = data.chunks(4).map(|chunk| {
+            let chunk: [u8; 4] = chunk.try_into().unwrap();
+            let val: f32 = unsafe { std::mem::transmute(chunk) };
+            val
+        });
+        if let Some(mut vis) =
+            self.vis.upgrade().as_ref().and_then(|a| a.lock().ok())
+        {
+            let vis = vis.deref_mut();
+            for (a, b) in vis.vals.iter_mut().zip(fl.step_by(self.chan_count)) {
+                *a = Complex::new(b, 0.0);
+            }
+            let mut fp = FftPlanner::new();
+            let fft = fp.plan_fft_forward(1024);
+            fft.process(&mut vis.vals);
+            for (a, b) in vis.vals.iter().zip(vis.vals_real.iter_mut()) {
+                *b = a.re.abs();
+            }
+        }
+    }
+}
+
 pub struct AudioResource {
     sink: allegro_audio::Sink,
     audio: allegro_audio::AudioAddon,
+    visuals: Arc<Mutex<Visuals>>,
 }
 
 impl AudioResource {
@@ -56,10 +105,35 @@ impl AudioResource {
             .map_err(|s| AudioError::AudioAddonInitError(s))?;
         allegro_acodec::AcodecAddon::init(&audio)
             .map_err(|s| AudioError::AcodecAddonInitError(s))?;
-        let sink = allegro_audio::Sink::new(&audio)
-            .map_err(|s| AudioError::SinkInitError(s))?;
+        let mixer = allegro_audio::Mixer::new(&audio).map_err(|_| {
+            AudioError::SinkInitError("Could not initialize mixer".to_owned())
+        })?;
+        assert!(matches!(mixer.get_channels(), ChannelConf::Conf2));
+        assert!(matches!(mixer.get_depth(), AudioDepth::F32));
+        let mut sink = allegro_audio::Sink::new_with_mixer(
+            44100,
+            AudioDepth::I16,
+            ChannelConf::Conf2,
+            mixer,
+        )
+        .map_err(|s| AudioError::SinkInitError(s))?;
 
-        Ok(ResourceHoster::new(Self { sink, audio }))
+        let vis = Visuals {
+            vals: [Complex::default(); 1024],
+            vals_real: [0.0; 512],
+        };
+        let vis = Arc::new(Mutex::new(vis));
+        let callback = Box::new(VisualsCallback {
+            chan_count: 2,
+            vis: Arc::downgrade(&vis),
+        });
+        sink.set_postprocess_callback(Some(callback)).unwrap(); // TODO: use .?
+
+        Ok(ResourceHoster::new(Self {
+            sink,
+            audio,
+            visuals: vis,
+        }))
     }
 
     pub fn new_audio_stream(&mut self, path: &str) -> Option<AudioStream> {
@@ -88,6 +162,10 @@ impl AudioResource {
         let mut s = sample.inner.create_instance().ok()?;
         s.attach(&mut self.sink).ok()?;
         Some(SampleInstance::from_allegro_sample_instance(s))
+    }
+
+    pub fn vis(&self) -> Weak<Mutex<Visuals>> {
+        Arc::downgrade(&self.visuals)
     }
 }
 
