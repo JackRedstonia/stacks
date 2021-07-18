@@ -259,6 +259,7 @@ impl Widget for TextEdit {
                 if !Rect::from_size(self.size).contains(*pos) =>
             {
                 state.release_focus();
+                return false;
             }
             InputEvent::KeyDown(k) => match k {
                 Keycode::Left => {
@@ -283,6 +284,7 @@ impl Widget for TextEdit {
             }
             _ => return false,
         }
+        println!("returning true");
         true
     }
 

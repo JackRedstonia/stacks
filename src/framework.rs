@@ -78,24 +78,6 @@ impl<T: Widget + 'static> Framework<T> {
         }
     }
 
-    fn focus_aware_input(&mut self, event: InputEvent) {
-        let remove_hover = FrameworkState::with_mut(|x| {
-            if x.just_grabbed_focus {
-                x.just_grabbed_focus = false;
-                return x.current_focused_id;
-            }
-            None
-        });
-        if let Some(id) = remove_hover {
-            self.root.input(&InputEvent::RemoveHoverExcept(id));
-        }
-        if let Some(id) = FrameworkState::current_focus() {
-            self.root.input(&InputEvent::Focused(id, Box::new(event)));
-        } else {
-            self.root.input(&event);
-        }
-    }
-
     fn maybe_load(&mut self) {
         if FrameworkState::consume_load_request() {
             self.root.load(&mut self.recycled_resource_stack);
@@ -138,7 +120,25 @@ impl<T: Widget + 'static> Game for Framework<T> {
     }
 
     fn input(&mut self, event: InputEvent) {
-        self.focus_aware_input(event);
+        let remove_hover = FrameworkState::with_mut(|x| {
+            if x.just_grabbed_focus {
+                x.just_grabbed_focus = false;
+                return x.current_focused_id;
+            }
+            None
+        });
+        if let Some(id) = remove_hover {
+            self.root.input(&InputEvent::RemoveHoverExcept(id));
+        }
+        if let Some(id) = FrameworkState::current_focus() {
+            let focused = InputEvent::Focused(id, Box::new(event.clone()));
+            if !self.root.input(&focused) && event.is_consumable() {
+                println!("the focused thing didn't take it. resending");
+                self.root.input(&event);
+            }
+        } else {
+            self.root.input(&event);
+        }
         self.maybe_load();
     }
 
