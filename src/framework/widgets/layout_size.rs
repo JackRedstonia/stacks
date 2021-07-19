@@ -142,6 +142,11 @@ impl LayoutDimension {
         self
     }
 
+    pub fn with_expand_from(mut self, other: &Self) -> Self {
+        self.expand = other.expand;
+        self
+    }
+
     pub fn layout_one(&self, space: scalar) -> scalar {
         if self.expand.is_some() {
             space.max(self.min)
