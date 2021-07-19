@@ -63,17 +63,7 @@ impl AudioPlayer {
     }
 
     fn curve_fft_height(height: f32) -> f32 {
-        let clipoff_factor = 1.25;
-        let clipoff_factor_inv = 1.0 / clipoff_factor;
-
-        let lifted = height * clipoff_factor;
-        let clipped = if lifted > 1.0 {
-            lifted.powf(0.5)
-        } else {
-            lifted
-        };
-
-        (clipoff_factor_inv * clipped).min(1.0)
+        ((height.log10() + 1.5) * 0.25).max(0.0).min(1.0)
     }
 
     fn refresh_fft(&mut self, factor: f32) -> Option<()> {
@@ -205,7 +195,7 @@ impl Widget for AudioPlayer {
             .iter()
             .fold((0.0, self.size.height), |(n, prev), i| {
                 let height = self.size.height
-                    - Self::curve_fft_height(i / 16.0) * self.size.height;
+                    - Self::curve_fft_height(*i) * self.size.height;
                 let mid = (height + prev) / 2.0;
                 if n != 0.0 {
                     path.quad_to((n - quad_spacing, prev), (n, mid));

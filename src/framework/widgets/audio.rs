@@ -85,7 +85,7 @@ impl PostProcessCallback for VisualsCallback {
             let fft = fp.plan_fft_forward(1024);
             fft.process(&mut vis.vals);
             for (a, b) in vis.vals.iter().zip(vis.vals_real.iter_mut()) {
-                *b = (a.re * a.re + a.im * a.im).sqrt();
+                *b = a.re * a.re + a.im * a.im;
             }
         }
     }
