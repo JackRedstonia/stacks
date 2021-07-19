@@ -146,7 +146,7 @@ impl<T: Widget + 'static> Game for Framework<T> {
     fn close(&mut self) {}
 
     fn crash(&mut self, err: GameError) {
-        println!("Stacks has crashed!\nMore info: {:?}", err);
+        eprintln!("Stacks has crashed!\nMore info: {:?}", err);
     }
 }
 
