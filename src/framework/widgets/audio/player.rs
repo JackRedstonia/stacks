@@ -96,12 +96,7 @@ impl Widget for AudioPlayer {
         }
     }
 
-    fn update(&mut self, _state: &mut WidgetState) {
-        let factor = (State::last_update_time().as_secs_f32()
-            * self.interpolation_factor)
-            .min(1.0);
-        self.refresh_fft(factor);
-    }
+    fn update(&mut self, _state: &mut WidgetState) {}
 
     fn input(&mut self, state: &mut WidgetState, event: &InputEvent) -> bool {
         match event {
@@ -184,16 +179,28 @@ impl Widget for AudioPlayer {
             }
         }
 
+        // Refresh FFT
+        let factor = (State::last_update_time_draw().as_secs_f32()
+            * self.interpolation_factor)
+            .min(1.0);
+        self.refresh_fft(factor);
+
         // Draw visualizations
         let fft = &self.fft[..400];
-        let width = self.size.width / fft.len() as f32;
         let mut path = skia::Path::new();
-        let spacing = width * 0.48;
-        let quad_spacing = width * 0.18;
+        let first = self.size.height
+            - Self::curve_fft_height(fft[0]) * self.size.height;
         path.move_to((0.0, self.size.height));
+        path.line_to((0.0, first));
+        let lin_width = 1.0 / fft.len() as f32;
         let last = fft
             .iter()
-            .fold((0.0, self.size.height), |(n, prev), i| {
+            .skip(1)
+            .fold((0.0, first, 0.0f32), |(n, prev, lin), i| {
+                let pos = self.size.width * lin.powf(0.7);
+                let width = pos - n;
+                let spacing = width * 0.48;
+                let quad_spacing = width * 0.18;
                 let height = self.size.height
                     - Self::curve_fft_height(*i) * self.size.height;
                 let mid = (height + prev) / 2.0;
@@ -202,7 +209,7 @@ impl Widget for AudioPlayer {
                 }
                 path.quad_to((n + quad_spacing, height), (n + spacing, height));
                 path.line_to((n + width - spacing, height));
-                (n + width, height)
+                (pos, height, lin + lin_width)
             })
             .1;
         path.quad_to((self.size.width, last), self.size.bottom_right());
