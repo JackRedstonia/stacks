@@ -63,7 +63,7 @@ impl AudioPlayer {
     }
 
     fn curve_fft_height(height: f32) -> f32 {
-        ((height.log10() + 1.5) * 0.25).max(0.0).min(1.0)
+        (((height + 0.0251).log10() + 1.6) * 0.16).max(0.0).min(1.0)
     }
 
     fn refresh_fft(&mut self, factor: f32) -> Option<()> {
