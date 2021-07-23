@@ -38,6 +38,8 @@ pub struct Fonts<T: Widget + ?Sized> {
 
 impl<T: Widget + ?Sized> Fonts<T> {
     pub fn new(inner: Wrap<T>) -> Result<Wrap<Self>, FTError> {
+        FrameworkState::request_load();
+
         let n = Cow::Borrowed("Fira Sans");
         let res = FontResource::new(n.clone())?;
         let mut r = res.access_mut();
@@ -49,6 +51,7 @@ impl<T: Widget + ?Sized> Fonts<T> {
         include_font!(r, "MediumItalic", n.clone(), FontStyle::MediumItalic, z);
         include_font!(r, "BoldItalic", n, FontStyle::BoldItalic, z);
         drop(r);
+        
         Ok(Self { res, inner }.into())
     }
 }

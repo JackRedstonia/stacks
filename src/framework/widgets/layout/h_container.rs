@@ -13,7 +13,8 @@ pub type HContainerDyn = HContainer<dyn Widget>;
 
 impl<T: Widget + ?Sized> HContainer<T> {
     pub fn new(size: ContainerSize, spacing: Option<scalar>) -> Wrap<Self> {
-        FrameworkState::request_load();
+        // `FrameworkState::request_load();` here is not needed, as there are
+        // no children just yet.
         Self {
             children: vec![],
             size,

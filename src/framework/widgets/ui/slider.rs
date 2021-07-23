@@ -81,6 +81,8 @@ impl Slider {
         button_paint: Paint,
         label_paint: Paint,
     ) -> Wrap<Self> {
+        FrameworkState::request_load();
+
         let label_text = label.clone();
         let label = Text::new(
             LayoutSize::ZERO,

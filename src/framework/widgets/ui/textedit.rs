@@ -29,6 +29,8 @@ impl TextEdit {
         text_size: Option<scalar>,
         text_paint: Paint,
     ) -> Wrap<Self> {
+        FrameworkState::request_load();
+
         let text = Text::new(
             layout_size,
             layout_mode,

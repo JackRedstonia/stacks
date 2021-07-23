@@ -29,6 +29,7 @@ impl<T: Widget> Contained<T> {
         size: ContainerSize,
         mode: ContainMode,
     ) -> Wrap<Self> {
+        FrameworkState::request_load();
         Self {
             inner,
             inner_size: LayoutSize::default(),

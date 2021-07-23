@@ -29,6 +29,8 @@ impl Button {
         background: Paint,
         label_paint: Paint,
     ) -> Wrap<Self> {
+        FrameworkState::request_load();
+
         let rect = Rectangle::new(
             LayoutSize::ZERO.expand_width().expand_height(),
             background,
