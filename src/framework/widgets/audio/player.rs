@@ -180,10 +180,14 @@ impl Widget for AudioPlayer {
         }
 
         // Refresh FFT
-        let factor = (State::last_update_time_draw().as_secs_f32()
-            * self.interpolation_factor)
-            .min(1.0);
-        self.refresh_fft(factor);
+        if let Some(sound) = &mut self.sound {
+            if sound.is_playing() {
+                let factor = (State::last_update_time_draw().as_secs_f32()
+                    * self.interpolation_factor)
+                    .min(1.0);
+                self.refresh_fft(factor);
+            }
+        }
 
         // Draw visualizations
         let fft = &self.fft[..400];
