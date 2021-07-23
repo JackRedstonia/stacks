@@ -9,6 +9,7 @@ use crate::skia::gpu::{
     BackendRenderTarget, DirectContext as SkiaDirectContext, SurfaceOrigin,
 };
 use crate::skia::{Canvas, ColorType, Point, Size, Surface};
+use crate::skia::graphics::allow_jit as allow_skia_jit;
 
 use glutin::dpi::{LogicalSize, PhysicalSize};
 use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};
@@ -228,6 +229,8 @@ where
     F: FnOnce() -> Result<T, E>,
     T: Game + 'static,
 {
+    allow_skia_jit();
+
     let (event_loop, mut ctx) = Context::new(size, title)?;
 
     let mut game = match game() {
