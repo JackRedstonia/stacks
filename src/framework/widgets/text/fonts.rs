@@ -51,7 +51,7 @@ impl<T: Widget + ?Sized> Fonts<T> {
         include_font!(r, "MediumItalic", n.clone(), FontStyle::MediumItalic, z);
         include_font!(r, "BoldItalic", n, FontStyle::BoldItalic, z);
         drop(r);
-        
+
         Ok(Self { res, inner }.into())
     }
 }

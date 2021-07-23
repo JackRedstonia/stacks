@@ -8,8 +8,8 @@ use crate::skia::gpu::gl::{Format as SkiaGLFormat, FramebufferInfo};
 use crate::skia::gpu::{
     BackendRenderTarget, DirectContext as SkiaDirectContext, SurfaceOrigin,
 };
-use crate::skia::{Canvas, ColorType, Point, Size, Surface};
 use crate::skia::graphics::allow_jit as allow_skia_jit;
+use crate::skia::{Canvas, ColorType, Point, Size, Surface};
 
 use glutin::dpi::{LogicalSize, PhysicalSize};
 use glutin::event::{Event, MouseButton, VirtualKeyCode, WindowEvent};

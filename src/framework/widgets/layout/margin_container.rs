@@ -53,7 +53,8 @@ impl<T: Widget + ?Sized> Widget for MarginContainer<T> {
         let child_size =
             size.bottom_right() - self.margin.size().bottom_right();
         let child_size = Size::new(child_size.x, child_size.y);
-        self.child.set_size(self.child_layout_size.layout_one(child_size));
+        self.child
+            .set_size(self.child_layout_size.layout_one(child_size));
     }
 
     fn draw(&mut self, _state: &mut WidgetState, canvas: &mut skia::Canvas) {
